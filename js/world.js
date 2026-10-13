@@ -15,8 +15,13 @@ const WORLD = (() => {
     dark:  '#0b0d15', wall: '#1b2033', wallTop: '#2a3149'
   };
 
-  /* ---------- salas ---------- */
-  const ROOMS = {
+  /* ---------- salas ----------
+     As salas padrão (PADRAO_*) são as de sempre. Quando o cliente manda a
+     planta, /criar-escritorio gera data/planta.json e o servidor o entrega
+     em window.ESCRITORIO.planta; carregar(planta) reconstrói ROOMS, DOORS,
+     SIGNS e SPAWN a partir dele. Os objetos são mutados no lugar para os
+     módulos que já guardaram a referência continuarem valendo.          */
+  const PADRAO_ROOMS = {
     diretoria: {
       id: 'diretoria', name: 'DIRETORIA', short: 'Diretoria',
       bx: 0, by: 0, bw: 15, bh: 19,
@@ -55,10 +60,8 @@ const WORLD = (() => {
       floorA: '#10131f', floorB: '#141827',
       desc: 'Recepção, elevador e a circulação entre as salas.'
     }
-  };
-
-  /* ---------- portas (x, y, orientação) ---------- */
-  const DOORS = [
+  };;
+  const PADRAO_DOORS = [
     { x: 14, y: 8,  o: 'v' }, { x: 14, y: 9,  o: 'v' },   // diretoria -> hall vertical
     { x: 5,  y: 18, o: 'h' }, { x: 6,  y: 18, o: 'h' },   // diretoria -> corredor
     { x: 18, y: 8,  o: 'v' }, { x: 18, y: 9,  o: 'v' },   // serviço  -> hall vertical
@@ -66,7 +69,27 @@ const WORLD = (() => {
     { x: 13, y: 22, o: 'h' }, { x: 14, y: 22, o: 'h' },   // lounge   -> corredor
     { x: 24, y: 22, o: 'h' }, { x: 25, y: 22, o: 'h' },   // lounge   -> corredor (2ª porta)
     { x: 38, y: 22, o: 'h' }, { x: 39, y: 22, o: 'h' }    // reunião  -> corredor
-  ];
+  ];;
+  let pisoCache = null;
+  const ROOMS = {};
+  const DOORS = [];
+  const SPAWN = { x: 45, y: 20 };          // elevador / recepção
+  let PLANTA = null;                       // a planta carregada, ou null (padrão)
+  const TIPO_PADRAO = { diretoria: 'diretoria', servico: 'operacao', lounge: 'descanso', reuniao: 'reuniao', corredor: 'corredor' };
+  const CORES = {
+    diretoria: { accent: C.fire1, floorA: '#241a24', floorB: '#2c2030' },
+    operacao:  { accent: C.volt1, floorA: '#111725', floorB: '#151c2e' },
+    reuniao:   { accent: '#a855f7', floorA: '#14182a', floorB: '#191e34' },
+    recepcao:  { accent: '#f472b6', floorA: '#1a1420', floorB: '#20182a' },
+    descanso:  { accent: C.fire3, floorA: '#1a1a12', floorB: '#20201a' },
+    sala:      { accent: '#22c55e', floorA: '#111b17', floorB: '#15201c' },
+    corredor:  { accent: '#64748b', floorA: '#10131f', floorB: '#141827' }
+  };
+  const DESC = {
+    diretoria: 'A sala do dono.', operacao: 'Mesas dos agentes: é aqui que o trabalho acontece.',
+    reuniao: 'Onde os agentes se reúnem.', recepcao: 'Quem chega entra por aqui.',
+    descanso: 'Jogos e descanso.', sala: 'Uma sala de atendimento, com uma estação.', corredor: 'Recepção, elevador e a circulação entre as salas.'
+  };
 
   /* ---------- grade ---------- */
   const kind   = new Uint8Array(W * H);
@@ -77,7 +100,7 @@ const WORLD = (() => {
   const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
 
   function buildGrid() {
-    kind.fill(FLOOR);
+    kind.fill(FLOOR); blocked.fill(0);
     for (let i = 0; i < W * H; i++) roomOf[i] = 'corredor';
 
     // anel externo
@@ -104,7 +127,42 @@ const WORLD = (() => {
     // elevador / entrada na parede leste do corredor
     kind[idx(W - 1, 20)] = WALL;
   }
-  buildGrid();
+
+  /** reconstrói as salas: com planta (data/planta.json) ou o padrão */
+  function carregar(planta) {
+    for (const k of Object.keys(ROOMS)) delete ROOMS[k];
+    DOORS.length = 0;
+    SIGNS.length = 0;
+    PLANTA = planta && Array.isArray(planta.salas) && planta.salas.length >= 2 ? planta : null;
+    if (!PLANTA) {
+      for (const [k, r] of Object.entries(PADRAO_ROOMS)) ROOMS[k] = { ...r, tipo: TIPO_PADRAO[k] || 'sala' };
+      DOORS.push(...PADRAO_DOORS);
+      SIGNS.push(...PADRAO_SIGNS);
+      SPAWN.x = 45; SPAWN.y = 20;
+    } else {
+      for (const s of PLANTA.salas) {
+        const cor = CORES[s.tipo] || CORES.sala;
+        ROOMS[s.id] = { id: s.id, name: String(s.nome).toUpperCase(), short: s.nome, tipo: s.tipo, tamanho: s.tamanho,
+                        bx: s.bx, by: s.by, bw: s.bw, bh: s.bh, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2,
+                        porta: s.porta, estacoes: s.estacoes || [], ...cor, desc: DESC[s.tipo] || '' };
+        if (s.porta) DOORS.push({ x: s.porta.x, y: s.porta.y, o: 'h' }, { x: s.porta.x + 1, y: s.porta.y, o: 'h' });
+      }
+      ROOMS.corredor = { id: 'corredor', name: 'RECEPÇÃO & CIRCULAÇÃO', short: 'Corredor', tipo: 'corredor', ...CORES.corredor, desc: DESC.corredor };
+      SPAWN.x = 45; SPAWN.y = 20;
+      // placas: equipe na parede norte da operação; nome do escritório em outra sala de cima; quadro na diretoria encostada à esquerda
+      const cima = PLANTA.salas.filter(s => s.by === 0);
+      const op = cima.find(s => s.tipo === 'operacao');
+      if (op && op.bw >= 10) SIGNS.push({ o: 'n', x: op.bx + 1, y: 0, len: Math.min(9, op.bw - 2), kind: 'equipe' });
+      const outra = cima.find(s => s !== op && s.bw >= 9);
+      if (outra) SIGNS.push({ o: 'n', x: outra.bx + 1, y: 0, len: Math.min(8, outra.bw - 2), kind: 'nome' });
+      else if (op && op.bw >= 20) SIGNS.push({ o: 'n', x: op.bx + 11, y: 0, len: 8, kind: 'nome' });
+      const dir = cima.find(s => s.tipo === 'diretoria');
+      if (dir && dir.bx === 0) SIGNS.push({ o: 'w', x: 0, y: 3, len: Math.min(8, dir.bh - 4), kind: 'quadro' });
+    }
+    buildGrid();
+    pisoCache = null;
+  }
+
 
   const kindAt  = (x, y) => inside(x, y) ? kind[idx(x, y)] : VOID;
   const roomAt  = (x, y) => inside(x, y) ? roomOf[idx(x, y)] : null;
@@ -132,7 +190,8 @@ const WORLD = (() => {
   }
 
   /* ---------- painéis nas paredes altas ---------- */
-  const SIGNS = [
+  const SIGNS = [];
+  const PADRAO_SIGNS = [
     { o: 'n', x: 20, y: 0,  len: 9,  kind: 'equipe'   },  // serviço: a equipe agora
     { o: 'n', x: 30, y: 0,  len: 10, kind: 'nome'     },  // nome do escritório (config)
     { o: 'n', x: 1,  y: 0,  len: 7,  kind: 'eventos'  },  // diretoria: próximos eventos
@@ -167,7 +226,6 @@ const WORLD = (() => {
      O piso é fixo: 1632 losangos por quadro era desperdício puro. Ele é
      pintado uma vez num canvas próprio e depois só copiado; só o brilho
      RGB refletido continua sendo calculado a cada quadro.                */
-  let pisoCache = null;
   function montaPiso() {
     const x0 = ISO.toScreen(0, H - 1).x - ISO.TW;
     const x1 = ISO.toScreen(W - 1, 0).x + ISO.TW;
@@ -207,15 +265,17 @@ const WORLD = (() => {
     // brilho RGB refletido no piso da sala de serviço
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    for (let x = ROOMS.servico.x1; x <= ROOMS.servico.x2; x += 7) {
-      const p = ISO.toScreen(x, 1.5);
-      const hue = (t * 28 + x * 14) % 360;
-      ISO.glow(ctx, p.x, p.y, 120, ISO.hsl(hue, 90, 55), .07);
-    }
-    for (let x = ROOMS.lounge.x1; x <= ROOMS.lounge.x2; x += 8) {
-      const p = ISO.toScreen(x, 28);
-      const hue = (t * 44 + x * 26) % 360;
-      ISO.glow(ctx, p.x, p.y, 150, ISO.hsl(hue, 95, 58), .07);
+    for (const r of Object.values(ROOMS)) {
+      if (r.tipo === 'operacao') for (let x = r.x1; x <= r.x2; x += 7) {
+        const p = ISO.toScreen(x, r.y1 + 0.5);
+        const hue = (t * 28 + x * 14) % 360;
+        ISO.glow(ctx, p.x, p.y, 120, ISO.hsl(hue, 90, 55), .07);
+      }
+      if (r.tipo === 'descanso') for (let x = r.x1; x <= r.x2; x += 8) {
+        const p = ISO.toScreen(x, (r.y1 + r.y2) / 2);
+        const hue = (t * 44 + x * 26) % 360;
+        ISO.glow(ctx, p.x, p.y, 150, ISO.hsl(hue, 95, 58), .07);
+      }
     }
     ctx.restore();
   }
@@ -232,10 +292,7 @@ const WORLD = (() => {
       ctx.fillText(r.name, p.x, p.y);
       ctx.restore();
     };
-    put(ROOMS.diretoria, 7, 15.4);
-    put(ROOMS.servico, 33, 16.2);
-    put(ROOMS.lounge, 14.5, 31.6);
-    put(ROOMS.reuniao, 40, 31.4);
+    for (const r of Object.values(ROOMS)) if (r.bw !== undefined) put(r, (r.x1 + r.x2) / 2 + 0.5, r.y2 - 1.4);
   }
 
   const cacheGrad = new Map();
@@ -588,13 +645,14 @@ const WORLD = (() => {
   /* ---- luminárias e detalhes de teto no chão (decalques) ---- */
   function drawDecals(ctx, t) { /* piso liso: sem logo pintado */ }
 
-  /* ---------- pontos de interesse ---------- */
-  const SPAWN = { x: 45, y: 20 };          // elevador / recepção
+
+  carregar(window.ESCRITORIO && window.ESCRITORIO.planta);
 
   return {
     W, H, VOID, FLOOR, WALL, DOOR, C,
     ROOMS, DOORS, SPAWN, WALL_H, PARAPET,
     SIGNS, signDepth,
+    carregar, get PLANTA() { return PLANTA; },
     kindAt, roomAt, isWall, walkable, setBlocked, wallOccludes,
     drawFloor, drawWallTile, drawDoorTile, drawSigns, drawDecals, drawRoomLabels,
     wallFace

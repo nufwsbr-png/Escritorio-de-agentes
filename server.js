@@ -745,6 +745,11 @@ function estadoClaude() {
   });
 }
 
+/* a planta do cliente (data/planta.json, gerada por planta.js): sem ela, as salas padrão */
+function lerPlanta() {
+  try { const p = JSON.parse(fs.readFileSync(path.join(DADOS, 'planta.json'), 'utf8')); return p && Array.isArray(p.salas) ? p : null; } catch (e) { return null; }
+}
+
 /* ---------------- HTTP ---------------- */
 function json(res, code, dados) {
   const corpo = JSON.stringify(dados);
@@ -772,7 +777,7 @@ const servidor = http.createServer(async (req, res) => {
   /* configuração pública para a tela: nome, dono, marca (sem segredo) */
   if (rota === '/config.js') {
     const c = lerConfig();
-    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {}, aberto: fs.existsSync(CONFIG_ARQ) };
+    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {}, aberto: fs.existsSync(CONFIG_ARQ), planta: lerPlanta() };
     res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('window.ESCRITORIO = ' + JSON.stringify(pub) + ';\n');
     return;
@@ -945,6 +950,7 @@ const servidor = http.createServer(async (req, res) => {
 
   /* ---- ajustes: o que está configurado, sem segredos (a abertura em si é /criar-escritorio no Claude Code) ---- */
   if (rota === '/api/ajustes' && req.method === 'GET') return json(res, 200, ABERTURA.atual());
+  if (rota === '/api/planta' && req.method === 'GET') { const p = lerPlanta(); return json(res, 200, p || { padrao: true }); }
   if (rota === '/api/claude' && req.method === 'GET') {
     return json(res, 200, await estadoClaude());
   }

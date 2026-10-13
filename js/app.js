@@ -222,9 +222,8 @@ class Actor {
   }
 
   wander() {
-    const room = this.a.status === 'descanso' ? WORLD.ROOMS.lounge
-               : this.a.status === 'reuniao'  ? WORLD.ROOMS.reuniao
-               : WORLD.ROOMS.servico;
+    const tipo = this.a.status === 'descanso' ? 'descanso' : this.a.status === 'reuniao' ? 'reuniao' : 'operacao';
+    const room = salaDoTipo(tipo);
     for (let i = 0; i < 14; i++) {
       const x = room.x1 + Math.floor(Math.random() * (room.x2 - room.x1));
       const y = room.y1 + Math.floor(Math.random() * (room.y2 - room.y1));
@@ -716,15 +715,27 @@ function renderHire() {
   box.appendChild(add);
 }
 
+/* as salas vêm de WORLD.ROOMS: as 5 padrão ou as da planta do cliente */
+const salasEmOrdem = () => [...Object.values(WORLD.ROOMS).filter(r => r.id !== 'corredor'), WORLD.ROOMS.corredor].filter(Boolean);
+/* a sala de um tipo (descanso, reuniao, operacao); sem ela, o corredor */
+function salaDoTipo(tipo) {
+  const r = Object.values(WORLD.ROOMS).find(x => x.tipo === tipo && x.bw !== undefined);
+  return r || { id: 'corredor', x1: 2, y1: 19, x2: 45, y2: 21 };
+}
+function capacidadeDe(r) {
+  if (r.tipo === 'reuniao') return FURN.meetSlots.length;
+  if (r.tipo === 'descanso') return FURN.restSlots.length;
+  return FURN.workSlots.filter(s => s.room === r.id).length;
+}
+
 function renderRooms() {
   const box = $('#rooms-list');
   box.innerHTML = '';
-  const order = ['diretoria', 'servico', 'lounge', 'reuniao', 'corredor'];
-  for (const id of order) {
-    const r = WORLD.ROOMS[id];
+  for (const r of salasEmOrdem()) {
+    const id = r.id;
     const inside = Array.from(actors.values()).filter(ac =>
       !ac.hidden && WORLD.roomAt(Math.round(ac.x), Math.round(ac.y)) === id);
-    const cap = id === 'servico' ? 18 : id === 'diretoria' ? 2 : id === 'reuniao' ? 8 : id === 'lounge' ? FURN.restSlots.length : 0;
+    const cap = capacidadeDe(r);
     const pct = cap ? Math.min(100, inside.length / cap * 100) : 0;
     const el = document.createElement('div');
     el.className = 'roomcard';
@@ -746,8 +757,8 @@ function renderStats() {
   $('#st-idle').textContent = ROSTER.count('descanso');
   $('#st-off').textContent  = ROSTER.count('offline');
   const leg = $('#roomlegend');
-  leg.innerHTML = ['diretoria', 'servico', 'lounge', 'reuniao'].map(id => {
-    const r = WORLD.ROOMS[id];
+  leg.innerHTML = salasEmOrdem().filter(r => r.id !== 'corredor').map(r => {
+    const id = r.id;
     const n = Array.from(actors.values()).filter(ac =>
       !ac.hidden && WORLD.roomAt(Math.round(ac.x), Math.round(ac.y)) === id).length;
     return `<div class="rl"><span class="dot" style="background:${r.accent};color:${r.accent}"></span>${esc(r.short)} · ${n}</div>`;

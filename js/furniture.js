@@ -40,135 +40,250 @@ const FURN = (() => {
      LAYOUT
      =========================================================== */
 
-  /* ---------- SALA DE SERVIÇO: 12 estações ----------
-     Duas fileiras. A que ficava colada na parede do fundo saiu: tapava o
-     painel de números e deixava a sala apertada.                        */
-  const COLS = [21, 25, 29, 33, 37, 41];
-  const ROWS = [
-    { y: 7,  face: 's' },      // de frente: vemos o rosto, monitor de costas
-    { y: 12, face: 'n' }       // de costas: a tela aparece para nós
-  ];
-  let n = 0;
-  for (const r of ROWS) {
-    for (const x of COLS) {
-      n++;
-      const id = 'D' + String(n).padStart(2, '0');
-      const hue = (n * 41) % 360;
-      let deskY, seat;
-      if (r.face === 'n') { deskY = r.y;       seat = { x: x + 1.5, y: r.y + 2.0,  facing: 'n' }; }
-      else                { deskY = r.y + 1.9; seat = { x: x + 1.5, y: r.y + 1.20, facing: 's' }; }
+  /** o escritório de sempre: 4 salas fixas */
+  function layoutPadrao() {
+    /* ---------- SALA DE SERVIÇO: 12 estações ----------
+       Duas fileiras. A que ficava colada na parede do fundo saiu: tapava o
+       painel de números e deixava a sala apertada.                        */
+    const COLS = [21, 25, 29, 33, 37, 41];
+    const ROWS = [
+      { y: 7,  face: 's' },      // de frente: vemos o rosto, monitor de costas
+      { y: 12, face: 'n' }       // de costas: a tela aparece para nós
+    ];
+    let n = 0;
+    for (const r of ROWS) {
+      for (const x of COLS) {
+        n++;
+        const id = 'D' + String(n).padStart(2, '0');
+        const hue = (n * 41) % 360;
+        let deskY, seat;
+        if (r.face === 'n') { deskY = r.y;       seat = { x: x + 1.5, y: r.y + 2.0,  facing: 'n' }; }
+        else                { deskY = r.y + 1.9; seat = { x: x + 1.5, y: r.y + 1.20, facing: 's' }; }
 
-      const mesa = add({ t: 'deskGamer', id, x, y: deskY, w: 3, d: 1.3,
-                         face: r.face, busy: false, hue, sabor: n % 3 });
-      block(x, deskY, 3, 1.3);
-      cadeira(seat, 'chairGamer', hue);
-      workSlots.push({ id, room: 'servico', label: 'Estação ' + id,
-                       x: seat.x, y: seat.y, facing: seat.facing, obj: mesa });
+        const mesa = add({ t: 'deskGamer', id, x, y: deskY, w: 3, d: 1.3,
+                           face: r.face, busy: false, hue, sabor: n % 3 });
+        block(x, deskY, 3, 1.3);
+        cadeira(seat, 'chairGamer', hue);
+        workSlots.push({ id, room: 'servico', label: 'Estação ' + id,
+                         x: seat.x, y: seat.y, facing: seat.facing, obj: mesa });
+      }
     }
-  }
 
 
-  /* ---------- DIRETORIA ---------- */
-  const seatA = { x: 4.5, y: 4.0,  facing: 's' };
-  const mesaA = add({ t: 'deskBoss', id: 'DIR-1', x: 2.4, y: 4.7, w: 4.2, d: 1.6,
-                      face: 's', busy: false, hue: 8, controle: true });
-  block(2.4, 4.7, 4.2, 1.6);
-  cadeira(seatA, 'chairBoss');
-  workSlots.push({ id: 'DIR-1', room: 'diretoria', label: 'Mesa da diretoria 1',
-                   x: seatA.x, y: seatA.y, facing: 's', obj: mesaA, vip: true });
+    /* ---------- DIRETORIA ---------- */
+    const seatA = { x: 4.5, y: 4.0,  facing: 's' };
+    const mesaA = add({ t: 'deskBoss', id: 'DIR-1', x: 2.4, y: 4.7, w: 4.2, d: 1.6,
+                        face: 's', busy: false, hue: 8, controle: true });
+    block(2.4, 4.7, 4.2, 1.6);
+    cadeira(seatA, 'chairBoss');
+    workSlots.push({ id: 'DIR-1', room: 'diretoria', label: 'Mesa da diretoria 1',
+                     x: seatA.x, y: seatA.y, facing: 's', obj: mesaA, vip: true });
 
-  const seatB = { x: 4.5, y: 11.0, facing: 's' };
-  const mesaB = add({ t: 'deskBoss', id: 'DIR-2', x: 2.4, y: 11.7, w: 4.2, d: 1.6,
-                      face: 's', busy: false, hue: 196, controle: true });
-  block(2.4, 11.7, 4.2, 1.6);
-  cadeira(seatB, 'chairBoss');
-  workSlots.push({ id: 'DIR-2', room: 'diretoria', label: 'Mesa da diretoria 2',
-                   x: seatB.x, y: seatB.y, facing: 's', obj: mesaB, vip: true });
+    const seatB = { x: 4.5, y: 11.0, facing: 's' };
+    const mesaB = add({ t: 'deskBoss', id: 'DIR-2', x: 2.4, y: 11.7, w: 4.2, d: 1.6,
+                        face: 's', busy: false, hue: 196, controle: true });
+    block(2.4, 11.7, 4.2, 1.6);
+    cadeira(seatB, 'chairBoss');
+    workSlots.push({ id: 'DIR-2', room: 'diretoria', label: 'Mesa da diretoria 2',
+                     x: seatB.x, y: seatB.y, facing: 's', obj: mesaB, vip: true });
 
-  add({ t: 'rug',      x: 1.6, y: 7.0, w: 6, d: 3.4, c: '#3a1620' });
-  add({ t: 'sofa',     x: 9.0, y: 6.4, w: 1.6, d: 3.2, dir: 'w', c: '#2b1a2e' });  block(9.0, 6.4, 1.6, 3.2);
-  add({ t: 'lowTable', x: 6.8, y: 7.6, w: 1.6, d: 1.6 });                          block(6.8, 7.6, 1.6, 1.6);
-  add({ t: 'trophy',   x: 11.2, y: 2.4 });                                         block(11.2, 2.4, 1.2, 1.2);
-  add({ t: 'plant',    x: 11.6, y: 15.4, k: 1 });                                  block(11.6, 15.4, 1, 1);
-  add({ t: 'plant',    x: 1.4,  y: 15.8, k: 0 });                                  block(1.4, 15.8, 1, 1);
-  add({ t: 'cooler',   x: 11.6, y: 8.6 });                                         block(11.6, 8.6, 1, 1);
+    add({ t: 'rug',      x: 1.6, y: 7.0, w: 6, d: 3.4, c: '#3a1620' });
+    add({ t: 'sofa',     x: 9.0, y: 6.4, w: 1.6, d: 3.2, dir: 'w', c: '#2b1a2e' });  block(9.0, 6.4, 1.6, 3.2);
+    add({ t: 'lowTable', x: 6.8, y: 7.6, w: 1.6, d: 1.6 });                          block(6.8, 7.6, 1.6, 1.6);
+    add({ t: 'trophy',   x: 11.2, y: 2.4 });                                         block(11.2, 2.4, 1.2, 1.2);
+    add({ t: 'plant',    x: 11.6, y: 15.4, k: 1 });                                  block(11.6, 15.4, 1, 1);
+    add({ t: 'plant',    x: 1.4,  y: 15.8, k: 0 });                                  block(1.4, 15.8, 1, 1);
+    add({ t: 'cooler',   x: 11.6, y: 8.6 });                                         block(11.6, 8.6, 1, 1);
 
-  /* ---------- LOUNGE ---------- */
-  [2.2, 4.2, 6.2].forEach((x, i) => {
-    const o = add({ t: 'arcade', x, y: 23.2, w: 1.5, d: 1.2, hue: [12, 190, 300][i] });
-    block(x, 23.2, 1.5, 1.2);
-    restSlots.push({ id: 'ARC' + i, label: 'arcade', x: x + 0.75, y: 25.0, facing: 'n',
-                     act: 'jogando fliperama', obj: o });
-  });
-
-  const pool = add({ t: 'poolTable', x: 9.6, y: 25, w: 4.6, d: 2.6 });
-  block(9.6, 25, 4.6, 2.6);
-  restSlots.push({ id: 'POOL0', label: 'sinuca', x: 8.6,  y: 26.3, facing: 'e', act: 'na sinuca', obj: pool });
-  restSlots.push({ id: 'POOL1', label: 'sinuca', x: 15.0, y: 26.3, facing: 'w', act: 'na sinuca', obj: pool });
-  restSlots.push({ id: 'POOL2', label: 'sinuca', x: 11.9, y: 24.3, facing: 's', act: 'na sinuca', obj: pool });
-
-  const peb = add({ t: 'foosball', x: 9.8, y: 29.4, w: 4.2, d: 2 });
-  block(9.8, 29.4, 4.2, 2);
-  restSlots.push({ id: 'PEB0', label: 'pebolim', x: 8.6,  y: 30.4, facing: 'e', act: 'no pebolim', obj: peb });
-  restSlots.push({ id: 'PEB1', label: 'pebolim', x: 14.7, y: 30.4, facing: 'w', act: 'no pebolim', obj: peb });
-
-  add({ t: 'tvWall', x: 18.4, y: 23.15, w: 5, d: 0.5 });
-  const sofaL = add({ t: 'sofa', x: 18.6, y: 26.4, w: 4.6, d: 1.6, dir: 'n', c: '#241c3c' });
-  block(18.6, 26.4, 4.6, 1.6);
-  ['SOF0', 'SOF1', 'SOF2'].forEach((id, i) =>
-    restSlots.push({ id, label: 'sofá', x: 19.7 + i * 1.4, y: 27.3, facing: 'n',
-                     sit: true, act: 'vendo TV', obj: sofaL }));
-  add({ t: 'rug', x: 18.2, y: 24.4, w: 5.4, d: 2, c: '#1b2440' });
-
-  [[25.2, 27.6, 24], [26.8, 29.4, 300], [24.4, 30.2, 160]].forEach((b, i) => {
-    const o = add({ t: 'beanbag', x: b[0], y: b[1], hue: b[2] });
-    block(b[0], b[1], 1.2, 1.2);
-    restSlots.push({ id: 'BAG' + i, label: 'puff', x: b[0] + 0.6, y: b[1] + 0.55,
-                     facing: 's', sit: true, act: 'jogando no celular', obj: o });
-  });
-
-  const bar = add({ t: 'bar', x: 2, y: 30.4, w: 5.4, d: 1.4 });
-  block(2, 30.4, 5.4, 1.4);
-  restSlots.push({ id: 'BAR0', label: 'bar', x: 3.0, y: 29.4, facing: 's', act: 'tomando um café', obj: bar });
-  restSlots.push({ id: 'BAR1', label: 'bar', x: 5.4, y: 29.4, facing: 's', act: 'tomando um café', obj: bar });
-
-  add({ t: 'vending',     x: 26.6, y: 23.2 });                block(26.6, 23.2, 1.2, 1.2);
-  add({ t: 'plant', x: 16.6, y: 23.4, k: 1 });                 block(16.6, 23.4, 1, 1);
-  add({ t: 'plant', x: 27.0, y: 31.2, k: 0 });                 block(27.0, 31.2, 1, 1);
-  add({ t: 'neonSign', x: 15.4, y: 23.2, txt: 'GAME ZONE', hue: 300 });
-
-  /* ---------- SALA DE REUNIÃO ---------- */
-  const mtable = add({ t: 'meetTable', x: 36, y: 26, w: 7, d: 3.2 });
-  block(36, 26, 7, 3.2);
-  [36.8, 38.8, 40.8].forEach((x, i) => {
-    const s = { id: 'MT' + i, x, y: 25.2, facing: 's', sit: true, obj: mtable };
-    meetSlots.push(s); cadeira(s, 'chairSimple');
-  });
-  [36.8, 38.8, 40.8].forEach((x, i) => {
-    const s = { id: 'MB' + i, x, y: 29.9, facing: 'n', sit: true, obj: mtable };
-    meetSlots.push(s); cadeira(s, 'chairSimple');
-  });
-  [{ id: 'ML', x: 35.2, y: 27.6, facing: 'e' }, { id: 'MR', x: 43.7, y: 27.6, facing: 'w' }]
-    .forEach(p => {
-      const s = Object.assign({ sit: true, obj: mtable }, p);
-      meetSlots.push(s); cadeira(s, 'chairSimple');
+    /* ---------- LOUNGE ---------- */
+    [2.2, 4.2, 6.2].forEach((x, i) => {
+      const o = add({ t: 'arcade', x, y: 23.2, w: 1.5, d: 1.2, hue: [12, 190, 300][i] });
+      block(x, 23.2, 1.5, 1.2);
+      restSlots.push({ id: 'ARC' + i, label: 'arcade', x: x + 0.75, y: 25.0, facing: 'n',
+                       act: 'jogando fliperama', obj: o });
     });
 
-  add({ t: 'tvWall', x: 37.5, y: 23.15, w: 4.6, d: 0.5, meeting: true });
-  add({ t: 'plant', x: 33.4, y: 31.2, k: 0 });               block(33.4, 31.2, 1, 1);
+    const pool = add({ t: 'poolTable', x: 9.6, y: 25, w: 4.6, d: 2.6 });
+    block(9.6, 25, 4.6, 2.6);
+    restSlots.push({ id: 'POOL0', label: 'sinuca', x: 8.6,  y: 26.3, facing: 'e', act: 'na sinuca', obj: pool });
+    restSlots.push({ id: 'POOL1', label: 'sinuca', x: 15.0, y: 26.3, facing: 'w', act: 'na sinuca', obj: pool });
+    restSlots.push({ id: 'POOL2', label: 'sinuca', x: 11.9, y: 24.3, facing: 's', act: 'na sinuca', obj: pool });
 
-  /* ---------- CORREDOR / RECEPÇÃO ---------- */
-  add({ t: 'elevator',  x: 46, y: 19.2, w: 1, d: 2 });
-  add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1);
-  add({ t: 'plant', x: 37.2, y: 19, k: 0 }); block(37.2, 19, 1, 1);
-  add({ t: 'plant', x: 34.0, y: 19, k: 1 }); block(34.0, 19, 1, 1);
+    const peb = add({ t: 'foosball', x: 9.8, y: 29.4, w: 4.2, d: 2 });
+    block(9.8, 29.4, 4.2, 2);
+    restSlots.push({ id: 'PEB0', label: 'pebolim', x: 8.6,  y: 30.4, facing: 'e', act: 'no pebolim', obj: peb });
+    restSlots.push({ id: 'PEB1', label: 'pebolim', x: 14.7, y: 30.4, facing: 'w', act: 'no pebolim', obj: peb });
 
-  add({ t: 'rack', x: 8.4,  y: 19, label: 'DADOS',     hue: 190 }); block(8.4, 19, 1.2, 1);
-  add({ t: 'rack', x: 10.0, y: 19, label: 'AGENTES',   hue: 20  }); block(10.0, 19, 1.2, 1);
-  add({ t: 'rack', x: 11.6, y: 19, label: 'CORE',      hue: 280 }); block(11.6, 19, 1.2, 1);
+    add({ t: 'tvWall', x: 18.4, y: 23.15, w: 5, d: 0.5 });
+    const sofaL = add({ t: 'sofa', x: 18.6, y: 26.4, w: 4.6, d: 1.6, dir: 'n', c: '#241c3c' });
+    block(18.6, 26.4, 4.6, 1.6);
+    ['SOF0', 'SOF1', 'SOF2'].forEach((id, i) =>
+      restSlots.push({ id, label: 'sofá', x: 19.7 + i * 1.4, y: 27.3, facing: 'n',
+                       sit: true, act: 'vendo TV', obj: sofaL }));
+    add({ t: 'rug', x: 18.2, y: 24.4, w: 5.4, d: 2, c: '#1b2440' });
 
-  [2.2, 17.4, 27.4].forEach((x, i) => { add({ t: 'plant', x, y: 19, k: i % 2 }); block(x, 19, 1, 1); });
-  add({ t: 'neonSign', x: 20.4, y: 19, txt: String((window.ESCRITORIO && ESCRITORIO.nome) || 'ESCRITÓRIO').toUpperCase().slice(0, 16), hue: 190 });
+    [[25.2, 27.6, 24], [26.8, 29.4, 300], [24.4, 30.2, 160]].forEach((b, i) => {
+      const o = add({ t: 'beanbag', x: b[0], y: b[1], hue: b[2] });
+      block(b[0], b[1], 1.2, 1.2);
+      restSlots.push({ id: 'BAG' + i, label: 'puff', x: b[0] + 0.6, y: b[1] + 0.55,
+                       facing: 's', sit: true, act: 'jogando no celular', obj: o });
+    });
+
+    const bar = add({ t: 'bar', x: 2, y: 30.4, w: 5.4, d: 1.4 });
+    block(2, 30.4, 5.4, 1.4);
+    restSlots.push({ id: 'BAR0', label: 'bar', x: 3.0, y: 29.4, facing: 's', act: 'tomando um café', obj: bar });
+    restSlots.push({ id: 'BAR1', label: 'bar', x: 5.4, y: 29.4, facing: 's', act: 'tomando um café', obj: bar });
+
+    add({ t: 'vending',     x: 26.6, y: 23.2 });                block(26.6, 23.2, 1.2, 1.2);
+    add({ t: 'plant', x: 16.6, y: 23.4, k: 1 });                 block(16.6, 23.4, 1, 1);
+    add({ t: 'plant', x: 27.0, y: 31.2, k: 0 });                 block(27.0, 31.2, 1, 1);
+    add({ t: 'neonSign', x: 15.4, y: 23.2, txt: 'GAME ZONE', hue: 300 });
+
+    /* ---------- SALA DE REUNIÃO ---------- */
+    const mtable = add({ t: 'meetTable', x: 36, y: 26, w: 7, d: 3.2 });
+    block(36, 26, 7, 3.2);
+    [36.8, 38.8, 40.8].forEach((x, i) => {
+      const s = { id: 'MT' + i, x, y: 25.2, facing: 's', sit: true, obj: mtable };
+      meetSlots.push(s); cadeira(s, 'chairSimple');
+    });
+    [36.8, 38.8, 40.8].forEach((x, i) => {
+      const s = { id: 'MB' + i, x, y: 29.9, facing: 'n', sit: true, obj: mtable };
+      meetSlots.push(s); cadeira(s, 'chairSimple');
+    });
+    [{ id: 'ML', x: 35.2, y: 27.6, facing: 'e' }, { id: 'MR', x: 43.7, y: 27.6, facing: 'w' }]
+      .forEach(p => {
+        const s = Object.assign({ sit: true, obj: mtable }, p);
+        meetSlots.push(s); cadeira(s, 'chairSimple');
+      });
+
+    add({ t: 'tvWall', x: 37.5, y: 23.15, w: 4.6, d: 0.5, meeting: true });
+    add({ t: 'plant', x: 33.4, y: 31.2, k: 0 });               block(33.4, 31.2, 1, 1);
+
+    /* ---------- CORREDOR / RECEPÇÃO ---------- */
+    add({ t: 'elevator',  x: 46, y: 19.2, w: 1, d: 2 });
+    add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1);
+    add({ t: 'plant', x: 37.2, y: 19, k: 0 }); block(37.2, 19, 1, 1);
+    add({ t: 'plant', x: 34.0, y: 19, k: 1 }); block(34.0, 19, 1, 1);
+
+    add({ t: 'rack', x: 8.4,  y: 19, label: 'DADOS',     hue: 190 }); block(8.4, 19, 1.2, 1);
+    add({ t: 'rack', x: 10.0, y: 19, label: 'AGENTES',   hue: 20  }); block(10.0, 19, 1.2, 1);
+    add({ t: 'rack', x: 11.6, y: 19, label: 'CORE',      hue: 280 }); block(11.6, 19, 1.2, 1);
+
+    [2.2, 17.4, 27.4].forEach((x, i) => { add({ t: 'plant', x, y: 19, k: i % 2 }); block(x, 19, 1, 1); });
+    add({ t: 'neonSign', x: 20.4, y: 19, txt: String((window.ESCRITORIO && ESCRITORIO.nome) || 'ESCRITÓRIO').toUpperCase().slice(0, 16), hue: 190 });
+  }
+
+  /* ---------- a mobília de cada sala da planta, pelo tipo ----------
+     As salas vêm de data/planta.json (WORLD.ROOMS já tem bx/by/bw/bh, x1..y2,
+     estacoes). Cada tipo recebe o que faz sentido: mesas na operação e nas
+     salas, mesa grande e cadeiras na reunião, sofá e jogos no descanso,
+     balcão na recepção, mesas do dono na diretoria.                      */
+  function layoutPlanta() {
+    let n = 0;
+    const nome = String((window.ESCRITORIO && ESCRITORIO.nome) || 'ESCRITÓRIO').toUpperCase().slice(0, 16);
+    for (const r of Object.values(WORLD.ROOMS)) {
+      if (r.bw === undefined) continue;
+      const cx = (r.x1 + r.x2) / 2, largura = r.x2 - r.x1 + 1, altura = r.y2 - r.y1 + 1;
+      const porY = r.porta ? r.porta.y : r.y2 + 1;                  // parede com a porta
+      const fundoY = porY > r.y2 ? r.y1 - 1 : r.y2 + 1;            // a parede oposta à porta
+      if (r.tipo === 'operacao' || r.tipo === 'sala') {
+        for (const e of r.estacoes) {
+          n++;
+          const id = 'D' + String(n).padStart(2, '0');
+          const hue = (n * 41) % 360;
+          const seat = { x: e.x + 1.5, y: e.y + 2.0, facing: 'n' };
+          const mesa = add({ t: 'deskGamer', id, x: e.x, y: e.y, w: 3, d: 1.3, face: 'n', busy: false, hue, sabor: n % 3 });
+          block(e.x, e.y, 3, 1.3);
+          cadeira(seat, 'chairGamer', hue);
+          workSlots.push({ id, room: r.id, label: (r.tipo === 'sala' ? r.short + ' · ' : 'Estação ') + id, x: seat.x, y: seat.y, facing: 'n', obj: mesa });
+        }
+        if (r.tipo === 'sala') { add({ t: 'plant', x: r.x2 - 0.6, y: r.y2 - 0.6, k: n % 2 }); block(r.x2 - 0.6, r.y2 - 0.6, 1, 1); }
+      } else if (r.tipo === 'diretoria') {
+        r.estacoes.forEach((e, i) => {
+          const id = 'DIR-' + (i + 1);
+          const seat = { x: e.x + 2.1, y: e.y - 0.7, facing: 's' };
+          const mesa = add({ t: 'deskBoss', id, x: e.x, y: e.y, w: 4.2, d: 1.6, face: 's', busy: false, hue: i ? 196 : 8, controle: true });
+          block(e.x, e.y, 4.2, 1.6);
+          cadeira(seat, 'chairBoss');
+          workSlots.push({ id, room: r.id, label: 'Mesa da diretoria ' + (i + 1), x: seat.x, y: seat.y, facing: 's', obj: mesa, vip: true });
+        });
+        if (largura >= 8 && altura >= 8) { add({ t: 'rug', x: r.x1 + 0.6, y: r.y1 + 6, w: Math.min(6, largura - 2), d: 3.4, c: '#3a1620' }); }
+        add({ t: 'plant', x: r.x2 - 0.5, y: r.y2 - 0.5, k: 1 }); block(r.x2 - 0.5, r.y2 - 0.5, 1, 1);
+        if (largura >= 10) { add({ t: 'trophy', x: r.x2 - 1.6, y: r.y1 + 1.2 }); block(r.x2 - 1.6, r.y1 + 1.2, 1.2, 1.2); }
+      } else if (r.tipo === 'reuniao') {
+        const w = Math.max(5, Math.min(7, largura - 3)), d = altura >= 7 ? 3.2 : 2.4;
+        const tx = cx - w / 2 + 0.5, ty = r.y1 + Math.max(1.6, (altura - d) / 2);
+        const mtable = add({ t: 'meetTable', x: tx, y: ty, w, d });
+        block(tx, ty, w, d);
+        const lugares = w >= 7 ? [0.8, 2.8, 4.8] : [0.8, 2.8];
+        lugares.forEach((dx, i) => { const s = { id: 'MT' + r.id + i, x: tx + dx, y: ty - 0.8, facing: 's', sit: true, obj: mtable }; meetSlots.push(s); cadeira(s, 'chairSimple'); });
+        lugares.forEach((dx, i) => { const s = { id: 'MB' + r.id + i, x: tx + dx, y: ty + d + 0.7, facing: 'n', sit: true, obj: mtable }; meetSlots.push(s); cadeira(s, 'chairSimple'); });
+        [{ id: 'ML' + r.id, x: tx - 0.8, y: ty + d / 2, facing: 'e' }, { id: 'MR' + r.id, x: tx + w + 0.7, y: ty + d / 2, facing: 'w' }]
+          .forEach(pp => { const s = Object.assign({ sit: true, obj: mtable }, pp); meetSlots.push(s); cadeira(s, 'chairSimple'); });
+        if (fundoY < r.y1) add({ t: 'tvWall', x: cx - 2, y: r.y1 + 0.15, w: Math.min(4.6, largura - 2), d: 0.5, meeting: true });
+        add({ t: 'plant', x: r.x1 + 0.4, y: r.y2 - 0.6, k: 0 }); block(r.x1 + 0.4, r.y2 - 0.6, 1, 1);
+      } else if (r.tipo === 'descanso') {
+        const sw = Math.min(4.6, largura - 3);
+        const sofaL = add({ t: 'sofa', x: r.x1 + 1, y: r.y1 + 3.4, w: sw, d: 1.6, dir: 'n', c: '#241c3c' });
+        block(r.x1 + 1, r.y1 + 3.4, sw, 1.6);
+        for (let i = 0; i < Math.min(3, Math.floor(sw / 1.4)); i++)
+          restSlots.push({ id: 'SOF' + r.id + i, label: 'sofá', x: r.x1 + 2.1 + i * 1.4, y: r.y1 + 4.3, facing: 'n', sit: true, act: 'vendo TV', obj: sofaL });
+        if (fundoY < r.y1) add({ t: 'tvWall', x: r.x1 + 1, y: r.y1 + 0.15, w: sw, d: 0.5 });
+        add({ t: 'rug', x: r.x1 + 0.6, y: r.y1 + 1.4, w: sw + 0.8, d: 2, c: '#1b2440' });
+        const bx = r.x1 + sw + 2.2;
+        if (largura >= 10) {
+          [[bx, r.y1 + 1.6, 24], [bx + 1.6, r.y1 + 3.4, 300], [bx + 0.4, r.y1 + 5.2, 160]].forEach((b, i) => {
+            if (b[0] + 1.2 > r.x2 + 1 || b[1] + 1.2 > r.y2 + 1) return;
+            const o = add({ t: 'beanbag', x: b[0], y: b[1], hue: b[2] });
+            block(b[0], b[1], 1.2, 1.2);
+            restSlots.push({ id: 'BAG' + r.id + i, label: 'puff', x: b[0] + 0.6, y: b[1] + 0.55, facing: 's', sit: true, act: 'jogando no celular', obj: o });
+          });
+        }
+        if (largura >= 14 && altura >= 8) {
+          const pool = add({ t: 'poolTable', x: bx + 3.2, y: r.y1 + 1.6, w: 4.6, d: 2.6 });
+          block(bx + 3.2, r.y1 + 1.6, 4.6, 2.6);
+          restSlots.push({ id: 'POOL' + r.id + 0, label: 'sinuca', x: bx + 2.2, y: r.y1 + 2.9, facing: 'e', act: 'na sinuca', obj: pool });
+          restSlots.push({ id: 'POOL' + r.id + 1, label: 'sinuca', x: bx + 8.6, y: r.y1 + 2.9, facing: 'w', act: 'na sinuca', obj: pool });
+        }
+        if (altura >= 8) {
+          const bar = add({ t: 'bar', x: r.x1 + 1, y: r.y2 - 1.6, w: Math.min(5.4, largura - 2), d: 1.4 });
+          block(r.x1 + 1, r.y2 - 1.6, Math.min(5.4, largura - 2), 1.4);
+          restSlots.push({ id: 'BAR' + r.id + 0, label: 'bar', x: r.x1 + 2, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: bar });
+          restSlots.push({ id: 'BAR' + r.id + 1, label: 'bar', x: r.x1 + 4.4, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: bar });
+        }
+        add({ t: 'neonSign', x: r.x1 + 0.4, y: r.y1 + 0.2, txt: 'GAME ZONE', hue: 300 });
+        add({ t: 'plant', x: r.x2 - 0.5, y: r.y2 - 0.6, k: 0 }); block(r.x2 - 0.5, r.y2 - 0.6, 1, 1);
+      } else if (r.tipo === 'recepcao') {
+        const rw = Math.min(2.6, largura - 2);
+        add({ t: 'reception', x: cx - rw / 2 + 0.5, y: fundoY < r.y1 ? r.y1 + 0.6 : r.y2 - 1.6, w: rw, d: 1 }); block(cx - rw / 2 + 0.5, fundoY < r.y1 ? r.y1 + 0.6 : r.y2 - 1.6, rw, 1);
+        add({ t: 'plant', x: r.x1 + 0.4, y: r.y1 + 0.4, k: 0 }); block(r.x1 + 0.4, r.y1 + 0.4, 1, 1);
+        add({ t: 'plant', x: r.x2 - 0.5, y: r.y1 + 0.4, k: 1 }); block(r.x2 - 0.5, r.y1 + 0.4, 1, 1);
+        if (altura >= 6 && largura >= 6) {
+          const sofa = add({ t: 'sofa', x: r.x1 + 1, y: r.y1 + 3, w: Math.min(3.2, largura - 2), d: 1.6, dir: 'n', c: '#2b1a2e' });
+          block(r.x1 + 1, r.y1 + 3, Math.min(3.2, largura - 2), 1.6);
+          restSlots.push({ id: 'ESP' + r.id, label: 'espera', x: r.x1 + 2.2, y: r.y1 + 3.9, facing: 'n', sit: true, act: 'na sala de espera', obj: sofa });
+        }
+      }
+    }
+    /* ---------- corredor ---------- */
+    add({ t: 'elevator',  x: 46, y: 19.2, w: 1, d: 2 });
+    if (!Object.values(WORLD.ROOMS).some(r => r.tipo === 'recepcao')) { add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1); }
+    add({ t: 'rack', x: 8.4,  y: 19, label: 'DADOS',   hue: 190 }); block(8.4, 19, 1.2, 1);
+    add({ t: 'rack', x: 10.0, y: 19, label: 'AGENTES', hue: 20  }); block(10.0, 19, 1.2, 1);
+    [2.2, 17.4, 27.4, 37.2].forEach((x, i) => { add({ t: 'plant', x, y: 19, k: i % 2 }); block(x, 19, 1, 1); });
+    add({ t: 'neonSign', x: 20.4, y: 19, txt: nome, hue: 190 });
+    // sem sala de descanso na planta, quem descansa fica no corredor, perto do elevador
+    if (!restSlots.length) for (let i = 0; i < 3; i++) restSlots.push({ id: 'COR' + i, label: 'corredor', x: 40 - i * 2, y: 20.5, facing: 's', act: 'no corredor', obj: null });
+    // sem sala de reunião, a reunião acontece no corredor
+    if (!meetSlots.length) for (let i = 0; i < 6; i++) meetSlots.push({ id: 'MC' + i, x: 14 + i * 2, y: 20.5, facing: 's', obj: null });
+  }
+
+  /** monta a mobília: pela planta, se houver; senão o padrão */
+  function montar() {
+    items.length = 0; workSlots.length = 0; restSlots.length = 0; meetSlots.length = 0;
+    if (WORLD.PLANTA) layoutPlanta(); else layoutPadrao();
+  }
+  montar();
 
   /* ===========================================================
      DESENHO
@@ -923,5 +1038,5 @@ const FURN = (() => {
     ctx.restore();
   }
 
-  return { items, workSlots, restSlots, meetSlots, drawItem, depth, caneca, TOP };
+  return { items, workSlots, restSlots, meetSlots, drawItem, depth, caneca, TOP, montar };
 })();
