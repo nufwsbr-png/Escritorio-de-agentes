@@ -1546,6 +1546,7 @@ $('#btn-allrest').addEventListener('click', () => { setAll('descanso'); toast('E
 $('#btn-report').addEventListener('click', openReport);
 $('#btn-avisos').addEventListener('click', () => AVISOS_UI.abrir());
 $('#btn-plataformas').addEventListener('click', () => PLATAFORMAS_UI.abrir());
+$('#btn-ajustes').addEventListener('click', () => AJUSTES.abrir());
 $('#btn-quadro').addEventListener('click', openQuadro);
 $('#btn-voice').addEventListener('click', toggleVoice);
 $('#btn-speak').addEventListener('click', () => speak(buildReport().fala));
@@ -1627,6 +1628,7 @@ document.addEventListener('keydown', e => {
   }
 })();
 ADMIN.atualizar();
+AJUSTES.avisoSemAbertura();
 SISTEMAS.atualizar();
 setInterval(() => SISTEMAS.atualizar(), 15000);
 // a equipe vem do disco, então o boot espera por ela antes de montar o andar

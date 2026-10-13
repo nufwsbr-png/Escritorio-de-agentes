@@ -67,6 +67,7 @@ const nomeDoAgente = (idSistema) => {
 const MEMORIA = require('./memoria').init({ ROOT, DADOS, lerRegistro, nomeDe: nomeDoAgente });
 const PLATAFORMAS = require('./plataformas').init({ ROOT, DADOS, lerRegistro, lerRegistroBruto, gravarRegistro });
 const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig, plataformas: PLATAFORMAS });
+let ABERTURA = null;   // precisa de AVISOS, que nasce mais abaixo; ver depois de AVISOS
 
 /* lê o corpo JSON de um POST/PUT, com limite de tamanho */
 const corpoJson = (req, limite = 1e5) => new Promise((resolve, reject) => {
@@ -588,6 +589,7 @@ const AVISOS = require('./avisos').init(DADOS, {
   resumo: async () => (await estado()).filter(x => x.estado === 'caiu')
     .map(x => (x.nome || x.id) + ' está fora do ar.')
 });
+ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLATAFORMAS, lerConfig, lerRegistroBruto, gravarRegistro });
 const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
@@ -770,7 +772,7 @@ const servidor = http.createServer(async (req, res) => {
   /* configuração pública para a tela: nome, dono, marca (sem segredo) */
   if (rota === '/config.js') {
     const c = lerConfig();
-    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {} };
+    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {}, aberto: fs.existsSync(CONFIG_ARQ) };
     res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('window.ESCRITORIO = ' + JSON.stringify(pub) + ';\n');
     return;
@@ -941,6 +943,8 @@ const servidor = http.createServer(async (req, res) => {
     return json(res, 200, REUNIAO.parar());
   }
 
+  /* ---- ajustes: o que está configurado, sem segredos (a abertura em si é /criar-escritorio no Claude Code) ---- */
+  if (rota === '/api/ajustes' && req.method === 'GET') return json(res, 200, ABERTURA.atual());
   if (rota === '/api/claude' && req.method === 'GET') {
     return json(res, 200, await estadoClaude());
   }
