@@ -167,11 +167,11 @@ function exemplo(acao) {
   const bruto = dep.lerRegistroBruto();
   if (acao === 'manter') return { ok: true, exemplo: bruto.exemplo ? 'presente' : 'ausente' };
   if (acao !== 'demitir') return { ok: false, motivo: 'use manter ou demitir' };
-  if (bruto.exemplo) { delete bruto.exemplo; dep.gravarRegistro(bruto); }
+  if (bruto.exemplo) { if (dep.desligar) { try { dep.desligar('exemplo'); } catch (e) {} } delete bruto.exemplo; dep.gravarRegistro(bruto); }
   const eq = lerJson(arq('equipe.json'), null);
   if (eq && Array.isArray(eq.team)) { eq.team = eq.team.filter(a => a.sistema !== 'exemplo' && a.key !== 'exemplo'); gravarJson(arq('equipe.json'), eq); }
   registrar('agente de exemplo demitido');
-  return { ok: true, exemplo: 'ausente' };
+  return { ok: true, exemplo: 'ausente', aviso: dep.desligar ? undefined : 'se o exemplo estiver ligado, desligue-o pelo escritório' };
 }
 
 function registrar(texto) {

@@ -63,7 +63,7 @@ function conferir({ ROOT, plataformas } = {}) {
   for (const a of arquivos) {
     const nome = path.basename(a);
     if (nome === '.env' || nome.endsWith('.pem') || nome === 'google-credentials.json') problemas.push('segredo versionado: ' + a);
-    if (/^data\/[^/]+\.json$/.test(a) && !/\.exemplo\.json$/.test(a)) problemas.push('dado do cliente versionado: ' + a);
+    if (/^data\//.test(a) && !/\.exemplo\.json$/.test(a)) problemas.push('dado do cliente versionado: ' + a);
     if (/\.(js|json|html|css|cmd|ps1|md|env|exemplo)$/i.test(a) || /\/env$/.test(a)) {
       let txt = ''; try { txt = fs.readFileSync(path.join(ROOT, a), 'utf8'); } catch (e) { continue; }
       const m = PADRAO_CHAVE.exec(semComentarios(txt));

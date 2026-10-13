@@ -88,7 +88,9 @@ function salvar(dados) {
   for (const [k, v] of Object.entries(entrada)) {
     const nomeVar = String(k).trim();
     if (!NOME_VAR.test(nomeVar)) return { ok: false, motivo: 'nome de variável inválido: ' + nomeVar + ' (só MAIÚSCULAS, números e _)' };
-    variaveis[nomeVar] = v == null ? '' : String(v);
+    const valor = v == null ? '' : String(v);
+    if (/[\r\n]/.test(valor)) return { ok: false, motivo: 'o valor de ' + nomeVar + ' tem quebra de linha; cole em uma linha só (JSON de credencial: minificado)' };
+    variaveis[nomeVar] = valor;
   }
   const agora = new Date().toISOString();
   const plataforma = {
@@ -134,7 +136,8 @@ function usadaPor(idPlataforma) {
 }
 
 /* ---------------- o bloco do .env ---------------- */
-const aspas = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '\\"') + '"';
+/* aspas externas só: carregarEnv do agente tira as externas e mantém o resto como está */
+const aspas = (v) => '"' + String(v == null ? '' : v) + '"';
 
 /**
  * blocoEnvPara(['drive','ophir'], ['C:\\manual']) → texto do bloco (LF).
@@ -146,6 +149,16 @@ function blocoEnvPara(ids, manuaisPastas = []) {
   const linhas = [INICIO];
   const tiposVistos = new Set();
   const pastas = [];
+  // um nome pode vir de duas plataformas (GOOGLE_CREDENCIAIS_JSON na planilha e na agenda):
+  // o último valor NÃO vazio vence, e o bloco avisa quando divergem
+  const vistos = new Map();   // nome -> { valor, de, linha }
+  const avisos = [];
+  const poe = (k, v, de) => {
+    const atual = vistos.get(k);
+    if (!atual) { vistos.set(k, { valor: v, de, linha: linhas.length }); linhas.push(k + '=' + aspas(v)); return; }
+    if (v && atual.valor && v !== atual.valor) avisos.push('# aviso: ' + k + ' difere entre ' + atual.de + ' e ' + de + '; vale o de ' + de);
+    if (v) { atual.valor = v; atual.de = de; linhas[atual.linha] = k + '=' + aspas(v); }
+  };
   for (const p of permitidas) {
     const t = TIPOS[p.tipo] || { sufixos: [], canonicos: [] };
     const primeiraDoTipo = !tiposVistos.has(p.tipo);
@@ -153,15 +166,16 @@ function blocoEnvPara(ids, manuaisPastas = []) {
     linhas.push('# ' + p.nome + (p.url ? ' — ' + p.url : '') + ' (' + p.tipo + (primeiraDoTipo ? '' : '; segunda do tipo: só os nomes prefixados') + ')');
     const pref = prefixoDe(p.id);
     for (const [k, v] of Object.entries(p.variaveis || {})) {
-      linhas.push(k + '=' + aspas(v));
+      poe(k, v, p.nome);
       if (primeiraDoTipo) {
         const idx = t.sufixos.findIndex(s => k === (SEM_PREFIXO.has(s) ? s : pref + s));
         const canonico = idx >= 0 ? t.canonicos[idx] : null;
-        if (canonico && canonico !== k) linhas.push(canonico + '=' + aspas(v));
+        if (canonico && canonico !== k) poe(canonico, v, p.nome);
       }
       if (p.tipo === 'pasta' && k === pref + 'PASTA' && v) pastas.push(String(v));
     }
   }
+  linhas.push(...avisos);
   if (pastas.length) {
     const todasPastas = [...new Set([...pastas, ...manuaisPastas.map(String).filter(Boolean)])];
     linhas.push('PASTAS_AUTORIZADAS=' + aspas(todasPastas.join(';')));
@@ -176,7 +190,7 @@ function separarBloco(texto) {
   const i = texto.indexOf(INICIO);
   if (i < 0) return [texto, null];
   const j = texto.indexOf(FIM, i);
-  if (j < 0) return [texto, null];
+  if (j < 0) throw new Error('bloco de plataformas corrompido no .env: há a linha de início e falta a de fim (' + FIM + ')');
   let fim = j + FIM.length;
   if (texto[fim] === '\r') fim++;
   if (texto[fim] === '\n') fim++;
@@ -189,16 +203,19 @@ function aplicarBloco(textoEnv, bloco) {
   const nl = crlf ? '\r\n' : '\n';
   const [sem] = separarBloco(textoEnv || '');
   const linhas = sem.split(/\r?\n/);
+  // o cabeçalho é o bloco de comentários CONTÍGUO no topo; o primeiro branco encerra
   let i = 0;
-  while (i < linhas.length && (linhas[i].trim() === '' || linhas[i].trim().startsWith('#'))) i++;
-  // volta para não engolir uma linha vazia que separa o cabeçalho do resto
-  const cabeca = linhas.slice(0, i), resto = linhas.slice(i);
-  while (cabeca.length && cabeca[cabeca.length - 1].trim() === '') cabeca.pop();
+  while (i < linhas.length && linhas[i].trim().startsWith('#')) i++;
+  const cabeca = linhas.slice(0, i);
+  let resto = linhas.slice(i);
+  // os brancos que separavam o cabeçalho do resto são recriados em volta do bloco; nada mais muda
+  let brancos = 0; while (brancos < resto.length && resto[brancos].trim() === '') brancos++;
+  resto = resto.slice(brancos);
   const blocoLinhas = bloco.replace(/\r?\n$/, '').split('\n');
   const saida = [...cabeca, ...(cabeca.length ? [''] : []), ...blocoLinhas, '', ...resto];
   let txt = saida.join(nl);
   if (!txt.endsWith(nl)) txt += nl;
-  return txt.replace(new RegExp('(' + nl + '){3,}', 'g'), nl + nl);
+  return txt;
 }
 
 /** pastas digitadas à mão em PASTAS_AUTORIZADAS fora do bloco */
@@ -220,8 +237,9 @@ function sincronizarAgente(idSistema) {
   const arq = path.join(s.pasta, '.env');
   let atual = '';
   try { atual = fs.readFileSync(arq, 'utf8'); } catch (e) { atual = ''; }
-  const bloco = blocoEnvPara(s.plataformas || [], manuaisDe(atual));
-  const novo = aplicarBloco(atual, bloco);
+  let novo, bloco;
+  try { bloco = blocoEnvPara(s.plataformas || [], manuaisDe(atual)); novo = aplicarBloco(atual, bloco); }
+  catch (e) { return { ok: false, motivo: e.message }; }
   if (novo !== atual) fs.writeFileSync(arq, novo);
   const nomes = bloco.split('\n').map(l => /^([A-Z][A-Z0-9_]*)=/.exec(l)).filter(Boolean).map(m => m[1]);
   return { ok: true, variaveis: nomes, mudou: novo !== atual };

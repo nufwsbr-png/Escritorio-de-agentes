@@ -113,7 +113,8 @@ function gerar(entrada) {
   const planta = { versao: 1, grade: { w: W, h: H }, corredor: { ...CORREDOR }, salas: [...bandas[0].salas, ...bandas[1].salas] };
   const v = validar(planta);
   if (!v.ok) return { ok: false, motivo: 'a planta gerada não passou na validação: ' + v.problemas.join('; ') };
-  return { ok: true, planta, capacidade: capacidade(planta) };
+  const embaixo = planta.salas.filter(s => s.by !== 0 && (s.tipo === 'operacao' || s.tipo === 'diretoria')).map(s => s.nome);
+  return { ok: true, planta, capacidade: capacidade(planta), aviso: embaixo.length ? 'na faixa de baixo cabe metade das mesas: ' + embaixo.join(', ') + '. Para mais mesas, reduza as salas de cima.' : undefined };
 }
 
 /* ---------------- validação: código para o garantido ---------------- */

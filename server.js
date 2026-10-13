@@ -20,7 +20,7 @@ const UTIL  = require('./util');
 const ROOT = __dirname;
 /* a pasta de dados (configuração, registro, estado) é data/; ESCRITORIO_DADOS troca
    por outra, para os testes rodarem sem tocar nos dados reais */
-const DADOS = process.env.ESCRITORIO_DADOS || path.join(DADOS);
+const DADOS = process.env.ESCRITORIO_DADOS || path.join(ROOT, 'data');
 
 /* ---------------- configuração ----------------
    data/config.json é seu e fica fora do git. O que faltar nele vem do
@@ -589,7 +589,7 @@ const AVISOS = require('./avisos').init(DADOS, {
   resumo: async () => (await estado()).filter(x => x.estado === 'caiu')
     .map(x => (x.nome || x.id) + ' está fora do ar.')
 });
-ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLATAFORMAS, lerConfig, lerRegistroBruto, gravarRegistro });
+ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLATAFORMAS, lerConfig, lerRegistroBruto, gravarRegistro, desligar });
 const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
@@ -832,8 +832,8 @@ const servidor = http.createServer(async (req, res) => {
     if (!admin) return soAdmin();
     const id = mplat[1];
     if (req.method === 'GET') { const p = PLATAFORMAS.obter(id, true); return p ? json(res, 200, p) : json(res, 404, { ok: false, motivo: 'não encontrada' }); }
-    if (req.method === 'PUT') return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar({ ...b, id }); return json(res, r.ok ? 200 : 400, r); })
-      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    if (req.method === 'PUT') { if (!PLATAFORMAS.obter(id)) return json(res, 404, { ok: false, motivo: 'plataforma não encontrada: ' + id }); return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar({ ...b, id }); return json(res, r.ok ? 200 : 400, r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message })); }
     if (req.method === 'DELETE') { const r = PLATAFORMAS.remover(id); return json(res, r.ok ? 200 : 404, r); }
   }
   const map = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/plataformas$/i);

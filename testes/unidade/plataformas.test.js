@@ -112,3 +112,28 @@ test('criarLista (CLI da abertura) cria várias com variáveis sugeridas vazias'
   assert.deepEqual(Object.keys(ag.variaveis), ['AGENDA_DA_CLINICA_CALENDAR_ID', 'GOOGLE_CREDENCIAIS_JSON']);
   assert.equal(ag.variaveis.AGENDA_DA_CLINICA_CALENDAR_ID, '');
 });
+
+test('revisão: canônico repetido vence o não vazio com aviso; valor com quebra de linha é recusado', (t) => {
+  const c = cenario(); t.after(c.limpar);
+  c.P.salvar({ id: 'plan', nome: 'Planilha', tipo: 'planilha', variaveis: { PLAN_SHEETS_ID: 'id1', GOOGLE_CREDENCIAIS_JSON: '' } });
+  c.P.salvar({ id: 'ag', nome: 'Agenda', tipo: 'agenda', variaveis: { AG_CALENDAR_ID: 'c1', GOOGLE_CREDENCIAIS_JSON: '{"a":"b"}' } });
+  const b = c.P.blocoEnvPara(['plan', 'ag']);
+  assert.match(b, /^GOOGLE_CREDENCIAIS_JSON="\{"a":"b"\}"$/m, 'o valor não vazio venceu, sem escapar aspas internas');
+  assert.equal((b.match(/^GOOGLE_CREDENCIAIS_JSON=/gm) || []).length, 1, 'uma linha só');
+  c.P.salvar({ id: 'ag', nome: 'Agenda', tipo: 'agenda', variaveis: { AG_CALENDAR_ID: 'c1', GOOGLE_CREDENCIAIS_JSON: '{"a":"c"}' } });
+  c.P.salvar({ id: 'plan', nome: 'Planilha', tipo: 'planilha', variaveis: { PLAN_SHEETS_ID: 'id1', GOOGLE_CREDENCIAIS_JSON: '{"a":"b"}' } });
+  assert.match(c.P.blocoEnvPara(['plan', 'ag']), /# aviso: GOOGLE_CREDENCIAIS_JSON difere/);
+  const r = c.P.salvar({ nome: 'X', tipo: 'api', variaveis: { X_TOKEN: 'a\nb' } });
+  assert.equal(r.ok, false); assert.match(r.motivo, /quebra de linha/);
+});
+
+test('revisão: aplicarBloco respeita o comentário da primeira seção e não mexe no resto', (t) => {
+  const c = cenario(); t.after(c.limpar);
+  const molde = '# cabeçalho 1\n# cabeçalho 2\n\n# --- escopo: só aqui dentro\nPASTAS_AUTORIZADAS=""\n\n\n\n# --- modos\nMODO_REAL="nao"\n';
+  const bloco = '# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>\nX="1"\n# <<< plataformas do escritório <<<\n';
+  const com = c.P.aplicarBloco(molde, bloco);
+  assert.ok(com.includes('# <<< plataformas do escritório <<<\n\n# --- escopo: só aqui dentro\nPASTAS_AUTORIZADAS=""'), 'o comentário da seção fica com a sua variável');
+  assert.ok(com.includes('PASTAS_AUTORIZADAS=""\n\n\n\n# --- modos'), 'as linhas em branco do agente não são colapsadas');
+  assert.equal(c.P.aplicarBloco(com, bloco), com, 'idempotente');
+  assert.throws(() => c.P.aplicarBloco('# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>\nX="1"\n', bloco), /corrompido/);
+});

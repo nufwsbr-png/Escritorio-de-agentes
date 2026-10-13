@@ -138,6 +138,7 @@ async function cenarioPlanta(b) {
 }
 
 (async () => {
+  if (typeof WebSocket === 'undefined') { console.log('fumaça pulada: precisa do Node 22 ou mais novo (WebSocket nativo); o resto do npm test vale'); process.exit(0); }
   if (!CHROME) { console.log('fumaça pulada: Chrome não encontrado (defina CHROME=caminho)'); process.exit(0); }
   const DADOS1 = dadosDeTeste(false), DADOS2 = dadosDeTeste(true);
   let esc = null, b = null;
