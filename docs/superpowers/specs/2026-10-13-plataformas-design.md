@@ -289,9 +289,13 @@ e um resumo no fim. Ao concluir, um único `POST /api/abertura` grava tudo:
 
 - Sem perguntar: porta (só se a 4321 estiver ocupada, com sugestão), fuso,
   cores detalhadas, textos de subtítulo.
-- A planta é guardada e mostrada nos Ajustes (miniatura e link para abrir).
-  Ela **não** redesenha as salas do escritório isométrico: isso fica fora
-  deste projeto, anotado como ideia.
+- A planta é guardada em `data/marca/` e mostrada nos Ajustes. **Decisão do
+  dono (13/10/2026): "Quando ser mandado a planta, deve acontecer isso e ser
+  feito redesenhada as salas do escritório isométrico."** Isso é um projeto
+  irmão, com design próprio (`2026-10-13-planta-salas-design.md`), porque
+  mexe no motor de desenho (`js/world.js`, `js/furniture.js`, `js/path.js`).
+  Neste plano, a abertura e os Ajustes recebem e guardam a planta e deixam o
+  gancho: quando o projeto irmão existir, enviar a planta dispara o redesenho.
 - "Refazer abertura" (nos Ajustes, só administrador) abre o mesmo assistente
   com os valores atuais preenchidos; concluir regrava os arquivos. Não apaga
   agentes nem plataformas: a lista de plataformas vem preenchida para editar.

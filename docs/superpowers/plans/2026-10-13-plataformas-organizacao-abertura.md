@@ -1,196 +1,198 @@
-# Plataformas, organização e abertura — plano de implementação
+# Plataformas, organização, `/criar-escritorio` e planta — plano de implementação
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** cadastro único de plataformas com permissão por agente entregue pelo `.env`, o escritório organizado e verificável por `npm test`, e um assistente de abertura que faz as perguntas de um escritório novo.
+**Goal:** cadastro único de plataformas com permissão por agente entregue pelo `.env`; o escritório organizado e verificável por `npm test`; a criação de um escritório disparada por `/criar-escritorio` no Claude Code, com dez perguntas e a planta redesenhando as salas.
 
-**Architecture:** três módulos novos no servidor Node sem dependências (`util.js`, `plataformas.js`, `abertura.js`) roteados por `server.js`; três arquivos novos na tela (`js/plataformas.js`, `js/abertura.js`, `js/ajustes.js`) usando o modal que já existe; o molde do agente ganha a leitura do bloco gerenciado; `testes/` com `node --test` para unidade, um conferidor de organização e o teste de fumaça headless.
+**Architecture:** módulos novos no servidor Node sem dependências (`util.js`, `plataformas.js`, `abertura.js`, `planta.js`), cada um módulo **e** linha de comando, roteados por `server.js` quando a tela precisa; a skill de projeto `.claude/skills/criar-escritorio/` conduz as perguntas e chama esses scripts; o motor da tela (`js/world.js`, `js/furniture.js`, `js/path.js`, `js/app.js`) passa a ler `data/planta.json` quando existe; `testes/` com `node --test`, um conferidor de organização e o teste de fumaça headless.
 
-**Tech Stack:** Node >= 18 (`node:test`, `node:assert`, `http`, `fs`), navegador puro, Chrome headless pelo protocolo DevTools (já usado no rascunho do teste de fumaça).
+**Tech Stack:** Node >= 18 (`node:test`, `node:assert`, `http`, `fs`, `child_process`), navegador puro, Chrome headless pelo protocolo DevTools.
 
 **Spec:** `docs/superpowers/specs/2026-10-13-plataformas-design.md`
 
 ## Global Constraints
 
 - Nenhuma dependência npm. Node >= 18.
-- Nenhum valor de variável de plataforma sai para quem não é administrador, nem para o log, nem para o chat.
-- O bloco gerenciado do `.env` fica entre `# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>` e `# <<< plataformas do escritório <<<`, no começo do arquivo, logo após o cabeçalho de comentários; o resto do arquivo é preservado byte a byte, inclusive o fim de linha.
+- Nenhum valor de variável de plataforma, chave de aviso ou senha sai para quem não é administrador, nem para o log, nem para o chat da skill (a senha gerada aparece uma vez, por decisão do design).
+- Bloco gerenciado do `.env`: entre `# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>` e `# <<< plataformas do escritório <<<`, no começo do arquivo após o cabeçalho de comentários; o resto preservado byte a byte, inclusive fim de linha.
 - Só sistemas com `trilha` no registro e `pasta` existente recebem o bloco.
-- Nomes de variável: `[A-Z][A-Z0-9_]*`; prefixo = id da plataforma em maiúsculas com `-` trocado por `_`.
-- Nomes canônicos por tipo exatamente como na tabela do spec; só a primeira plataforma de cada tipo na lista de permissão os recebe.
-- `PASTAS_AUTORIZADAS` só entra no bloco se houver plataforma tipo `pasta`; valor = caminhos das plataformas + caminhos manuais já presentes fora do bloco, separados por `;`, sem repetição.
-- Verificação de administrador no servidor, pelo `soAdmin()` já existente, em toda rota de escrita e em toda leitura com valor.
+- Nomes de variável `[A-Z][A-Z0-9_]*`; prefixo = id em maiúsculas com `-` → `_`; nomes canônicos por tipo como na tabela do spec; só a primeira plataforma de cada tipo recebe os canônicos.
+- `PASTAS_AUTORIZADAS` só com plataforma tipo `pasta`; soma com os caminhos manuais fora do bloco, sem repetição.
+- Administrador verificado no servidor por `soAdmin()` em toda escrita e leitura com valor.
+- Grade do escritório: 48 por 34; tipos de sala `diretoria | operacao | reuniao | recepcao | descanso | sala`; de 2 a 12 salas; sem `data/planta.json` a tela é a de hoje.
+- Todo script de linha de comando aceita `--ajuda` e devolve JSON em uma linha quando chamado por outro programa.
 - Textos em português do Brasil, no tom do resto da tela.
 
 ## Review Focus
 
-1. `.env` do agente com CRLF e sem bloco: sincronizar deve inserir o bloco e manter o CRLF do resto (teste na Tarefa 2).
-2. Plataforma removida enquanto um agente a tem: o agente perde as variáveis dela e `PLATAFORMAS_PERMITIDAS` encolhe (teste na Tarefa 2).
-3. Dois agentes, um com a plataforma e outro sem: editar o valor muda só o primeiro (teste na Tarefa 2).
-4. Variável com nome inválido ou id duplicado no cadastro: recusado com motivo em português, nada gravado (teste na Tarefa 2).
-5. Abertura concluída sem logo, sem planta e sem avisos: grava só o que veio e o escritório sobe sem erro (teste na Tarefa 9).
+1. `.env` CRLF sem bloco: sincronizar insere o bloco e mantém o CRLF (Tarefa 2).
+2. Plataforma removida enquanto um agente a tem: o agente perde as variáveis e `PLATAFORMAS_PERMITIDAS` encolhe (Tarefa 2).
+3. Planta com 12 salas grandes que não cabem na grade: `planta.js gerar` recusa e diz quais juntar, em vez de sobrepor (Tarefa 10).
+4. `planta.json` com sala sem porta alcançável: o validador recusa; o motor nunca recebe grade sem caminho (Tarefa 10).
+5. `/criar-escritorio` rodado de novo: nenhum valor existente é apagado sem a pessoa pedir; plataformas e agentes ficam (Tarefa 9 e 12).
 
 ---
 
-### Task 1: `util.js` (slug e executável do Claude, sem repetição)
+### Task 1: `util.js` (slug, executável do Claude, leitura de `.env`)
 
 **Files:**
 - Create: `util.js`
-- Modify: `server.js:104` (slug), `server.js:576-581` (CLAUDE_BIN), `agentes.js:42-43`, `testador.js` (usa `dep.CLAUDE_BIN`, não muda), `modelos/agente/tarefa/rodar.js:24-28`, `modelos/agente/atendimento/server.js:54-58`, `modelos/agente/comum/agente-base.js`
+- Modify: `server.js:104`, `server.js:576-581`, `agentes.js:42-43`, `modelos/agente/comum/agente-base.js` (ganha `acharClaude`, cópia documentada), `modelos/agente/tarefa/rodar.js:24-28`, `modelos/agente/atendimento/server.js:54-58`
 - Test: `testes/unidade/util.test.js`
 
 **Interfaces:**
-- Produces: `slug(texto: string, max = 30): string` (NFD, sem acento, minúsculas, `[^a-z0-9]+` → `-`, sem `-` nas pontas, cortado em `max`); `acharClaude(): string` (procura `~/.local/bin/claude(.exe)`, senão `claude.exe`/`claude`); `lerEnvArquivo(caminho): Map<string,string>` (mesma regra do `carregarEnv` do molde, sem tocar em `process.env`).
-- O molde do agente não pode depender do escritório: `agente-base.js` ganha `acharClaude` próprio (uma cópia, documentada como cópia do `util.js` do escritório) e `rodar.js` e o `server.js` do atendente passam a usar `base.acharClaude()`.
+- Produces: `slug(texto, max = 30): string`; `acharClaude(): string`; `lerEnvArquivo(caminho): Map<string,string>`; `rodarCli(modulo, acoes)`: utilitário que transforma `{ acao: fn }` numa linha de comando com `--ajuda` e saída JSON (usado por `plataformas.js`, `abertura.js`, `planta.js`).
 
-- [ ] **Step 1: escrever o teste**
+- [ ] **Step 1: escrever o teste** (`slug('Tati Teste') === 'tati-teste'`, `slug('Recepção & Caixa', 10) === 'recepcao-c'`, `slug('---') === ''`; `lerEnvArquivo` com `A="1 2"`, `#B=3`, `C=x` → Map `{A:'1 2', C:'x'}`; `acharClaude()` não vazio; `rodarCli` com `--ajuda` imprime as ações).
+- [ ] **Step 2: rodar e ver falhar:** `node --test testes/unidade/` → FAIL.
+- [ ] **Step 3: criar `util.js`**; trocar as cópias em `server.js` e `agentes.js`; `agente-base.js` exporta `acharClaude`; `rodar.js` e o server do atendente usam `base.acharClaude()`.
+- [ ] **Step 4: rodar:** PASS; `node --check` nos seis arquivos.
+- [ ] **Step 5: commit** `util.js: slug, acharClaude, lerEnvArquivo e rodarCli`
 
-```js
-// testes/unidade/util.test.js
-const test = require('node:test'); const assert = require('node:assert');
-const { slug, lerEnvArquivo, acharClaude } = require('../../util');
-test('slug tira acento e limita', () => { assert.equal(slug('Tati Teste'), 'tati-teste'); assert.equal(slug('Recepção & Caixa', 10), 'recepcao-c'); assert.equal(slug('---'), ''); });
-test('lerEnvArquivo lê aspas e ignora comentário', () => { /* grava um .env temporário com A="1 2", #B=3, C=x e confere Map {A:'1 2', C:'x'} */ });
-test('acharClaude devolve string não vazia', () => { assert.ok(acharClaude().length > 0); });
-```
-
-- [ ] **Step 2: rodar e ver falhar:** `node --test testes/unidade/` → FAIL (módulo não existe)
-- [ ] **Step 3: criar `util.js`** com as três funções; trocar as cópias em `server.js` e `agentes.js` por `require('./util')`; em `agente-base.js` exportar `acharClaude`; `rodar.js` e o server do atendente usam `base.acharClaude()`.
-- [ ] **Step 4: rodar:** `node --test testes/unidade/` → PASS; `node --check server.js agentes.js modelos/agente/tarefa/rodar.js modelos/agente/atendimento/server.js modelos/agente/comum/agente-base.js` → sem erro.
-- [ ] **Step 5: commit** `git commit -m "util.js: slug, acharClaude e lerEnvArquivo sem repetição"`
-
-### Task 2: `plataformas.js` (cadastro, bloco do `.env`, sincronização)
+### Task 2: `plataformas.js` (cadastro, bloco do `.env`, sincronização, CLI)
 
 **Files:**
 - Create: `plataformas.js`
-- Test: `testes/unidade/plataformas.test.js` (usa uma pasta temporária como `ROOT`, com `data/` e um registro falso)
+- Test: `testes/unidade/plataformas.test.js` (pasta temporária como `ROOT`, registro falso)
 
 **Interfaces:**
 - `init({ ROOT, lerRegistro, lerRegistroBruto, gravarRegistro })`
-- `TIPOS: { api: ['URL','TOKEN'], planilha: ['SHEETS_ID','GOOGLE_CREDENCIAIS_JSON'], agenda: ['CALENDAR_ID','GOOGLE_CREDENCIAIS_JSON'], pasta: ['PASTA'], whatsapp: ['API_URL','API_CHAVE','SESSAO'], email: ['USUARIO','SENHA_APP','PASTA'], banco: ['URL','CHAVE'], navegador: ['URL','PERFIL'], link: ['URL'] }` e `CANONICOS` por tipo conforme o spec (`GOOGLE_CREDENCIAIS_JSON` é canônico sem prefixo nos tipos planilha e agenda).
-- `listar(comValores = false): Plataforma[]` (sem valores: `variaveis` vira lista de nomes; inclui `usadaPor: string[]`)
-- `obter(id, comValores = false): Plataforma | null`
-- `salvar(dados): { ok, plataforma?, motivo? }` (cria se não tem `id`; id = `slug(nome)`, único; valida tipo, nomes de variáveis; `atualizadaEm`)
-- `remover(id): { ok, usadaPor, motivo? }` (tira dos sistemas e sincroniza)
-- `blocoEnvPara(ids: string[], manuaisPastas: string[] = []): string` (texto do bloco, LF; vazio → bloco só com `PLATAFORMAS_PERMITIDAS=""`)
-- `sincronizarAgente(idSistema): { ok, motivo?, variaveis: string[] }` (só nomes)
-- `sincronizarTodos(): { sincronizados: string[], pulados: string[] }`
-- `definirDoAgente(idSistema, ids: string[]): { ok, motivo? }` (grava `plataformas` no registro bruto e sincroniza)
-- `usadaPor(idPlataforma): string[]`
-- Regra interna `aplicarBloco(textoEnv, bloco): string` (exportada para teste): remove bloco antigo se houver, insere o novo após o cabeçalho (linhas iniciais que começam com `#` ou vazias), preserva `\r\n` se o arquivo usa.
+- `TIPOS`, `CANONICOS` por tipo (tabela do spec; `GOOGLE_CREDENCIAIS_JSON` canônico sem prefixo em planilha e agenda)
+- `listar(comValores = false)`, `obter(id, comValores = false)`, `salvar(dados)`, `remover(id)`, `blocoEnvPara(ids, manuaisPastas = [])`, `aplicarBloco(textoEnv, bloco)`, `sincronizarAgente(idSistema)`, `sincronizarTodos()`, `definirDoAgente(idSistema, ids)`, `usadaPor(idPlataforma)`
+- CLI: `node plataformas.js listar | criar <lista.json> | sincronizar` (o `criar` aceita `[{nome, tipo, url}]` e cria com variáveis sugeridas vazias; é o que a skill usa)
 
-- [ ] **Step 1: escrever os testes** (um `test()` por item):
-  - `salvar` cria com id `ophir`, recusa nome de variável `token` (minúsculo) e tipo `xyz`;
-  - `blocoEnvPara(['ophir'])` contém `OPHIR_TOKEN="..."` e `SISTEMA_API_TOKEN="..."` e `PLATAFORMAS_PERMITIDAS="ophir"`, não contém `PASTAS_AUTORIZADAS`;
-  - `blocoEnvPara(['drive','ophir'], ['C:\\manual'])` contém `PASTAS_AUTORIZADAS="C:\\x;C:\\manual"` e `PASTA_ENTRADA="C:\\x"`;
-  - dois do tipo `api`: só o primeiro tem `SISTEMA_API_URL`;
-  - `aplicarBloco` em `.env` CRLF sem bloco → bloco após cabeçalho, resto idêntico, CRLF mantido; em `.env` com bloco antigo → substitui, resto idêntico byte a byte;
-  - `sincronizarAgente` pula sistema sem `trilha`; cria `.env` se não existe em sistema com `trilha`;
-  - editar o valor de `OPHIR_TOKEN` e `sincronizarTodos` → muda o `.env` do agente A (tem), não o do B (não tem);
-  - `remover('ophir')` → `usadaPor` lista A, `.env` de A sem `OPHIR_`, `PLATAFORMAS_PERMITIDAS=""`.
-- [ ] **Step 2: rodar e ver falhar:** `node --test testes/unidade/plataformas.test.js` → FAIL
-- [ ] **Step 3: implementar `plataformas.js`** (arquivo `data/plataformas.json` = lista; escapes de `"` com `\"`; `PASTAS_AUTORIZADAS` manual lido com `lerEnvArquivo` sobre o texto fora do bloco).
-- [ ] **Step 4: rodar:** `node --test testes/unidade/` → PASS
-- [ ] **Step 5: commit** `git commit -m "plataformas.js: cadastro único, bloco do .env e sincronização"`
+- [ ] **Step 1: testes** (um por item): `salvar` cria id `ophir`, recusa variável `token` e tipo `xyz`; `blocoEnvPara(['ophir'])` tem `OPHIR_TOKEN`, `SISTEMA_API_TOKEN`, `PLATAFORMAS_PERMITIDAS="ophir"`, não tem `PASTAS_AUTORIZADAS`; `blocoEnvPara(['drive','ophir'], ['C:\\manual'])` tem `PASTAS_AUTORIZADAS="C:\\x;C:\\manual"` e `PASTA_ENTRADA="C:\\x"`; dois `api` → só o primeiro com `SISTEMA_API_URL`; `aplicarBloco` em CRLF sem bloco e com bloco antigo (resto byte a byte); `sincronizarAgente` pula sem `trilha`, cria `.env` ausente; editar valor + `sincronizarTodos` muda só quem tem; `remover` lista `usadaPor` e limpa; CLI `criar` com lista de 2 cria 2 com valores vazios.
+- [ ] **Step 2: rodar e ver falhar.**
+- [ ] **Step 3: implementar.**
+- [ ] **Step 4: rodar:** PASS.
+- [ ] **Step 5: commit** `plataformas.js: cadastro único, bloco do .env, sincronização e CLI`
 
 ### Task 3: rotas da API e contratação com plataformas
 
 **Files:**
-- Modify: `server.js` (bloco de rotas `/api/`, após `/api/setores`; `/api/contratar` passa `plataformas`), `agentes.js` (`criarAgente` recebe `plataformas` e grava no item; depois de criar a pasta chama `dep.plataformas.sincronizarAgente(id)`), `.gitignore` (já cobre `data/*.json`; conferir)
-- Test: `testes/api/plataformas.api.test.js` (sobe `server.js` com `PORT=4397` e `ROOT` temporário via variável `ESCRITORIO_ROOT`? **Decisão:** não existe hoje; o teste usa a pasta real com `data/` de teste copiada para `data-teste/` e `ROOT` apontando por `process.env.ESCRITORIO_DADOS`. Se isso exigir mexer em `server.js` além de uma linha, o teste de API vira parte do teste de fumaça (Tarefa 8) e esta tarefa testa só por `curl` manual registrado no commit.)
+- Modify: `server.js` (rotas do spec §6 após `/api/setores`; `/api/contratar` passa `plataformas`), `agentes.js` (`criarAgente` grava `plataformas` no item e chama `dep.plataformas.sincronizarAgente(id)`)
+- Test: `testes/api/plataformas.api.test.js` — sobe `server.js` com `PORT=4397` e `ESCRITORIO_DADOS=<pasta temporária>` (**uma linha nova em `server.js`:** `const DADOS = process.env.ESCRITORIO_DADOS || path.join(ROOT, 'data')`, e todos os `path.join(ROOT, 'data', ...)` passam a usar `DADOS`; é a única mudança estrutural, e é o que permite testar sem tocar nos dados reais)
 
-**Interfaces:**
-- Consumes: `PLATAFORMAS` (Tarefa 2), `soAdmin()`.
-- Produces: rotas da tabela do spec §6; `POST /api/contratar` aceita `plataformas: string[]`; a resposta de contratar inclui `plataformas`.
-
-- [ ] **Step 1: escrever o teste de API** (sem sessão: `GET /api/plataformas` não contém `"valor"` nem o token; `POST` → 403 com `precisaAdmin`; com `/api/admin/entrar`: `POST` cria, `PUT` edita, `PUT /api/agentes/exemplo/plataformas` grava e o `.env` do exemplo ganha o bloco, `DELETE` remove).
+- [ ] **Step 1: teste de API:** sem sessão `GET /api/plataformas` sem `"valor"` e sem o token; `POST` → 403 `precisaAdmin`; com `/api/admin/entrar`: `POST` cria, `PUT` edita, `PUT /api/agentes/exemplo/plataformas` grava e o `.env` do exemplo (cópia na pasta temporária) ganha o bloco, `DELETE` remove.
 - [ ] **Step 2: rodar e ver falhar.**
-- [ ] **Step 3: implementar** as rotas; `agentes.js` recebe `plataformas` em `init` e chama a sincronização ao criar.
+- [ ] **Step 3: implementar** rotas, `DADOS`, contratação.
 - [ ] **Step 4: rodar:** PASS; `node --check server.js`.
-- [ ] **Step 5: commit** `git commit -m "API de plataformas e permissão por agente na contratação"`
+- [ ] **Step 5: commit** `API de plataformas, permissão por agente e ESCRITORIO_DADOS para testes`
 
 ### Task 4: tela — modal Plataformas, caixas no Contratar, painel no monitor
 
 **Files:**
-- Create: `js/plataformas.js` (`PLATAFORMAS_UI.abrir()`, `PLATAFORMAS_UI.caixas(selecionadas): string` para o Contratar, `PLATAFORMAS_UI.painelDoAgente(id)`)
-- Modify: `index.html` (botão `#btn-plataformas` ao lado de `#btn-avisos`; botão `#mon-plataformas` no monitor; `<script src="js/plataformas.js">`), `js/contratar.js` (passo 2: caixas; `corpoReq.plataformas`), `js/extras.js` (`abrir(id,'plataformas')`), `js/app.js` (ligar os dois botões), `css/style.css` (lista de plataformas, campo de senha com "mostrar")
-- Test: `testes/fumaca.js` (Tarefa 8) ganha: abrir o modal, contar itens, abrir o painel no monitor, ver as caixas no passo 2.
+- Create: `js/plataformas.js` (`PLATAFORMAS_UI.abrir()`, `.caixas(selecionadas)`, `.painelDoAgente(id)`)
+- Modify: `index.html` (`#btn-plataformas`, `#mon-plataformas`, script), `js/contratar.js` (caixas no passo 2; `corpoReq.plataformas`), `js/extras.js` (`abrir(id,'plataformas')`), `js/app.js` (botões), `css/style.css`
+- Test: checagens no `testes/fumaca.js` (Tarefa 8): modal abre e lista; painel do monitor; caixas no passo 2.
 
-- [ ] **Step 1: acrescentar ao rascunho do teste de fumaça** as três checagens (ficam vermelhas até a Tarefa 8 existir; registrar que a verificação completa é na Tarefa 8).
-- [ ] **Step 2: implementar** a tela. Ícones por tipo: api 🔗, planilha 📊, agenda 📅, pasta 📁, whatsapp 💬, email ✉️, banco 🗄️, navegador 🌐, link 🔖. Valores em `<input type="password">` com botão "mostrar"; só renderizados se `ADMIN.ehAdmin()`.
-- [ ] **Step 3: verificar à mão** no navegador (admin: cadastrar, editar, remover; sem admin: sem valores) e registrar no commit.
-- [ ] **Step 4: commit** `git commit -m "Tela de plataformas: modal, contratação e painel do agente"`
+- [ ] **Step 1: anotar as três checagens** no rascunho de `testes/fumaca.js` (vermelhas até a Tarefa 8).
+- [ ] **Step 2: implementar** (ícones por tipo: api 🔗, planilha 📊, agenda 📅, pasta 📁, whatsapp 💬, email ✉️, banco 🗄️, navegador 🌐, link 🔖; valores em `type="password"` com "mostrar", só com `ADMIN.ehAdmin()`).
+- [ ] **Step 3: verificar à mão** (admin cadastra, edita, remove; sem admin não vê valor) e registrar no commit.
+- [ ] **Step 4: commit** `Tela de plataformas: modal, contratação e painel do agente`
 
 ### Task 5: o agente lê o bloco (molde, ANATOMIA, exemplo)
 
 **Files:**
-- Modify: `modelos/agente/comum/tools/base.js` (`plataformasPermitidas(): string[]`, `exigePlataforma(id): boolean`), `modelos/agente/comum/CLAUDE.md` (linha na tabela de arquivos e regra "plataformas só pelo escritório"), `modelos/ANATOMIA.md` (componentes 8 e 9), `modelos/agente/tarefa/env` e `modelos/agente/atendimento/env` (comentário: "o bloco do escritório entra aqui em cima; não edite"), `modelos/agente/tarefa/server.js` e `modelos/agente/atendimento/server.js` (o painel mostra `PLATAFORMAS_PERMITIDAS` como "plataformas que este agente usa"), `exemplo-agente/` (mesmas mudanças, por cópia), `README.md` (seção nova "Plataformas")
-- Test: `testes/unidade/tools-base.test.js` (com `PLATAFORMAS_PERMITIDAS="ophir;drive"` no ambiente: `exigePlataforma('ophir')` true, `exigePlataforma('crm')` false; sem a variável: lista vazia)
+- Modify: `modelos/agente/comum/tools/base.js` (`plataformasPermitidas()`, `exigePlataforma(id)`), `modelos/agente/comum/CLAUDE.md`, `modelos/ANATOMIA.md` (componentes 8 e 9), `modelos/agente/tarefa/env`, `modelos/agente/atendimento/env` (comentário do bloco), os dois `server.js` de molde (painel mostra `PLATAFORMAS_PERMITIDAS`), `exemplo-agente/` (propagar)
+- Test: `testes/unidade/tools-base.test.js`
 
-- [ ] **Step 1: escrever o teste** (carrega `modelos/agente/comum/tools/base.js` com `process.env` ajustado).
+- [ ] **Step 1: teste** (`PLATAFORMAS_PERMITIDAS="ophir;drive"` → `exigePlataforma('ophir')` true, `('crm')` false; sem variável → lista vazia).
 - [ ] **Step 2: rodar e ver falhar.**
-- [ ] **Step 3: implementar** e propagar ao `exemplo-agente/` (copiar os arquivos de molde alterados, mantendo os já personalizados do exemplo).
+- [ ] **Step 3: implementar e propagar** ao exemplo (copiar os arquivos de molde alterados; manter os personalizados do exemplo).
 - [ ] **Step 4: rodar:** PASS.
-- [ ] **Step 5: commit** `git commit -m "Agente só enxerga as plataformas permitidas: tools/base, contrato, anatomia"`
+- [ ] **Step 5: commit** `Agente só enxerga as plataformas permitidas`
 
 ### Task 6: `CLAUDE.md` da raiz do escritório
 
 **Files:**
 - Create: `CLAUDE.md`
-- Test: verificação manual (uma sessão `claude -p "onde eu guardo a chave de um CRM do cliente?"` na raiz responde "no cadastro de plataformas, botão 🔌, nunca em arquivo de código"); registrar a resposta no commit.
 
-- [ ] **Step 1: escrever** o `CLAUDE.md` com: o que é o projeto em 5 linhas; o mapa "onde fica cada coisa" (tabela: coisa → lugar → quem escreve); as regras de sessão do spec ("Trabalho irmão" item 1); o roteiro das 10 perguntas da abertura para "criar o escritório do cliente X"; como testar (`npm test`); o que nunca fazer (segredo fora de `.env`/`data/`, escrever em `agentes/` fora das rotas, reestruturar pastas sem pedir).
-- [ ] **Step 2: rodar** a verificação manual acima.
-- [ ] **Step 3: commit** `git commit -m "CLAUDE.md da raiz: onde fica cada coisa e as regras de sessão"`
+- [ ] **Step 1: escrever:** o projeto em 5 linhas; "esta pasta é o produto: para abrir um escritório, `/criar-escritorio`"; mapa onde fica cada coisa (tabela coisa → lugar → quem escreve, incluindo `docs/superpowers/`, `testes/`, `.claude/skills/`); regras de sessão (segredo só em `.env` de agente ou `data/`; plataforma só pelo cadastro; dado novo em `data/`; molde novo em `modelos/agente/` refletido em `exemplo-agente/`; regra nova de agente passa pela ANATOMIA; nenhuma escrita em `agentes/` fora das rotas; sem reestruturar pastas sem pedir); como testar (`npm test`); como mudar o que a abertura pergunta (editar a skill, não a tela).
+- [ ] **Step 2: verificar:** `claude -p "onde eu guardo a chave de um CRM do cliente?"` na raiz → resposta aponta o cadastro de plataformas; registrar no commit.
+- [ ] **Step 3: commit** `CLAUDE.md da raiz: onde fica cada coisa e as regras de sessão`
 
 ### Task 7: `testes/conferir-organizacao.js`
 
 **Files:**
-- Create: `testes/conferir-organizacao.js`
-- Test: ele mesmo, mais um caso negativo: `testes/unidade/conferir.test.js` cria `agentes/zz-teste/.env` com `CHAVE="abc123"` fora de bloco e `.gitignore` sem `.env`, chama o conferidor como função e espera `ok: false` com o motivo; apaga a pasta no fim.
+- Create: `testes/conferir-organizacao.js` (`conferir({ ROOT }): { ok, problemas }`, script sai 1 com a lista)
+- Test: `testes/unidade/conferir.test.js` (caso negativo: `agentes/zz-teste/.env` com `CHAVE="abc12345"` fora de bloco e `.gitignore` sem `.env` → `ok: false`; apaga no fim)
 
-**Interfaces:**
-- `conferir({ ROOT }): { ok, problemas: string[] }` exportada; executado como script sai com código 1 e lista os problemas.
-- Checagens: (a) `git ls-files` não contém `.env`, `*.pem`, `google-credentials.json`, nem `data/*.json` além dos dois exemplos; (b) nenhum arquivo rastreado tem padrão `(api[_-]?key|token|senha|password|secret)\s*[:=]\s*["'][^"']{8,}` fora de comentário; (c) toda pasta em `agentes/` e `exemplo-agente/` tem `CLAUDE.md`, `ANATOMIA.md`, `prompt-agente.md`, `skills/constituicao.md`, `tools/base.js`, `memoria/licoes.md`, `progresso-do-agente.md`, `server.js`, `.gitignore` com `.env`; (d) `http://` ou `https://` fixo só nos arquivos permitidos (`avisos.js`, `modelos/agente/atendimento/server.js`, `index.html` fontes, `README.md`, `docs/`, `modelos/skills/`, `*.md`); porta de 4 dígitos começando com 4 fixa só em `server.js` (padrão), `agente-base.js` (padrão) e `js/contratar.js`/`js/app.js` (sugestão); (e) em cada `.env` de agente, variável com prefixo de plataforma cadastrada só dentro do bloco.
+Checagens: (a) `git ls-files` sem `.env`, `*.pem`, `google-credentials.json`, `data/*.json` além dos dois exemplos; (b) nenhum arquivo rastreado com `(api[_-]?key|token|senha|password|secret)\s*[:=]\s*["'][^"']{8,}` fora de comentário; (c) toda pasta em `agentes/` e `exemplo-agente/` com os arquivos da anatomia e `.gitignore` contendo `.env`; (d) `http(s)://` fixo só em `avisos.js`, `modelos/agente/atendimento/server.js`, `index.html`, `*.md`, `docs/`, `modelos/skills/`; porta `4xxx` fixa só em `server.js`, `agente-base.js`, `js/contratar.js`, `js/app.js`; (e) em cada `.env` de agente, variável com prefixo de plataforma cadastrada só dentro do bloco; (f) `.claude/skills/criar-escritorio/SKILL.md` existe e tem frontmatter válido.
 
-- [ ] **Step 1: escrever o teste negativo.**
-- [ ] **Step 2: rodar e ver falhar.**
-- [ ] **Step 3: implementar** o conferidor.
-- [ ] **Step 4: rodar:** `node testes/conferir-organizacao.js` → `ok` no repositório; `node --test testes/unidade/` → PASS.
-- [ ] **Step 5: commit** `git commit -m "conferir-organizacao: segredos, anatomia, endereços e bloco de plataformas"`
+- [ ] **Step 1: teste negativo.** - [ ] **Step 2: ver falhar.** - [ ] **Step 3: implementar.** - [ ] **Step 4: rodar:** `ok` no repositório; unidade PASS.
+- [ ] **Step 5: commit** `conferir-organizacao: segredos, anatomia, endereços, bloco e skill`
 
 ### Task 8: `testes/fumaca.js` e `npm test`
 
 **Files:**
-- Create: `testes/fumaca.js` (a partir do rascunho do Chrome headless: sobe `server.js` em `PORT=4398` com `data` de teste em pasta temporária copiada dos exemplos, abre a tela, confere título, cards, monitor, painéis extras, modal de plataformas, caixas do contratar, assistente de abertura quando não há config; derruba tudo no fim; sai 1 se houver erro de JS ou checagem falsa)
-- Modify: `package.json` (`"test": "node --test testes/unidade/ && node testes/conferir-organizacao.js && node testes/fumaca.js"`), `README.md` (seção "Testar")
+- Create: `testes/fumaca.js` (a partir do rascunho headless: sobe `server.js` em `PORT=4398` com `ESCRITORIO_DADOS` temporário copiado dos exemplos; asserções: título, cards, monitor, painéis extras, modal de plataformas, caixas do contratar, aviso "não foi aberto" quando não há config, Ajustes; derruba tudo; sai 1 em erro de JS ou asserção falsa)
+- Modify: `package.json` (`"test": "node --test testes/unidade/ && node testes/conferir-organizacao.js && node testes/fumaca.js"`)
 
-- [ ] **Step 1: escrever o teste** (as checagens são asserções, não `console.log`).
-- [ ] **Step 2: rodar:** `npm test` → as checagens de abertura falham (Tarefa 9 ainda não existe): registrar e seguir.
-- [ ] **Step 3: commit** `git commit -m "npm test: unidade, conferidor e fumaça da tela"`
+- [ ] **Step 1: escrever** (asserções, não `console.log`). - [ ] **Step 2: rodar:** as de Ajustes e aviso falham até a Tarefa 9; registrar.
+- [ ] **Step 3: commit** `npm test: unidade, conferidor e fumaça`
 
-### Task 9: abertura do escritório e Ajustes
+### Task 9: `abertura.js` (módulo e CLI), aviso sem config e ⚙️ Ajustes
 
 **Files:**
-- Create: `abertura.js` (servidor), `js/abertura.js`, `js/ajustes.js`
-- Modify: `server.js` (rotas `/api/abertura` GET/POST, `/config.js` com `abertura`, `/api/admin/senha` reaproveitado; upload base64 → `data/marca/logo.<ext>`, `data/marca/planta.<ext>`, extensões `png|jpg|jpeg|svg|webp|pdf`, 5 MB), `index.html` (`#btn-ajustes`, `<script>`s), `js/app.js` (abrir o assistente no boot se `ESCRITORIO.abertura`; ligar o botão), `css/style.css`, `data/config.exemplo.json` (comentário sobre a abertura), `README.md` (seção "Abrir um escritório novo" substitui parte do roteiro de instalação)
-- Test: `testes/unidade/abertura.test.js` (`montarConfig(respostas)` puro: empresa "Clínica X" → `nome` "Escritório da Clínica X"; setores vazios → omite; reunião desligada → `automatica:false`; `validar(respostas)` recusa senha < 6 e empresa vazia) e `testes/fumaca.js` (assistente aparece sem config; concluir com o mínimo grava os arquivos; com config não aparece; Ajustes mostra o status do Claude igual a `/api/claude`)
+- Create: `abertura.js`, `js/ajustes.js`
+- Modify: `server.js` (`/config.js` ganha `aberto: boolean`, `salas: n`; rota `GET /api/ajustes` com resumo sem segredos), `index.html` (`#btn-ajustes`, aviso `#sem-abertura`), `js/app.js` (mostra o aviso se `!ESCRITORIO.aberto`; botão), `css/style.css`, `data/config.exemplo.json` (nota: "o jeito normal de criar este arquivo é /criar-escritorio")
+- Test: `testes/unidade/abertura.test.js` (`montarConfig`: empresa "Clínica X" → `nome` "Escritório da Clínica X"; setores vazios omitidos; reunião desligada; `validar` recusa empresa vazia; `gerarSenha()` tem 16+ caracteres e três classes; `aplicar` numa pasta temporária grava `config.json`, `avisos.json` sem a chave e `admin.json` com hash; `atual()` devolve sem segredos) e `testes/fumaca.js`
 
 **Interfaces:**
-- `abertura.js`: `init({ ROOT, lerConfig, ADMIN, AVISOS, PLATAFORMAS, lerRegistroBruto, gravarRegistro })`; `atual(): Respostas` (sem segredos); `validar(r): string[]`; `montarConfig(r): Config`; `aplicar(r): { ok, gravados: string[], motivos? }`.
-- Respostas: `{ empresa, oQueFaz, dono, setores: [{nome, emoji?, desc?}], plataformas: [{nome, tipo, url}], marca: { cor?, logo?: {nome, base64}, planta?: {nome, base64} }, senhaAdmin?, avisos?: {...formato do AVISOS.configurar}, reuniao: { automatica, dias, hora, meta }, primeiroAgente?: { setor, plataformas, dor }, manterExemplo: boolean }`.
-- Tela: `ABERTURA.abrir(valoresAtuais)` com os 10 passos do spec, "pular" nos opcionais, resumo final, `POST /api/abertura`; ao terminar, se `primeiroAgente`, chama `CONTRATAR.abrir()` com os campos preenchidos. `AJUSTES.abrir()` com resumo, status do Claude (`/api/claude`, botão conectar reaproveitando o fluxo de `conversa.js`), miniaturas, atalhos e "Refazer abertura" (`ADMIN.exigir`).
+- `init({ ROOT, DADOS, ADMIN, AVISOS, lerConfig })`; `atual()`, `validar(r)`, `montarConfig(r)`, `aplicar(r)`, `gerarSenha()`, `definirSenha(senha)`, `estadoClaude()` (reusa `claude auth status`), `exemplo('manter'|'demitir')`
+- CLI: `node abertura.js atual | aplicar <respostas.json> | senha | claude | exemplo manter|demitir`
+- `Respostas: { empresa, oQueFaz, dono, setores:[{nome,emoji?,desc?}], marca:{cor?, logo?, planta?} (nomes de arquivos já em data/marca/), avisos:{ntfy:{topico}, whatsapp:{fone}} , reuniao:{automatica,dias,hora,meta}, primeiroAgente?, manterExemplo }`
 
-- [ ] **Step 1: escrever os testes de unidade** de `montarConfig` e `validar`.
-- [ ] **Step 2: rodar e ver falhar.**
-- [ ] **Step 3: implementar `abertura.js`** e as rotas.
-- [ ] **Step 4: rodar:** unidade PASS.
-- [ ] **Step 5: implementar a tela** (`js/abertura.js`, `js/ajustes.js`, botão, CSS) e as checagens no `testes/fumaca.js`.
-- [ ] **Step 6: rodar:** `npm test` → PASS completo.
-- [ ] **Step 7: commit** `git commit -m "Abertura do escritório: assistente, Refazer abertura e Ajustes com status do Claude"`
+- [ ] **Step 1: testes de unidade.** - [ ] **Step 2: ver falhar.** - [ ] **Step 3: implementar `abertura.js`** e as rotas. - [ ] **Step 4: unidade PASS.**
+- [ ] **Step 5: implementar** aviso sem config e `js/ajustes.js` (resumo, status do Claude com botão conectar, miniaturas de logo e planta, atalhos, instrução do `/criar-escritorio`); checagens no `testes/fumaca.js`.
+- [ ] **Step 6: `npm test`** → PASS exceto Tarefas 10 a 12.
+- [ ] **Step 7: commit** `abertura.js, aviso sem config e Ajustes com status do Claude`
 
-### Task 10: fechamento
+### Task 10: `planta.js` (salas → grade)
 
-- [ ] **Step 1:** `README.md`: seções Plataformas, Abrir um escritório novo, Testar; estrutura atualizada (`util.js`, `plataformas.js`, `abertura.js`, `testes/`, `docs/`).
+**Files:**
+- Create: `planta.js`, `testes/fixtures/salas-clinica.json` (7 salas: recepcao média, operacao média, reuniao pequena, diretoria pequena, 3 `sala` pequenas, vizinhanças), `testes/fixtures/salas-grande-demais.json` (12 grandes)
+- Test: `testes/unidade/planta.test.js`
+
+**Interfaces:**
+- Entrada `salas.json`: `[{ id, nome, tipo, tamanho: 'pequena'|'media'|'grande', vizinhos: [ids] }]`
+- `gerar(salas): { ok, planta?, motivo?, sugestao? }` — `planta`: `{ versao: 1, grade: {w:48,h:34}, salas: [{ id, nome, tipo, bx, by, bw, bh, x1, y1, x2, y2, porta: {x,y}, estacoes: [{x,y}] }], corredor: [{x1,y1,x2,y2}] }`
+- `validar(planta): { ok, problemas }` (sem sobreposição; cada sala com porta no corredor; toda sala alcançável por busca em largura na grade; de 2 a 12 salas; estações dentro da sala)
+- `capacidade(planta): number`
+- Algoritmo: tamanhos em tiles (pequena 8×8, média 14×10, grande 20×12, com `sala` sempre 7×7); corredor horizontal central de 3 tiles; salas acima e abaixo, da esquerda para a direita, agrupadas por vizinhança quando dá; se não couber, devolve `motivo` e `sugestao` (quais juntar ou reduzir).
+- CLI: `node planta.js gerar <salas.json>` (grava `data/planta.json` e imprime capacidade) | `validar` | `capacidade` | `remover`.
+
+- [ ] **Step 1: testes:** fixture de 7 → `ok`, `validar` ok, capacidade 6+1+1+1+2 = 11 estações (operacao média 12? **valor fixo do spec:** operacao pequena 6, média 12, grande 18; diretoria 2; `sala` 1; os outros 0) → 12+2+3 = 17; fixture grande demais → `ok:false` com `sugestao`; planta sem porta (editada) → `validar` falha; `remover` apaga `data/planta.json`.
+- [ ] **Step 2: ver falhar.** - [ ] **Step 3: implementar.** - [ ] **Step 4: PASS.**
+- [ ] **Step 5: commit** `planta.js: salas da planta encaixadas na grade, com validação e capacidade`
+
+### Task 11: o motor desenha a planta
+
+**Files:**
+- Modify: `server.js` (`GET /api/planta` devolve `data/planta.json` ou `{ padrao: true }`), `js/world.js` (`WORLD.carregar(planta)`: constrói `ROOMS`, grade, portas e corredor a partir do JSON; sem JSON, o layout de hoje), `js/furniture.js` (mobília por tipo de sala: `operacao` mesas em fileiras pelas `estacoes`; `reuniao` mesa grande; `recepcao` balcão; `descanso` sofá e jogos; `diretoria` as duas estações premium; `sala` uma mesa e uma cadeira), `js/app.js` (mesas dos agentes = estações de todas as salas, na ordem; capacidade; aviso quando agentes > estações; salas no painel Salas; boot espera `/api/planta`), `js/path.js` (usa a grade gerada; sem mudança se já lê de `WORLD`)
+- Test: `testes/fumaca.js` com `data/planta.json` gerado da fixture: 7 salas no painel Salas, agentes com mesa, `__escritorio.visitar('reuniao')` termina na sala, zero erro de JS; e sem o arquivo, as 5 salas de hoje.
+
+- [ ] **Step 1: checagens no fumaça.** - [ ] **Step 2: rodar e ver falhar.**
+- [ ] **Step 3: implementar** `WORLD.carregar`, mobília por tipo, mesas dinâmicas, rota.
+- [ ] **Step 4: `npm test`** → PASS nas duas condições (com e sem planta).
+- [ ] **Step 5: commit** `O escritório desenha as salas de data/planta.json`
+
+### Task 12: a skill `/criar-escritorio`
+
+**Files:**
+- Create: `.claude/skills/criar-escritorio/SKILL.md`, `.claude/skills/criar-escritorio/referencias/perguntas.md` (as dez, com o texto de cada pergunta, o que ler antes, o que gravar e por qual script), `.claude/skills/criar-escritorio/referencias/planta.md` (como interpretar a planta: tipos de sala, tamanho relativo, vizinhos, o JSON de `salas.json`, o que fazer quando não dá para ler), `.claude/skills/criar-escritorio/modelos/respostas-modelo.json`, `.claude/skills/criar-escritorio/modelos/salas-modelo.json`
+- Modify: `CLAUDE.md` (aponta a skill), `README.md` (seção "Abrir um escritório novo": `claude` na pasta, `/criar-escritorio`)
+
+Regras da skill (no SKILL.md): uma pergunta por mensagem; ler `node abertura.js atual` antes de perguntar e só perguntar o que falta ou o que a pessoa quer mudar; nunca pedir chave no chat (dizer onde colar); gravar só pelos scripts; na planta, ler o arquivo, propor as salas, confirmar, `node planta.js gerar`, subir o escritório e pedir para olhar; senha gerada e mostrada uma vez; no fim, resumo com nomes de arquivos, nunca valores; registrar em `data/abertura.log` o que foi feito.
+
+- [ ] **Step 1: escrever a skill e as referências.**
+- [ ] **Step 2: verificar à seco:** `node abertura.js aplicar .claude/skills/criar-escritorio/modelos/respostas-modelo.json` numa `ESCRITORIO_DADOS` temporária grava os arquivos; `node planta.js gerar .claude/skills/criar-escritorio/modelos/salas-modelo.json` gera; o conferidor (f) passa.
+- [ ] **Step 3: verificar de verdade, uma vez:** numa cópia limpa do projeto, `claude` e `/criar-escritorio`, responder as dez perguntas com uma planta de teste; conferir os critérios 9 a 13 do spec; registrar o resultado (sem valores) em `docs/superpowers/verificacoes/2026-10-13-criar-escritorio.md`.
+- [ ] **Step 4: commit** `/criar-escritorio: a abertura do escritório pelo Claude Code`
+
+### Task 13: fechamento
+
+- [ ] **Step 1:** `README.md` (Plataformas; Abrir um escritório novo; Planta; Testar; estrutura com os módulos e `testes/`, `docs/`, `.claude/skills/`); `modelos/ANATOMIA.md` e `CLAUDE.md` conferidos.
 - [ ] **Step 2:** `npm test` → PASS; `git status` limpo; push.
-- [ ] **Step 3: commit** `git commit -m "README: plataformas, abertura e testes"`
+- [ ] **Step 3: commit** `README: plataformas, abertura, planta e testes`
