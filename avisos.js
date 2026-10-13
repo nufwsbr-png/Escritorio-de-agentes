@@ -123,7 +123,7 @@ function agendarResumo() {
     ultimoResumo = dia;
     const linhas = await montarResumo();
     if (linhas.length) await avisar(fonte.nome() + ' · resumo do dia', linhas.join('\n') + '\nAbra o escritório para ver.');
-  }, 60000);
+  }, 60000).unref();   // não segura o processo vivo sozinho: a CLI da abertura e os testes precisam sair
 }
 
 module.exports = {
