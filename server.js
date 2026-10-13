@@ -619,14 +619,18 @@ function perguntar(id, texto, modo) {
   const c = conversaDe(id);
   if (c.rodando) return { ok: false, motivo: 'ele ainda está respondendo a anterior' };
 
-  /* construir: a skill da trilha conduz a jornada dentro da pasta do agente.
-     Pode editar e rodar comandos; o que ela não pode é escrever o prompt do
-     dono — isso está na própria skill e no CLAUDE.md da pasta. */
+  /* construir: a ANATOMIA diz o que todo agente precisa ter; o progresso é
+     essa lista; a skill da trilha diz como construir cada componente. Pode
+     editar e rodar comandos; o que não pode é escrever a identidade do dono. */
+  const skillDe = (AGENTES.TRILHAS[s.trilha] || AGENTES.TRILHAS.tarefa).skill;
   const papel = (modo === 'construir'
-    ? 'Você é o construtor do agente ' + (s.nome || id) + ' dentro do escritório de agentes. A skill da jornada está em ' +
-      '.claude/skills/ desta pasta (' + (s.trilha === 'atendimento' ? 'criar-agente' : 'criar-agente-setor') + '): leia o SKILL.md, ' +
-      'o CLAUDE.md e o progresso-do-agente.md e conduza UM passo por vez, em português do Brasil. Nunca preencha prompt-agente.md ' +
-      'além do OBJETIVO que o dono ditar; nunca cole chave no chat; mantenha /saude, /painel e /log no server.js.'
+    ? 'Você é o construtor do agente ' + (s.nome || id) + ' dentro do escritório de agentes. Leia, nesta ordem, CLAUDE.md (o contrato), ' +
+      'ANATOMIA.md (os componentes que todo agente precisa ter) e progresso-do-agente.md (a lista deles, com o que já está pronto). ' +
+      'Conduza UM componente por vez, o primeiro em aberto, com teste no fim; só marque [x] com o teste provado e registre no progresso o que fez. ' +
+      'A skill de referência está em .claude/skills/' + skillDe + '/: consulte o passo correspondente para o COMO (armadilhas, módulos, clique a clique), ' +
+      'mas a lista e a ordem são as do progresso. O guia executa e o dono confere: você constrói, roda o teste e mostra a evidência; só para nas pausas ' +
+      'que dependem do dono (decisão de negócio, credencial, clique num site, aprovação). Nunca invente conteúdo de negócio: rascunhe e peça confirmação; ' +
+      'lacuna vira [A PREENCHER]. Nunca cole chave no chat. Mantenha /saude, /painel e /log no server.js. Responda em português do Brasil.'
     : PAPEL) + MEMORIA.contextoDe(id);
 
   // -p sem valor lê o prompt da entrada padrão: a pergunta nunca passa

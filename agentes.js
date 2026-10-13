@@ -1,31 +1,36 @@
 /* ===========================================================
    agentes.js — contratar é construir
 
-   Todo agente novo nasce numa pasta com a estrutura padrão (derivada da
-   skill criar-agente): skills/ e tools/, prompt-agente.md do dono,
-   constituição como ferramenta, .env com as conexões de trabalho,
-   memoria.md, progresso e um server.js com o contrato do escritório
-   (/saude, /painel, /log). A skill da trilha vai junto, em
-   .claude/skills/, e o modo Construir do monitor a invoca.
+   Todo agente novo nasce numa pasta com a anatomia do escritório
+   (modelos/ANATOMIA.md): identidade do dono, constituição como ferramenta,
+   tools/ com cerca, lançador com modos e pós-verificação, memória em camadas,
+   lições aprovadas pelo dono, painel trancado, .env com os segredos e o
+   progresso como lista de componentes. A skill de referência da trilha vai
+   junto em .claude/skills/ e o modo Construir do monitor a consulta.
 
    Duas trilhas:
-     atendimento — a skill criar-agente inteira (WhatsApp, OpenRouter).
-     setor       — a jornada criar-agente-setor (Claude Code da máquina).
+     atendimento — atendente de WhatsApp (OpenRouter). Referência: criar-agente.
+     tarefa      — agente que executa uma tarefa (Claude Code da máquina em
+                   chamadas isoladas). Referência: criar-agente-tarefa.
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
 
 let dep = null;   // { ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config }
 
-/* Os dois setores fixos: o atendimento (trilha inteira da skill criar-agente)
-   e "outro" (o dono dá o nome). Os do meio variam por cliente: uma clínica,
-   um escritório de advocacia e uma loja têm setores diferentes. Por isso
-   eles podem vir de data/config.json ("setores": [{ id, nome, emoji, desc }]);
-   sem a chave, valem os padrões abaixo. */
-const ATENDIMENTO = { id: 'atendimento', nome: 'Atendimento no WhatsApp', emoji: '🎧', trilha: 'atendimento', skill: 'criar-agente', passos: 23,
+const TRILHAS = {
+  atendimento: { skill: 'criar-agente', passos: 18, molde: 'atendimento' },
+  tarefa: { skill: 'criar-agente-tarefa', passos: 17, molde: 'tarefa' },
+  setor: { skill: 'criar-agente-tarefa', passos: 17, molde: 'tarefa' }   // nome antigo da trilha tarefa
+};
+
+/* Os dois setores fixos: o atendimento e "outro" (o dono dá o nome). Os do
+   meio variam por cliente e podem vir de data/config.json
+   ("setores": [{ id, nome, emoji, desc }]); sem a chave, valem os padrões. */
+const ATENDIMENTO = { id: 'atendimento', nome: 'Atendimento no WhatsApp', emoji: '🎧', trilha: 'atendimento',
   desc: 'Atende clientes no WhatsApp: responde, agenda, registra e passa para gente quando precisa. Cérebro pelo OpenRouter, com chave própria.' };
-const OUTRO = { id: 'outro', nome: 'Outro setor', emoji: '🏢', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-  desc: 'Um trabalho interno que não está na lista: você dá o nome do setor.' };
+const OUTRO = { id: 'outro', nome: 'Outro setor', emoji: '🏢', trilha: 'tarefa',
+  desc: 'Uma tarefa interna que não está na lista: você dá o nome do setor.' };
 const SETORES_PADRAO = [
   { id: 'sdr',        nome: 'Prospecção & SDR',          emoji: '🎯', desc: 'Encontra clientes em potencial, qualifica e prepara a primeira abordagem.' },
   { id: 'conteudo',   nome: 'Conteúdo & Redes Sociais',  emoji: '📱', desc: 'Planeja o calendário, escreve legendas e acompanha o que funcionou.' },
@@ -34,8 +39,9 @@ const SETORES_PADRAO = [
   { id: 'dados',      nome: 'Dados & Relatórios',        emoji: '🧮', desc: 'Junta os números dos outros sistemas num painel e explica o que mudou.' },
   { id: 'qa',         nome: 'QA de Sistemas',            emoji: '🧪', desc: 'Roda build, typecheck e teste antes de qualquer deploy dos outros agentes.' }
 ];
-const slugId = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+const comTrilha = (s) => ({ ...s, skill: TRILHAS[s.trilha].skill, passos: TRILHAS[s.trilha].passos });
 
 /** a lista que a tela mostra: atendimento, os setores do cliente (ou os padrões) e "outro" */
 function setores() {
@@ -44,17 +50,13 @@ function setores() {
   const meio = [];
   for (const s of doCliente) {
     if (!s || !s.nome) continue;
-    const id = slugId(s.id || s.nome);
-    if (!id || id === 'atendimento' || id === 'outro' || id === slugId(ATENDIMENTO.nome) || meio.some(x => x.id === id)) continue;
-    meio.push({ id, nome: String(s.nome).slice(0, 40), emoji: s.emoji || '🏢', desc: String(s.desc || '').slice(0, 200),
-                trilha: 'setor', skill: 'criar-agente-setor', passos: 14 });
+    const id = slug(s.id || s.nome);
+    if (!id || id === 'atendimento' || id === 'outro' || id === slug(ATENDIMENTO.nome) || meio.some(x => x.id === id)) continue;
+    meio.push({ id, nome: String(s.nome).slice(0, 40), emoji: s.emoji || '🏢', desc: String(s.desc || '').slice(0, 200), trilha: 'tarefa' });
   }
-  return [ATENDIMENTO, ...meio, OUTRO];
+  return [ATENDIMENTO, ...meio, OUTRO].map(comTrilha);
 }
 const setorDe = (id) => setores().find(s => s.id === id) || null;
-
-const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'agente';
 
 /* ---------------- progresso da construção ---------------- */
 function progressoDe(pasta, trilha) {
@@ -64,8 +66,8 @@ function progressoDe(pasta, trilha) {
   const feitos = (t.match(/^- \[x\]/gim) || []).length;
   const abertos = (t.match(/^- \[ \]/gim) || []).length;
   const concluido = /^## CONCLU[IÍ]DO/im.test(t);
-  // atendimento: o portão é o fim da fase 1 (passo 12); setor: a linha "PORTÃO: aprovado"
-  const portao = concluido || /PORT[ÃA]O:\s*aprovad/i.test(t) || (trilha === 'atendimento' && feitos >= 12);
+  // o portão é um componente da lista: marcado, o boneco vira funcionário
+  const portao = concluido || /^- \[x\][^\n]*PORT[ÃA]O/im.test(t) || /PORT[ÃA]O:\s*aprovad/i.test(t);
   const total = feitos + abertos;
   return { passo: feitos, total, portao, concluido, emTreinamento: !portao && !concluido,
            pct: total ? Math.round(feitos / total * 100) : 0 };
@@ -79,6 +81,7 @@ const copiarDir = (de, para) => {
     if (e.isDirectory()) copiarDir(a, b); else fs.copyFileSync(a, b);
   }
 };
+const EH_TEXTO = /\.(md|js|json|txt|env)$|^(env|gitignore)$/i;
 
 function criarAgente(b) {
   const nome = String(b.nome || '').trim().slice(0, 40);
@@ -88,6 +91,7 @@ function criarAgente(b) {
   const setorNome = setor.id === 'outro' ? String(b.setorNome || '').trim().slice(0, 40) : setor.nome;
   if (!setorNome) return { ok: false, motivo: 'diga o nome do setor' };
   const negocio = String(b.negocio || dep.config().empresa || dep.config().nome || '').trim().slice(0, 80) || 'o negócio';
+  const trilha = TRILHAS[setor.trilha];
 
   const porta = Number(b.porta);
   if (!Number.isInteger(porta) || porta < 1024 || porta > 65535) return { ok: false, motivo: 'porta inválida (use de 1024 a 65535)' };
@@ -97,8 +101,8 @@ function criarAgente(b) {
   if (dona) return { ok: false, motivo: 'a porta ' + porta + ' já é de ' + (dona[1].nome || dona[0]) };
 
   const bruto = dep.lerRegistroBruto();
-  let id = slug(nome), n = 2;
-  while (bruto[id]) id = slug(nome) + '-' + n++;
+  let id = slug(nome) || 'agente', n = 2;
+  while (bruto[id]) id = (slug(nome) || 'agente') + '-' + n++;
 
   let pasta = String(b.pasta || '').trim();
   pasta = pasta ? path.resolve(pasta) : path.join(dep.ROOT, 'agentes', id);
@@ -106,46 +110,50 @@ function criarAgente(b) {
     return { ok: false, motivo: 'a pasta já existe e não está vazia: ' + pasta };
 
   const MODELOS = path.join(dep.ROOT, 'modelos');
-  const skillDe = path.join(MODELOS, 'skills', setor.skill);
-  if (!fs.existsSync(skillDe)) return { ok: false, motivo: 'skill não encontrada em modelos/skills/' + setor.skill };
+  const skillDe = path.join(MODELOS, 'skills', trilha.skill);
+  if (!fs.existsSync(skillDe)) return { ok: false, motivo: 'skill não encontrada em modelos/skills/' + trilha.skill };
 
   const data = new Date().toLocaleDateString('pt-BR');
   const troca = (t) => t.replace(/\{\{NOME\}\}/g, nome).replace(/\{\{SETOR\}\}/g, setorNome)
-    .replace(/\{\{NEGOCIO\}\}/g, negocio).replace(/\{\{PORTA\}\}/g, String(porta))
-    .replace(/\{\{SKILL\}\}/g, setor.skill).replace(/\{\{DATA\}\}/g, data);
-  const modelo = (rel) => troca(fs.readFileSync(path.join(MODELOS, 'agente', rel), 'utf8'));
-  const escreve = (rel, txt) => { const a = path.join(pasta, rel); fs.mkdirSync(path.dirname(a), { recursive: true }); fs.writeFileSync(a, txt); };
+    .replace(/\{\{NEGOCIO\}\}/g, negocio).replace(/\{\{PORTA\}\}/g, String(porta)).replace(/\{\{TRILHA\}\}/g, setor.trilha)
+    .replace(/\{\{SKILL\}\}/g, trilha.skill).replace(/\{\{DATA\}\}/g, data).replace(/\{\{ESCRITORIO_PORTA\}\}/g, String(dep.PORT));
+  /** copia um molde inteiro trocando os {{CAMPOS}} nos arquivos de texto; `env` e `gitignore` ganham o ponto */
+  const copiarMolde = (de, para) => {
+    for (const e of fs.readdirSync(de, { withFileTypes: true })) {
+      const origem = path.join(de, e.name);
+      const nomeFinal = e.name === 'env' ? '.env' : e.name === 'gitignore' ? '.gitignore' : e.name === 'progresso.md' ? 'progresso-do-agente.md' : e.name;
+      const destino = path.join(para, nomeFinal);
+      if (e.isDirectory()) { copiarMolde(origem, destino); continue; }
+      fs.mkdirSync(path.dirname(destino), { recursive: true });
+      if (EH_TEXTO.test(e.name)) fs.writeFileSync(destino, troca(fs.readFileSync(origem, 'utf8')));
+      else fs.copyFileSync(origem, destino);
+    }
+  };
 
   try {
     fs.mkdirSync(pasta, { recursive: true });
-    escreve('agente.json', JSON.stringify({ nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta,
-                                            criadoEm: new Date().toISOString(), trabalho: '' }, null, 2) + '\n');
-    escreve('CLAUDE.md', modelo('CLAUDE.md'));
-    escreve('server.js', modelo('server.js'));
-    escreve('prompt-agente.md', modelo('prompt-agente.md'));
-    escreve(path.join('skills', 'constituicao.md'), modelo(path.join('skills', 'constituicao.md')));
-    escreve(path.join('tools', 'README.md'), modelo(path.join('tools', 'README.md')));
-    escreve('memoria.md', modelo('memoria.md'));
-    escreve('.gitignore', modelo('gitignore'));
-    escreve('.env', modelo(setor.trilha === 'atendimento' ? 'env-atendimento' : 'env-setor'));
-    escreve('progresso-do-agente.md', modelo(setor.trilha === 'atendimento' ? 'progresso-atendimento.md' : 'progresso-setor.md'));
-    copiarDir(skillDe, path.join(pasta, '.claude', 'skills', setor.skill));
-    // o atendimento usa também os modelos da própria skill (passos 7 e 9); já estão dentro dela
+    fs.writeFileSync(path.join(pasta, 'agente.json'), JSON.stringify({ nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta,
+                                            criadoEm: new Date().toISOString(), tarefa: '' }, null, 2) + '\n');
+    copiarMolde(path.join(MODELOS, 'agente', 'comum'), pasta);
+    copiarMolde(path.join(MODELOS, 'agente', trilha.molde), pasta);
+    fs.writeFileSync(path.join(pasta, 'ANATOMIA.md'), fs.readFileSync(path.join(MODELOS, 'ANATOMIA.md'), 'utf8'));
+    for (const d of ['memoria/entidades', 'amostras', 'saidas', 'quarentena']) fs.mkdirSync(path.join(pasta, d), { recursive: true });
+    copiarDir(skillDe, path.join(pasta, '.claude', 'skills', trilha.skill));
   } catch (e) {
     return { ok: false, motivo: 'não consegui criar a pasta: ' + e.message };
   }
 
   const item = {
-    nome, tipo: 'local', pasta, comando: 'node', args: ['server.js'], env: { PORT: String(porta) }, porta, abre: '/painel',
+    nome, tipo: 'local', pasta, comando: 'node', args: ['server.js'], env: { PORT: String(porta), ESCRITORIO_PORTA: String(dep.PORT) }, porta, abre: '/painel',
     setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio,
-    sobre: setor.emoji + ' ' + setorNome + (negocio ? ' de ' + negocio : '') + '. Em construção pela skill ' + setor.skill + '. Abra Conversar > Construir para seguir a jornada.',
-    dicas: ['O chat de teste do agente fica em / e o painel do dono em /painel',
-            'Em Conversar > Construir, a skill conduz a construção passo a passo',
-            'As conexões de trabalho ficam no .env da pasta; cole os valores pelo editor, nunca no chat']
+    sobre: setor.emoji + ' ' + setorNome + (negocio ? ' de ' + negocio : '') + '. Em construção: ' + trilha.passos + ' componentes da anatomia do escritório, com a skill ' + trilha.skill + ' de referência. Abra Conversar > Construir para seguir.',
+    dicas: ['Em Conversar > Construir, o construtor segue a ANATOMIA, um componente por vez, com teste no fim de cada um',
+            setor.trilha === 'atendimento' ? 'O chat de teste fica em / e o painel do dono em /painel' : 'O lançador é rodar.js: node rodar.js amostras/caso-01 roda em ensaio; o painel em /painel aprova, responde e corrige',
+            'As conexões ficam no .env da pasta; cole os valores pelo editor, nunca no chat']
   };
   bruto[id] = item;
   dep.gravarRegistro(bruto);
-  return { ok: true, id, sistema: item, pasta, setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha } };
+  return { ok: true, id, sistema: item, pasta, setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha, skill: trilha.skill, passos: trilha.passos } };
 }
 
 /* ---------------- constituição pela tela (ficha do negócio) ---------------- */
@@ -189,5 +197,5 @@ function gravarConstituicao(id, dados) {
 
 module.exports = {
   init(d) { dep = d; return module.exports; },
-  setores, setorDe, progressoDe, criarAgente, lerConstituicao, gravarConstituicao
+  TRILHAS, setores, setorDe, progressoDe, criarAgente, lerConstituicao, gravarConstituicao
 };

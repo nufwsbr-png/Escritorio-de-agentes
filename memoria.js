@@ -1,19 +1,21 @@
 /* ===========================================================
    memoria.js — o que os agentes lembram, dizem uns aos outros e propõem
 
-   Três coisas, todas em arquivo:
+   Quatro coisas, todas em arquivo:
 
-   MEMÓRIA   memoria.md na pasta de cada agente. Entra no começo de toda
-             chamada (conversa, reunião, testador) e cresce no fim com o que
-             o agente marcou em <memoria>…</memoria>. Limite de tamanho:
-             as linhas mais velhas saem.
+   MEMÓRIA DO ESCRITÓRIO  memoria/escritorio.md na pasta de cada agente. Entra
+             no começo de toda chamada feita pelo escritório (conversa,
+             reunião, testador) e cresce no fim com o que o agente marcou em
+             <memoria>…</memoria>. Limite de tamanho: as linhas mais velhas saem.
+   LIÇÕES    memoria/licoes.md: as regras que o DONO aprovou. Entram também
+             em toda chamada. O agente só propõe (por <proposta> aqui, ou
+             pela reflexão do lançador no painel dele); nunca escreve nelas.
    RECADOS   data/mensagens.json. Um agente deixa um recado para outro com
              <mensagem para="id">…</mensagem>; ele é entregue no próximo
              prompt do destinatário. O dono também pode escrever pela tela.
-   PROPOSTAS data/propostas.json. O agente sugere mudança no prompt ou na
-             constituição com <proposta arquivo=".." titulo="..">…</proposta>.
-             Nada entra sozinho: fica pendente até o dono aprovar. É a regra
-             da skill: o construtor nunca escreve o prompt do dono.
+   PROPOSTAS data/propostas.json. O agente sugere mudança no prompt, na
+             constituição ou uma lição com <proposta arquivo=".." titulo="..">.
+             Nada entra sozinho: fica pendente até o dono aprovar.
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -21,9 +23,10 @@ const crypto = require('crypto');
 
 let dep = null;   // { ROOT, lerRegistro, nomeDe(id) }
 const MEMORIA_MAX = 8000;
-const MODELO_MEMORIA = (nome) => '# Memória de ' + nome + '\n\n' +
-  '<!-- O que este agente aprendeu operando. O escritório lê no começo de cada conversa,\n' +
-  '     reunião e teste, e acrescenta no fim o que o agente marcou como aprendizado. -->\n\n## Aprendizados\n\n';
+const MODELO_MEMORIA = (nome) => '# Memória do escritório — ' + nome + '\n\n' +
+  '<!-- O que este agente anotou nas conversas e reuniões do escritório. O escritório lê no\n' +
+  '     começo de cada conversa, reunião e teste, e acrescenta no fim o que o agente marcou\n' +
+  '     em <memoria>. Curto; nunca chave. -->\n\n## Aprendizados\n\n';
 
 const arqMensagens = () => path.join(dep.ROOT, 'data', 'mensagens.json');
 const arqPropostas = () => path.join(dep.ROOT, 'data', 'propostas.json');
@@ -31,12 +34,15 @@ const lerJson = (a, padrao) => { try { return JSON.parse(fs.readFileSync(a, 'utf
 const gravarJson = (a, d) => { try { fs.mkdirSync(path.dirname(a), { recursive: true }); fs.writeFileSync(a, JSON.stringify(d, null, 2) + '\n'); } catch (e) {} };
 const hoje = () => new Date().toLocaleDateString('pt-BR');
 const nomeDe = (id) => (dep.nomeDe && dep.nomeDe(id)) || ((dep.lerRegistro()[id] || {}).nome) || id;
+const semComentarios = (t) => String(t || '').replace(/<!--[\s\S]*?-->/g, '').trim();
 
-/* ---------------- memória ---------------- */
+/* ---------------- memória do escritório ---------------- */
 function arquivoMemoria(id) {
   const s = dep.lerRegistro()[id];
   if (!s || !s.pasta || !fs.existsSync(s.pasta)) return null;
-  return path.join(s.pasta, 'memoria.md');
+  // pastas antigas tinham memoria.md na raiz; as novas têm memoria/escritorio.md
+  const novo = path.join(s.pasta, 'memoria', 'escritorio.md'), velho = path.join(s.pasta, 'memoria.md');
+  return (!fs.existsSync(novo) && fs.existsSync(velho)) ? velho : novo;
 }
 
 function lerMemoria(id) {
@@ -45,7 +51,7 @@ function lerMemoria(id) {
   try { return fs.readFileSync(a, 'utf8'); }
   catch (e) {
     const t = MODELO_MEMORIA(nomeDe(id));
-    try { fs.writeFileSync(a, t); } catch (_) {}
+    try { fs.mkdirSync(path.dirname(a), { recursive: true }); fs.writeFileSync(a, t); } catch (_) {}
     return t;
   }
 }
@@ -53,6 +59,7 @@ function lerMemoria(id) {
 function gravarMemoria(id, texto) {
   const a = arquivoMemoria(id);
   if (!a) return { ok: false, motivo: 'esse agente não tem pasta' };
+  fs.mkdirSync(path.dirname(a), { recursive: true });
   fs.writeFileSync(a, String(texto).slice(0, MEMORIA_MAX * 2));
   return { ok: true };
 }
@@ -64,7 +71,6 @@ function anotar(id, linha) {
   let t = lerMemoria(id) || MODELO_MEMORIA(nomeDe(id));
   if (!/^## Aprendizados/m.test(t)) t = t.trimEnd() + '\n\n## Aprendizados\n\n';
   t = t.trimEnd() + '\n- [' + hoje() + '] ' + String(linha).replace(/\s+/g, ' ').trim().slice(0, 400) + '\n';
-  // estourou: tira as linhas mais antigas de aprendizado, nunca o cabeçalho
   while (t.length > MEMORIA_MAX) {
     const linhas = t.split('\n');
     const i = linhas.findIndex((l, k) => l.startsWith('- ') && k > linhas.findIndex(x => /^## Aprendizados/.test(x)));
@@ -72,8 +78,17 @@ function anotar(id, linha) {
     linhas.splice(i, 1);
     t = linhas.join('\n');
   }
+  fs.mkdirSync(path.dirname(a), { recursive: true });
   fs.writeFileSync(a, t);
   return true;
+}
+
+/** as lições aprovadas pelo dono (memoria/licoes.md), só as linhas */
+function licoesDe(id) {
+  const s = dep.lerRegistro()[id];
+  if (!s || !s.pasta) return [];
+  try { return semComentarios(fs.readFileSync(path.join(s.pasta, 'memoria', 'licoes.md'), 'utf8')).split(/\r?\n/).map(l => l.trim()).filter(l => l.startsWith('- ')); }
+  catch (e) { return []; }
 }
 
 /* ---------------- recados ---------------- */
@@ -102,7 +117,9 @@ const caixaDe = (id, n = 40) => lerJson(arqMensagens(), []).filter(m => m.para =
 const novos = (desde) => lerJson(arqMensagens(), []).filter(m => m.quando > desde);
 
 /* ---------------- propostas ---------------- */
-const ARQUIVOS_PERMITIDOS = /^(prompt-agente\.md|CLAUDE\.md|memoria\.md|skills\/[a-z0-9_-]+\.md)$/i;
+// o que o agente pode propor mudar: a identidade, a constituição e outras skills, e as lições.
+// CLAUDE.md (contrato) e tools/ (código) ficam de fora: isso é trabalho do construtor, não proposta.
+const ARQUIVOS_PERMITIDOS = /^(prompt-agente\.md|skills\/[a-z0-9_-]+\.md|memoria\/licoes\.md|memoria\/escritorio\.md|memoria\.md)$/i;
 
 function registrarProposta({ agente, arquivo, secao, titulo, conteudo }) {
   arquivo = String(arquivo || 'prompt-agente.md').replace(/\\/g, '/').trim();
@@ -130,10 +147,13 @@ function decidir(idProposta, decisao) {
     const alvo = path.join(s.pasta, p.arquivo);
     if (!alvo.startsWith(path.resolve(s.pasta))) return { ok: false, motivo: 'caminho fora da pasta' };
     let t = ''; try { t = fs.readFileSync(alvo, 'utf8'); } catch (e) {}
-    const bloco = '\n' + p.conteudo.trim() + '\n';
-    const marca = '<!-- aprovado pelo dono em ' + hoje() + ': ' + p.titulo.replace(/-->/g, '') + ' -->';
-    if (p.secao) {
-      // dentro da seção pedida: logo antes do próximo título do mesmo nível ou do fim
+    const ehLicao = /memoria\/licoes\.md$/i.test(p.arquivo);
+    // lição: uma linha por item, com origem; o resto: bloco marcado na seção pedida
+    const bloco = ehLicao
+      ? '\n' + p.conteudo.trim().split(/\n+/).map(l => (l.trim().startsWith('- ') ? l.trim() : '- ' + l.trim()) + (/\(origem:/i.test(l) ? '' : ' (origem: ' + p.agenteNome + ', ' + hoje() + ')')).join('\n') + '\n'
+      : '\n' + p.conteudo.trim() + '\n';
+    const marca = ehLicao ? '' : '<!-- aprovado pelo dono em ' + hoje() + ': ' + p.titulo.replace(/-->/g, '') + ' -->';
+    if (p.secao && !ehLicao) {
       const re = new RegExp('^(#{1,6})\\s+' + p.secao.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'mi');
       const m = re.exec(t);
       if (m) {
@@ -143,7 +163,7 @@ function decidir(idProposta, decisao) {
         const corte = prox < 0 ? t.length : m.index + m[0].length + prox;
         t = t.slice(0, corte).trimEnd() + '\n' + marca + bloco + '\n' + t.slice(corte);
       } else t = t.trimEnd() + '\n\n## ' + p.secao + '\n' + marca + bloco;
-    } else t = t.trimEnd() + '\n\n' + marca + bloco;
+    } else t = t.trimEnd() + '\n' + (marca ? '\n' + marca : '') + bloco;
     fs.mkdirSync(path.dirname(alvo), { recursive: true });
     fs.writeFileSync(alvo, t);
   }
@@ -158,18 +178,21 @@ const INSTRUCOES =
   '\n\nCOMO FALAR COM O ESCRITÓRIO (blocos no FIM da resposta, retirados do texto antes de o dono ler):\n' +
   '- <memoria>uma ou duas linhas</memoria> se aprendeu algo durável sobre este sistema (fato, causa de erro, compromisso). Sem novidade, não inclua.\n' +
   '- <mensagem para="ID">texto</mensagem> para deixar um recado a outro agente; use o ID do sistema dele, listado abaixo.\n' +
-  '- <proposta arquivo="prompt-agente.md" secao="Nunca faça isso" titulo="curto">texto a acrescentar</proposta> para sugerir mudança no seu prompt ' +
-  'ou na constituição. Ela NÃO entra sozinha: o dono aprova no escritório. Nunca edite prompt-agente.md nem skills/constituicao.md diretamente.';
+  '- <proposta arquivo="memoria/licoes.md" titulo="curto">- Quando X, então Y.</proposta> para propor uma lição; ' +
+  '<proposta arquivo="prompt-agente.md" secao="Nunca faça isso" titulo="curto">texto</proposta> para o prompt; arquivo="skills/constituicao.md" para a constituição. ' +
+  'Nada disso entra sozinho: o dono aprova no escritório. Nunca edite prompt-agente.md, skills/constituicao.md nem memoria/licoes.md diretamente.';
 
-/** memória + recados pendentes + colegas, para colar no prompt de sistema */
+/** memória do escritório + lições + recados pendentes + colegas, para colar no prompt de sistema */
 function contextoDe(id) {
   const reg = dep.lerRegistro();
   let ctx = '';
   const mem = lerMemoria(id);
   if (mem) {
-    const util = mem.replace(/<!--[\s\S]*?-->/g, '').replace(/^# .*$/m, '').trim();
-    if (util.replace(/## Aprendizados/, '').trim()) ctx += '\n\nSUA MEMÓRIA (memoria.md — o que você já aprendeu operando):\n' + util.slice(-4000);
+    const util = semComentarios(mem).replace(/^# .*$/m, '').trim();
+    if (util.replace(/## Aprendizados/, '').trim()) ctx += '\n\nMEMÓRIA DO ESCRITÓRIO (memoria/escritorio.md — o que você já anotou):\n' + util.slice(-4000);
   }
+  const lic = licoesDe(id);
+  if (lic.length) ctx += '\n\nLIÇÕES APROVADAS PELO DONO (memoria/licoes.md — valem como regra):\n' + lic.slice(-40).join('\n');
   const pend = pendentesPara(id, true);
   if (pend.length)
     ctx += '\n\nRECADOS RECEBIDOS (responda ou aja sobre eles se fizer sentido):\n' +
@@ -205,7 +228,7 @@ function processarBlocos(id, texto) {
 
 module.exports = {
   init(d) { dep = d; return module.exports; },
-  lerMemoria, gravarMemoria, anotar,
+  lerMemoria, gravarMemoria, anotar, licoesDe,
   enviar, pendentesPara, caixaDe, novos,
   registrarProposta, propostas, decidir,
   contextoDe, processarBlocos

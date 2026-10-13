@@ -286,7 +286,7 @@ class Actor {
     if (this.microBreak > 0)   { this.act = 'pegando um café'; return; }
     if (this.moving)           { this.act = 'indo para ' + (this.slot ? (this.slot.label || 'a estação') : 'algum lugar'); return; }
     const tr = st === 'trabalhando' ? this.treino() : null;
-    if (tr)                    { this.act = 'em treinamento · passo ' + tr.passo + ' de ' + (tr.total || '?'); return; }
+    if (tr)                    { this.act = 'em treinamento · componente ' + tr.passo + ' de ' + (tr.total || '?'); return; }
     if (st === 'trabalhando')  { this.act = this.slot ? ('produzindo na ' + this.slot.label) : 'procurando mesa livre'; return; }
     if (st === 'reuniao')      { this.act = 'em reunião'; return; }
     if (st === 'descanso')     { this.act = this.slot ? this.slot.act : 'circulando no lounge'; return; }
@@ -346,7 +346,7 @@ class Actor {
                : this.a.status === 'descanso' ? '🎮'
                : this.a.status === 'reuniao' ? '🗣️' : '💤';
       AVATAR.bubble(ctx, p.x, stack, ic,
-                    this.visita ? 'recado' : tr ? 'passo ' + tr.passo + '/' + (tr.total || '?')
+                    this.visita ? 'recado' : tr ? tr.passo + '/' + (tr.total || '?')
                     : this.microBreak > 0 ? 'pausa' : SHORT_ACT[this.a.status], col);
     }
     void t;
@@ -662,8 +662,8 @@ function renderHire() {
   novo.className = 'hcard';
   novo.innerHTML = `
     <div class="top"><div class="emo">🏗️</div><div class="nm">Contratar agente novo${cadeado}</div></div>
-    <p class="desc">Atendimento no WhatsApp (skill criar-agente, 23 passos) ou um dos setores do escritório (14 passos).
-      O agente nasce com pasta, sistema próprio e a skill que conduz a construção.</p>
+    <p class="desc">Atendimento no WhatsApp ou um agente de tarefa para um setor do escritório.
+      O agente nasce com a anatomia padrão: identidade, constituição, ferramentas com cerca, lançador, memória, lições, painel trancado.</p>
     <p class="why"><b>Como funciona:</b> você escolhe o tipo, dá nome e porta. O boneco entra em treinamento e o monitor abre em Construir.</p>
     <div class="acts"><button class="btn primary wide act" style="margin:0">＋ contratar agente</button></div>`;
   novo.querySelector('.act').addEventListener('click', () => CONTRATAR.abrir());
@@ -677,7 +677,7 @@ function renderHire() {
     el.innerHTML = `<div class="top"><div class="emo">🎓</div><div class="nm">Em treinamento</div></div>` +
       treinando.map(a => {
         const tr = actors.get(a.id).treino();
-        return `<p class="desc" style="margin:8px 0 2px"><b>${esc(a.name)}</b> · ${esc(a.role)} — passo ${tr.passo} de ${tr.total || '?'}</p>
+        return `<p class="desc" style="margin:8px 0 2px"><b>${esc(a.name)}</b> · ${esc(a.role)} — componente ${tr.passo} de ${tr.total || '?'}</p>
                 <div class="passo"><i style="width:${tr.pct}%"></i></div>`;
       }).join('') +
       `<div class="acts" style="margin-top:10px"><button class="mini act">abrir o monitor de ${esc(treinando[0].name)}</button></div>`;
@@ -1348,9 +1348,8 @@ document.addEventListener('agente-contratado', async e => {
   toast(`${agente.name} foi contratado(a) — entrando pela recepção, em treinamento.`);
   await abrirMonitor(agente);
   CONVERSA.abrir(sistema, 'construir',
-    trilha === 'atendimento'
-      ? 'quero criar meu agente de atendimento. Leia a skill criar-agente em .claude/skills e o progresso-do-agente.md e comece pelo primeiro passo em aberto.'
-      : 'quero construir este agente de setor. Leia a skill criar-agente-setor em .claude/skills, o CLAUDE.md e o progresso-do-agente.md e comece pelo primeiro passo em aberto.');
+    'quero construir este agente' + (trilha === 'atendimento' ? ' de atendimento' : ' de tarefa') +
+      '. Leia CLAUDE.md, ANATOMIA.md e progresso-do-agente.md e comece pelo primeiro componente em aberto, consultando a skill de referência em .claude/skills para o como.');
 });
 // recados: quem deixou um recado anda até a mesa do outro
 let marcaRecados = Date.now();

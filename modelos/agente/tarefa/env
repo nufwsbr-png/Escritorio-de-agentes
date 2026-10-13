@@ -1,0 +1,34 @@
+# Conexões e escopo de {{NOME}} (agente de tarefa). Valor entre aspas.
+# Cole os valores pelo editor e salve. NUNCA cole chave no chat.
+# O cérebro deste agente é o Claude Code da máquina: não há chave de modelo aqui.
+
+# --- escopo: só aqui dentro o agente pode ler e escrever (caminhos absolutos, separados por ;)
+PASTAS_AUTORIZADAS=""
+
+# --- modos (dois interruptores para o real: MODO_REAL=sim no .env E --real na chamada)
+# MODO="proposta"       deixa o gatilho rodar em proposta em vez de ensaio
+MODO_REAL="nao"
+
+# --- limites da rodada
+LIMITE_MINUTOS="10"
+LIMITE_RODADAS_DIA="50"
+# MODELO="sonnet"
+
+# --- conexões dos módulos escolhidos (só os nomes aqui; o catálogo está em
+#     .claude/skills/criar-agente-tarefa/referencias/modulos.md). Apague o que não usar.
+# GOOGLE_SHEETS_ID=""
+# GOOGLE_CALENDAR_ID=""
+# GOOGLE_CREDENCIAIS_JSON=""
+# SISTEMA_API_URL=""
+# SISTEMA_API_TOKEN=""
+# WHATSAPP_API_URL=""
+# WHATSAPP_API_CHAVE=""
+# EMAIL_USUARIO=""
+# EMAIL_SENHA_APP=""
+
+# --- tranca do painel e chave do gatilho externo (componente 11)
+PAINEL_SENHA=""
+GATILHO_CHAVE=""
+
+# --- porta do escritório, para os avisos (padrão 4321)
+# ESCRITORIO_PORTA="4321"

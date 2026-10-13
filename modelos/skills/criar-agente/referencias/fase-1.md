@@ -2,7 +2,7 @@
 
 Aqui nasce o agente inteiro — rodando só num chat de teste no navegador, sem WhatsApp. A ordem é proposital: cada peça entra separada para o aluno VER a diferença que ela faz (agente sem memória esquece, sem prompt é genérico, sem base inventa). Não junte passos "pra adiantar": o aluno que vê o antes e o depois sabe consertar o agente dele sozinho depois.
 
-No fim desta fase fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandbox convencer.
+Nesta fase o aluno quase não para: você constrói, roda o teste pela API local do sandbox, cola a entrada e a resposta literal no chat, e explica. As pausas humanas são quatro: o rascunho do prompt (7), o material e o rascunho da constituição (9) e as duas idas ao Google (10). No fim fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandbox convencer.
 
 ---
 
@@ -10,18 +10,18 @@ No fim desta fase fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandb
 
 **Por quê:** todo agente de IA se organiza em duas pastas — `skills` (documentos que dizem como agir) e `tools` (os códigos das ações) — e começar com a estrutura certa evita a bagunça que impede o projeto de crescer.
 
-**Antes, pergunte:** o tipo de negócio e o nome (você já deve ter do arquivo de progresso). Peça para ele criar uma pasta nova e vazia no computador com o nome do projeto (ex.: `atendimento-[nome-do-negocio]`) e abrir essa pasta no Antigravity.
+**O guia lê antes:** tipo e nome do negócio no progresso. A pasta do projeto é a pasta em que você está rodando (o LEIA-ME mandou criá-la antes de abrir o chat) — não peça para criar outra.
 
-**Pedido pronto pra colar:**
-> Quero criar um atendente de IA para [TIPO DE NEGÓCIO, ex.: uma barbearia] chamado(a) [NOME DO NEGÓCIO], começando do zero. Por enquanto ele vai rodar somente num chat de teste no navegador — nada de WhatsApp ainda. Não crie ferramentas, prompt nem memória ainda. Organize o projeto em duas pastas: `skills` (arquivos .md que dizem como agir) e `tools` (códigos das ações). Crie a primeira skill chamada `constituicao`, vazia por enquanto.
+**O guia executa:**
+> Criar um atendente de IA para [TIPO DE NEGÓCIO] chamado(a) [NOME DO NEGÓCIO], começando do zero. Por enquanto ele vai rodar somente num chat de teste no navegador — nada de WhatsApp ainda. Não criar ferramentas, prompt nem memória ainda. Organizar o projeto em duas pastas: `skills` (arquivos .md que dizem como agir) e `tools` (códigos das ações). Criar a primeira skill chamada `constituicao`, vazia por enquanto.
 
-**Teste que prova:** as pastas `skills/` e `tools/` existem no projeto, com um `constituicao.md` vazio dentro de `skills/`.
+**O guia testa e mostra:** liste as pastas e os arquivos criados. `skills/constituicao.md` existe e está vazio.
 
 **Se falhar:**
-1. A pasta aberta no editor não é a pasta nova — os arquivos foram parar em outro lugar.
-2. O pedido gerou mais coisa do que devia (servidor, ferramentas) — sem problema grave, mas confira se a constituição está vazia.
+1. Arquivos foram parar fora da pasta do projeto — confira o diretório de trabalho.
+2. Criou mais coisa do que devia (servidor, ferramentas) — apague; a constituição fica vazia.
 
-**Armadilha real:** no pedido original havia "em JavaScript" e foi REMOVIDO de propósito — especificar linguagem de programação limita o construtor sem necessidade. Não deixe o aluno (nem você) decidir tecnologia que ele não vai ler.
+**Armadilha real:** no pedido original havia "em JavaScript" e foi REMOVIDO de propósito — especificar linguagem de programação limita o construtor sem necessidade. Não deixe o aluno decidir tecnologia que ele não vai ler; escolha você a mais simples que resolve.
 
 **Quando pular:** não pula — é a fundação.
 
@@ -29,17 +29,15 @@ No fim desta fase fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandb
 
 ## Passo 4 — A chave do OpenRouter no lugar certo
 
-**Por quê:** a chave de API é a senha que paga as respostas do agente, e senha não se cola em chat — vai num arquivo chamado `.env` que fica só no computador dele.
+**Por quê:** a chave de API é a senha que paga as respostas do agente, e senha não se cola em chat — vai no arquivo `.env` que fica só no computador dele.
 
-**Antes:** guie o clique a clique para criar a chave: `openrouter.ai` → ícone do perfil → **Keys** → **Create Key** → dê um nome (ex.: "agente [negócio]") → copie a chave (ela só aparece uma vez).
+**O guia lê antes:** a chave já está no `.env` desde o passo 2. Não há visita ao site aqui.
 
-**Como fazer (você executa, ele cola):** crie você o arquivo `.env` na raiz do projeto com o conteúdo `OPENROUTER_API=""` e diga: "abra o arquivo `.env` que acabei de criar, cole a sua chave entre as aspas e salve (Ctrl+S). NÃO cole a chave aqui no chat." Crie também um `.gitignore` já contendo `.env` e `google-credentials.json` (explique: é a lista do que nunca sai do computador dele).
-
-**Teste que prova:** ele confirma que o `.env` tem a chave entre aspas e que salvou.
+**O guia testa e mostra:** confira de novo a chave pela API do OpenRouter e mostre o saldo. Confirme que `.gitignore` contém `.env` e `google-credentials.json`. Explique a lição do passo em uma frase: a chave vive no arquivo, o arquivo nunca sai do computador, e eu leio de lá sem nunca escrever o valor no chat.
 
 **Se falhar:**
-1. Esqueceu o Ctrl+S — a causa nº 1 de "não funciona" em arquivo editado à mão.
-2. Copiou a chave pela metade — ela é longa; recriar no OpenRouter se perdeu.
+1. Chave inválida ("401") — copiada pela metade; recriar no OpenRouter e colar de novo no mesmo campo.
+2. Saldo zero — colocar crédito.
 
 **Armadilha real:** a regra "não cola a chave no chat" veio da construção original — chave colada em conversa fica gravada no histórico para sempre. O jeito certo é o arquivo, desde o primeiro dia.
 
@@ -51,17 +49,15 @@ No fim desta fase fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandb
 
 **Por quê:** o sandbox é o laboratório onde errar é de graça — a gente conversa com o agente pelo navegador quantas vezes quiser antes de ele encostar num cliente de verdade.
 
-**Antes:** nada novo — usa a chave do passo 4.
+**O guia executa:**
+> Criar um chat de teste no navegador (um sandbox local, só para testes) onde o dono conversa com o atendente. Usar o modelo `anthropic/claude-sonnet-5` do OpenRouter, com a chave que está no `.env`, e mostrar a resposta aparecendo aos poucos (streaming). Expor também um endpoint simples para o guia mandar mensagens por código (os testes de todos os passos seguintes passam por ele). Subir o servidor.
 
-**Pedido pronto pra colar:**
-> Crie um chat de teste no navegador (um sandbox local, só para testes) onde eu converso com o atendente. Use o modelo `anthropic/claude-sonnet-5` do OpenRouter, com a chave que está no `.env`, e mostre a resposta aparecendo aos poucos (streaming). Depois me diga como abrir esse chat.
-
-**Teste que prova (e é proposital):** abrir o endereço local no navegador e mandar "olá, quem é você?". O agente vai responder como um assistente genérico da Anthropic, SEM saber que é do negócio dele — e vai esquecer o nome dele entre mensagens. Diga ao aluno: "isso está CERTO por enquanto; é o 'antes'. Nos próximos passos você vai ver ele ganhar memória e identidade."
+**O guia testa e mostra (teste proposital — demonstre, não pergunte):** mande pela API "olá, quem é você?" e cole a resposta. Depois mande "me chamo [nome do aluno]" e, em OUTRA chamada, "qual é o meu nome?" — cole as duas respostas. O agente vai se apresentar como um assistente genérico da Anthropic e vai esquecer o nome. Diga: "isso está CERTO por enquanto; é o 'antes'. Nos próximos passos você vai ver ele ganhar memória e identidade." Entregue o endereço local: "abra no navegador quando quiser conversar com ele; não precisa me responder".
 
 **Se falhar:**
-1. Crédito zerado ou chave errada no OpenRouter (o erro costuma citar "401" ou "credits").
-2. O servidor não está rodando — peça "execute o servidor" ao construtor (você executa; o aluno não abre terminal).
-3. Endereço errado no navegador — confirme a porta que o construtor informou.
+1. Crédito zerado ou chave errada no OpenRouter (o erro cita "401" ou "credits") — confira pela API.
+2. O servidor não subiu — suba você; confira a porta.
+3. Dois servidores no ar — encerre tudo e suba um só.
 
 **Armadilha real:** na construção original o teste "quem é você" respondeu "sou Claudio, assistente da Anthropic" — de propósito, para mostrar o que um agente sem prompt é. Use esse momento: é a melhor demonstração do porquê dos passos 7 e 8.
 
@@ -73,24 +69,21 @@ No fim desta fase fica o PORTÃO: ninguém atravessa para o WhatsApp sem o sandb
 
 **Por quê:** um agente sem memória é um agente burro — o cliente diz "sim" e ele não sabe sim pra quê; a memória guarda as últimas mensagens de cada pessoa para a conversa ter pé e cabeça.
 
-**Antes, clique a clique no Supabase:**
-1. `supabase.com` → **New project** → nome (ex.: "atendimento [negócio]"), senha forte (guardar!), região **South America (São Paulo)**.
-2. Nas opções de segurança que aparecerem: NÃO expor tabelas novas automaticamente e manter a proteção de linha (RLS) ligada — se a tela oferecer, aceite o padrão mais fechado.
-3. Copiar a **URL do projeto** (Settings → API) e me mandar. (A URL pode; as chaves do Supabase vão pro `.env` se o construtor pedir.)
+**O guia lê antes:** URL, chaves e senha do banco no `.env` (passo 2). Detecte se o MCP do Supabase está conectado; se não estiver, crie as tabelas você mesmo pela conexão direta com o banco (a senha está no `.env`) — não peça para o aluno rodar SQL no site.
 
-Verifique se o MCP do Supabase está conectado ao editor; se não estiver, guie a conexão ou peça ao construtor as instruções — sem ele, o construtor não consegue criar as tabelas sozinho e vai te dar um SQL para você rodar pelo site do Supabase (SQL Editor → colar → Run).
+**O guia executa:**
+> Dar memória ao atendente, gravada no Supabase. Criar as tabelas necessárias para conversas e mensagens. Antes de cada resposta, ler as últimas 20 mensagens daquela pessoa, e reconhecer cliente que já conversou antes. Alterar SÓ a parte de memória — não modificar a constituição nem a chave de API. Reiniciar o servidor.
 
-**Pedido pronto pra colar:**
-> Quero que o atendente tenha memória, gravada no Supabase. Crie as tabelas necessárias para conversas e mensagens. Antes de cada resposta, leia as últimas 20 mensagens daquela pessoa, e reconheça cliente que já conversou antes. Altere SÓ a parte de memória — não modifique a constituição nem a chave de API. No final, me informe os nomes das tabelas criadas. A URL do meu projeto Supabase é: [URL]
+Anote no progresso os nomes das tabelas.
 
-**Teste que prova:** no sandbox, mandar "me chamo [nome do aluno]" e depois, em OUTRA mensagem, "qual é o meu nome?" — o agente tem que lembrar.
+**O guia testa e mostra:** "me chamo [nome do aluno]" e, em outra chamada, "qual é o meu nome?" — cole as duas respostas; agora ele lembra. Mostre o registro no banco (conversa e mensagens) como evidência.
 
 **Se falhar:**
-1. Tabelas não foram criadas (MCP desconectado) — rodar o SQL pelo site do Supabase.
+1. Tabelas não foram criadas — confira no banco; crie pela conexão direta.
 2. URL ou chave do Supabase erradas no `.env`.
-3. O construtor criou as tabelas mas o servidor não foi reiniciado — peça "reinicie o servidor".
+3. Servidor não reiniciado depois das tabelas.
 
-**Armadilha real:** o pedido original tinha, de propósito, a frase "altere só a memória, não modifique a constituição nem a chave" — porque construtor sem cerca mexe onde não deve. Mantenha essa cerca em TODOS os pedidos que alteram o projeto.
+**Armadilha real:** o pedido original tinha, de propósito, a frase "altere só a memória, não modifique a constituição nem a chave" — porque construtor sem cerca mexe onde não deve. Você é o construtor agora: mantenha essa cerca em TODOS os passos que alteram o projeto, e registre no progresso exatamente o que tocou.
 
 **Quando pular:** não pula. Sem memória, os passos de agendamento viram conversa de peixe.
 
@@ -100,24 +93,24 @@ Verifique se o MCP do Supabase está conectado ao editor; se não estiver, guie 
 
 **Por quê:** o prompt é quem o agente É — sem ele o agente é um assistente genérico; com ele, é o recepcionista do SEU negócio, com o seu objetivo comercial.
 
-**Antes, pergunte (e anote no progresso):**
-- Nome do negócio e o que ele faz, em uma frase.
-- O OBJETIVO COMERCIAL de cada conversa: aonde o agente deve conduzir o cliente? (ex.: agendar uma avaliação gratuita, marcar um horário, fechar um orçamento, chamar no balcão)
-- O tom: caloroso? formal? descontraído?
+**O guia lê antes:** nome e descrição do negócio no progresso (não pergunte de novo). Objetivo comercial e tom: deduza do tipo de negócio (barbearia e clínica: "conduzir até marcar um horário"; loja: "fechar o orçamento"; consultório: "marcar uma avaliação") — e mostre a dedução.
 
-**Como fazer:** copie `modelos/prompt-agente-modelo.md` (desta skill) para o projeto do aluno como `prompt-agente.md`, preenchendo o bloco OBJETIVO com os dados dele. IMPORTANTE: preencha SÓ o OBJETIVO — as seções "Ferramentas", "Como agir" e "Nunca faça isso" ficam com os títulos e VAZIAS (elas se preenchem nos passos seguintes, por necessidade real, nunca por antecipação). Explique o formato: `#` com espaço vira título que o modelo entende; sem o espaço, não.
+**O guia rascunha:** copie `modelos/prompt-agente-modelo.md` (desta skill) para a raiz do projeto como `prompt-agente.md`, preencha SÓ o bloco OBJETIVO e apague os comentários. As seções "Ferramentas", "Como agir" e "Nunca faça isso" ficam com os títulos e VAZIAS (elas se preenchem nos passos seguintes, por necessidade real, nunca por antecipação).
 
-**Pedido pronto pra colar:**
-> Use o arquivo `prompt-agente.md` como prompt de sistema do atendente, relido a cada mensagem (para eu poder editar o arquivo e ver o efeito sem reiniciar nada). NÃO altere o conteúdo do arquivo — ele é meu; só faça o servidor usar ele.
+**Pausa humana (a) — uma pergunta:** mostre o bloco OBJETIVO rascunhado e diga de onde tirou cada frase. Pergunte: "é assim que você quer que o seu negócio atenda? Mude o que quiser — o prompt é seu." Explique o formato em meia frase: `#` com espaço vira título que o modelo entende; sem o espaço, não.
 
-**Teste que prova:** no sandbox, "quem é você?" → agora ele responde como o recepcionista do negócio, com o nome certo. Bônus que impressiona: mudar uma palavra no arquivo, salvar, perguntar de novo — a resposta muda sem reiniciar.
+**O guia executa (depois da confirmação):**
+> Usar o arquivo `prompt-agente.md` como prompt de sistema do atendente, relido a cada mensagem (para o dono poder editar o arquivo e ver o efeito sem reiniciar nada). NÃO alterar o conteúdo do arquivo — ele é do dono; só fazer o servidor usar ele.
+
+Depois confira por código que as três seções seguem vazias.
+
+**O guia testa e mostra:** "quem é você?" → cole a resposta: agora ele é o recepcionista do negócio, com o nome certo. Mostre o antes (passo 5) e o depois lado a lado. Bônus que impressiona: diga ao aluno "troque uma palavra no arquivo, salve, e pergunte de novo no navegador — a resposta muda sem reiniciar nada".
 
 **Se falhar:**
-1. Esqueceu de salvar o arquivo (Ctrl+S).
-2. Título sem espaço depois do `#` — o modelo ignora a seção.
-3. O construtor não religou o arquivo — confirme que o servidor foi reiniciado ao menos uma vez após a mudança.
+1. Título sem espaço depois do `#` — o modelo ignora a seção.
+2. O arquivo não está sendo relido — confirme o servidor reiniciado ao menos uma vez.
 
-**Armadilha real (das grandes):** na construção original, o construtor PREENCHEU SOZINHO as seções vazias do prompt, sem ninguém pedir — e tudo foi apagado na hora, com a bronca: "não deixe o agente escrever o seu prompt; ele não sabe como você quer que o seu negócio atenda". Confira o arquivo depois do pedido: se apareceram seções preenchidas que o aluno não escreveu, apague e avise o construtor para não alterar o prompt.
+**Armadilha real (das grandes):** na construção original, o construtor PREENCHEU SOZINHO as seções vazias do prompt, sem ninguém pedir — e tudo foi apagado na hora, com a bronca: "não deixe o agente escrever o seu prompt; ele não sabe como você quer que o seu negócio atenda". Você é o construtor agora: NUNCA escreva conteúdo de negócio no prompt sem rascunho aprovado. As linhas técnicas de ferramentas (passos 8, 10, 11, 18) e de comportamento (12, 18, 21) você insere e mostra; as regras de atendimento são dele.
 
 **Quando pular:** não pula — é a identidade do agente.
 
@@ -127,22 +120,22 @@ Verifique se o MCP do Supabase está conectado ao editor; se não estiver, guie 
 
 **Por quê:** a base de conhecimento NÃO entra no prompt — ela vira uma ferramenta que o agente consulta só quando precisa, porque carregar tudo em toda mensagem custa caro e aumenta a chance de o agente se confundir.
 
-**Antes:** nada novo.
-
-**Como fazer:** primeiro o aluno (ou você, editando por ele) adiciona no `prompt-agente.md`, na seção **Ferramentas**, a linha:
+**O guia executa:** primeiro insira no `prompt-agente.md`, na seção **Ferramentas**, a linha (e mostre ao aluno que inseriu):
 > `constituicao` — tudo sobre [NOME DO NEGÓCIO]: dados, serviços, preços, dúvidas frequentes, políticas e promoções ativas. Consulte sempre que a resposta depender de informação do negócio.
 
-**Pedido pronto pra colar:**
-> Adicionei no prompt uma ferramenta chamada `constituicao`, que lê o arquivo `skills/constituicao.md` quando o atendente precisar de informação do negócio. Implemente essa ferramenta (function calling), com o atendente podendo usar a ferramenta, receber o resultado e pensar de novo antes de responder. A constituição NÃO pode entrar no prompt de sistema — ela só é lida quando a ferramenta for chamada.
+Depois:
+> Implementar a ferramenta `constituicao` (function calling), que lê o arquivo `skills/constituicao.md` quando o atendente precisar de informação do negócio — com o atendente podendo usar a ferramenta, receber o resultado e pensar de novo antes de responder. A constituição NÃO pode entrar no prompt de sistema — ela só é lida quando a ferramenta for chamada. Reiniciar o servidor.
 
-**Teste que prova (proposital, com a constituição ainda vazia):** perguntar "onde vocês ficam?" → o agente vai ENROLAR educadamente ("vou confirmar com a equipe..."). Diga ao aluno: "viu? ele não inventou um endereço — mas também não soube responder. O próximo passo dá o conhecimento."
+Confira por código: o conteúdo de `constituicao.md` não aparece na montagem do prompt de sistema; o nome da ferramenta no prompt e no código é idêntico; só um servidor está no ar.
+
+**O guia testa e mostra (proposital, com a constituição ainda vazia):** "onde vocês ficam?" → cole a resposta: o agente ENROLA educadamente ("vou confirmar com a equipe..."). Diga: "viu? ele não inventou um endereço — mas também não soube responder. O próximo passo dá o conhecimento." Mostre que a ferramenta foi chamada (log da chamada).
 
 **Se falhar:**
-1. O construtor colocou a constituição DENTRO do prompt de sistema (ver armadilha) — mandar reverter.
-2. O nome da ferramenta no prompt está diferente do nome no código — os nomes têm que ser EXATAMENTE iguais.
-3. Servidor antigo ainda rodando em outra porta — peça para o construtor encerrar tudo e subir um só.
+1. A constituição foi parar DENTRO do prompt de sistema (ver armadilha) — reverter.
+2. Nome da ferramenta diferente entre prompt e código — têm que ser EXATAMENTE iguais.
+3. Servidor antigo ainda rodando em outra porta — encerrar tudo e subir um só.
 
-**Armadilha real (a mais repetida da história):** o construtor original fez exatamente o erro proibido — juntou a `constituicao.md` no prompt de sistema "para ajudar". Foi preciso explicar a arquitetura certa e mandar reverter. Depois do pedido, PERGUNTE ao construtor onde a constituição está sendo lida; se a resposta citar "prompt de sistema", corrija na hora. Segunda armadilha do mesmo dia: dois servidores rodando (um velho na porta 3000, um novo na 3001) — teste indo para o servidor errado.
+**Armadilha real (a mais repetida da história):** o construtor original fez exatamente o erro proibido — juntou a `constituicao.md` no prompt de sistema "para ajudar". Foi preciso explicar a arquitetura certa e mandar reverter. Segunda armadilha do mesmo dia: dois servidores rodando (um velho na porta 3000, um novo na 3001) — teste indo para o servidor errado.
 
 **Quando pular:** não pula — function calling é o que transforma um chat num agente.
 
@@ -152,23 +145,20 @@ Verifique se o MCP do Supabase está conectado ao editor; se não estiver, guie 
 
 **Por quê:** a constituição é a única fonte de verdade do agente — tudo que ele afirmar sobre preço, serviço e política tem que estar escrito aqui, senão ele inventa.
 
-**Antes, colete com o aluno, seção por seção (NUNCA invente por ele):**
-1. Dados do negócio: nome, endereço, referência, estacionamento, telefone, redes sociais.
-2. Horário de funcionamento, dia a dia.
-3. Quem atende: profissionais/atendentes, especialidade de cada um, dias de cada um.
-4. Serviços com preço e duração de cada um.
-5. Perguntas que os clientes mais fazem (e as respostas).
-6. Políticas: agendamento, remarcação/cancelamento, atraso, pagamento.
-7. Promoções vigentes, com validade.
+**O guia lê antes:** nome e descrição no progresso; qualquer material já encontrado na pasta no primeiro contato; se o negócio tem site ou perfil público, leia-o.
 
-**Como fazer:** copie `modelos/constituicao-modelo.md` (desta skill) para `skills/constituicao.md` do projeto e preencha com o que ele respondeu. O que ele não souber na hora vira `[A PREENCHER]` — e explique: o agente foi instruído a responder "confirmo com a equipe" quando esbarrar nesses campos, então campo vazio não gera mentira, gera prudência. Se o aluno já tem o material num PDF ou doc: peça o arquivo, converta você para Markdown (modelos de IA trabalham muito melhor com Markdown) e LIMPE — só as informações do negócio, sem instruções de preenchimento nem enfeite.
+**Pausa humana 1 (b) — o material, de uma vez:**
+> Agora o agente ganha o conhecimento do seu negócio. Me mande tudo que você já tem sobre ele, do jeito que estiver: PDF, cardápio de serviços, tabela de preços, texto do site, link do Instagram. Se não tiver nada pronto, escreva de uma vez só, num texto corrido: endereço, horários de cada dia, quem atende e o que faz, serviços com preço e duração, as perguntas que os clientes mais fazem, as regras de remarcação e pagamento, e promoções com validade.
 
-**Teste que prova:** "que serviços vocês oferecem?" → lista real com preços reais; "onde fica?" → o endereço dele. Peça para o aluno conferir cada número — é a informação DELE, só ele sabe se está certa.
+**O guia rascunha:** copie `modelos/constituicao-modelo.md` para `skills/constituicao.md` e preencha com o material. Se veio PDF ou doc, converta para Markdown e LIMPE — só as informações do negócio, sem instruções de preenchimento nem enfeite. O que não estiver no material vira `[A PREENCHER]` — NUNCA invente. Apague os comentários do modelo.
+
+**Pausa humana 2 (a, e) — uma confirmação:** mostre o arquivo rascunhado, a lista das lacunas `[A PREENCHER]` e peça: "confira cada número — é a informação do seu negócio, só você sabe se está certa. Preencha as lacunas que souber agora; as outras ficam em aberto e o agente responde 'confirmo com a equipe' nelas, então campo vazio não gera mentira, gera prudência."
+
+**O guia testa e mostra:** "que serviços vocês oferecem?" e "onde fica?" → cole as respostas: lista real com preços reais, o endereço dele. Mostre que a ferramenta foi chamada.
 
 **Se falhar:**
-1. Salvou sem Ctrl+S ou editou o arquivo errado.
-2. A ferramenta não está sendo chamada — pergunte ao construtor se a ferramenta `constituicao` foi usada na resposta.
-3. Dado errado na própria constituição — o agente repete o que está escrito; corrija o arquivo, não o agente.
+1. A ferramenta não foi chamada — confira o log.
+2. Dado errado na própria constituição — o agente repete o que está escrito; corrija o arquivo, não o agente.
 
 **Armadilha real:** o documento original veio de um PDF convertido que chegou SUJO — cheio de guias de "como preencher este formulário" no meio do conteúdo. Foi preciso pedir uma versão só com as informações. Documento sujo = agente que repete a sujeira para o cliente.
 
@@ -180,40 +170,45 @@ Verifique se o MCP do Supabase está conectado ao editor; se não estiver, guie 
 
 **Por quê:** aqui o agente ganha mãos — deixa de só conversar e passa a AGIR: consultar horários livres e marcar de verdade numa agenda que o dono vê no celular.
 
-**Antes, pergunte:**
-- O negócio trabalha com horário marcado? (Se não: ver "quando pular".)
-- Horário de funcionamento e regras de agendamento (antecedência mínima, duração padrão).
+**O guia lê antes:** se o negócio trabalha com hora marcada, deduza do OBJETIVO do prompt e da constituição (duração nos serviços, política de agendamento) — diga a dedução; só pergunte se ficar ambíguo. Horário de funcionamento (constituição §1), duração padrão (§2) e antecedência mínima (§4) saem da constituição — não pergunte.
 
-**Clique a clique do Google (a parte mais burocrática do projeto — avise que são 10 minutos chatos e depois nunca mais):**
-1. `console.cloud.google.com` → criar projeto (ex.: "agente [negócio]").
-2. Menu → **APIs e serviços** → **Biblioteca** → buscar "Google Calendar API" → **Ativar**.
-3. **Credenciais** → **Criar credenciais** → **Conta de serviço** → nome (ex.: "conta-agente") → papel **Básico > Proprietário** → concluir.
-4. Clicar na conta criada → aba **Chaves** → **Adicionar chave** → **JSON** → baixa um arquivo no computador.
-5. Renomear o arquivo baixado para `google-credentials.json` — CUIDADO para não ficar `google-credentials.json.json` (o Windows esconde a extensão; se der erro depois, é isso). Arrastar o arquivo para a raiz do projeto, do lado do `.env`.
-6. Avise: esse arquivo é uma SENHA. Já está no `.gitignore` do passo 4 — nunca enviar por WhatsApp/e-mail.
-7. No `calendar.google.com` do dono: criar uma agenda NOVA dedicada (ex.: "Atendimento [negócio]") → Configurações da agenda → **Compartilhar com pessoas específicas** → colar o e-mail da conta de serviço (campo `client_email` dentro do JSON — abra e copie para ele) → permissão **"Fazer alterações e ver todos os detalhes"** → nas mesmas configurações, copiar o **ID da agenda**.
-8. Você adiciona `GOOGLE_CALENDAR_ID="..."` no `.env` com o ID que ele te passar.
+**Pausa humana 1 (c) — Google Cloud, uma ida só (avise: são 10 minutos chatos e depois nunca mais):**
+> 1. `console.cloud.google.com` → criar projeto (nome "agente [negócio]").
+> 2. Menu → **APIs e serviços** → **Biblioteca** → buscar "Google Calendar API" → **Ativar**. Na mesma Biblioteca, buscar "Google Sheets API" → **Ativar** (vamos usar no próximo passo; é uma ativação separada).
+> 3. **Credenciais** → **Criar credenciais** → **Conta de serviço** → nome "conta-agente" → papel **Básico > Proprietário** → concluir.
+> 4. Clicar na conta criada → aba **Chaves** → **Adicionar chave** → **JSON** → baixa um arquivo no computador.
+> 5. Arraste esse arquivo para a pasta do projeto, do lado do `.env` (não precisa renomear — eu renomeio). Esse arquivo é uma SENHA: nunca envie por WhatsApp ou e-mail. Me avise quando ele estiver na pasta.
 
-**Pedido pronto pra colar:**
-> Quero conectar o atendente ao Google Calendar do negócio. São duas ferramentas: **ver horários livres** e **criar evento**. Use a conta de serviço do arquivo `google-credentials.json` e a agenda do `.env`. Regras: funcionamento [HORÁRIOS POR DIA], duração padrão de [X] minutos por atendimento (deixe fácil de mudar), nunca marcar no passado nem fora do expediente, nunca marcar em cima de horário ocupado (confira o conflito de novo imediatamente antes de gravar, para dois clientes ao mesmo tempo não pegarem a mesma vaga), e sempre exigir o nome do cliente. Informe a data e a hora atuais ao atendente automaticamente. Eu mesmo vou editar o prompt para adicionar essas ferramentas — NÃO altere o prompt.
+**O guia executa entre as pausas:** detecte o arquivo na pasta, renomeie para `google-credentials.json` (se veio `.json.json`, corrija — o Windows esconde a extensão), leia o `client_email` e mostre-o ao aluno.
 
-Depois da implementação, pergunte ao construtor os NOMES EXATOS que as ferramentas ganharam e adicione-os você na seção Ferramentas do `prompt-agente.md`, com uma linha de descrição cada.
+**Pausa humana 2 (c) — agenda e planilha, uma ida só:**
+> Agora dois compartilhamentos com o e-mail da conta de serviço, que é: `[client_email]`.
+> 1. `calendar.google.com` → criar uma agenda NOVA dedicada (nome "Atendimento [negócio]") → Configurações da agenda → **Compartilhar com pessoas específicas** → colar esse e-mail → permissão **"Fazer alterações e ver todos os detalhes"**. Nas mesmas configurações, copiar o **ID da agenda** (o código comprido, não o nome).
+> 2. Criar uma planilha nova no Google Sheets (nome "clientes [negócio]") → **Compartilhar** → colar o mesmo e-mail → permissão **Editor**.
+> Me mande o ID da agenda e o link da planilha (os dois podem vir aqui no chat; não são segredo).
 
-**Teste que prova (em dupla):** (1) no sandbox, pedir um horário → o agente consulta, oferece opções válidas e, ao confirmar com nome, o evento APARECE na agenda do Google (mandar o aluno abrir e VER); (2) simular um segundo cliente pedindo o MESMO horário → tem que ser recusado com alternativa.
+Grave `GOOGLE_CALENDAR_ID` e `GOOGLE_SHEETS_ID` (extraído do link, entre `/d/` e `/edit`) no `.env`.
+
+**O guia executa:**
+> Conectar o atendente ao Google Calendar do negócio. Duas ferramentas: **ver horários livres** e **criar evento**. Usar a conta de serviço do arquivo `google-credentials.json` e a agenda do `.env`. Regras: funcionamento [HORÁRIOS POR DIA, da constituição], duração padrão de [X, da constituição] minutos por atendimento (fácil de mudar), nunca marcar no passado nem fora do expediente, nunca marcar em cima de horário ocupado (conferir o conflito de novo imediatamente antes de gravar, para dois clientes ao mesmo tempo não pegarem a mesma vaga), e sempre exigir o nome do cliente. Informar a data e a hora atuais ao atendente automaticamente. Reiniciar o servidor; o boot deve indicar a agenda LIGADA.
+
+Insira os nomes exatos das duas ferramentas na seção Ferramentas do `prompt-agente.md`, com uma linha de descrição cada, e mostre ao aluno.
+
+**O guia testa e mostra (em dupla):** (1) pela API, peça um horário como cliente "TESTE Agenda", confirme com nome → cole a conversa e, pela API da agenda, mostre o evento criado (título, data, ID). Diga: "abra a sua agenda do Google e veja o evento; não precisa me responder". (2) Simule um segundo cliente pedindo o MESMO horário → cole a recusa com alternativa. Apague o evento de teste ao fim do passo e registre.
 
 **Se falhar:**
 1. Agenda não compartilhada com o `client_email`, ou permissão só de leitura.
-2. Arquivo `google-credentials.json.json` (extensão dupla).
-3. ID da agenda errado no `.env` (é o ID comprido das configurações, não o nome).
-4. Servidor não reiniciado depois das credenciais — o boot deve indicar a agenda LIGADA.
+2. API não ativada — o erro da primeira chamada diz isso e traz o link.
+3. ID da agenda errado (é o ID comprido das configurações, não o nome).
+4. Servidor não reiniciado depois das credenciais.
 
 **Armadilhas reais (este passo foi o mais acidentado da construção original — conte ao aluno):**
-- **O agente "confirmou" um agendamento QUE NÃO EXISTIA** antes de as credenciais entrarem — com convicção total, até "venha sem maquiagem". Lição: agente sem ferramenta enrola com segurança de quem sabe; NUNCA confie no "está confirmado" — confie no evento visível na agenda.
-- O agente chamava o negócio pelo nome errado — e o erro estava no prompt escrito à mão pelo próprio autor. Erro de digitação seu vira erro do agente.
-- Um horário livre "sumiu" dos testes e parecia bug — na verdade o construtor tinha consultado a constituição e visto que nenhum serviço cabia naquele buraco. Antes de acusar erro, pergunte ao construtor POR QUE ele fez o que fez.
-- Testar com um modelo fraco fez o agente errar duração, nome do serviço e planilha. Modelo bom no agente não é luxo, é o que dispensa páginas de instrução.
+- **O agente "confirmou" um agendamento QUE NÃO EXISTIA** antes de as credenciais entrarem — com convicção total, até "venha sem maquiagem". Lição: agente sem ferramenta enrola com segurança de quem sabe; NUNCA confie no "está confirmado" — confie no evento lido pela API da agenda. É por isso que todo teste seu traz o ID do evento.
+- O agente chamava o negócio pelo nome errado — e o erro estava no prompt escrito à mão. Erro de digitação no arquivo vira erro do agente.
+- Um horário livre "sumiu" dos testes e parecia bug — na verdade o construtor tinha consultado a constituição e visto que nenhum serviço cabia naquele buraco. Antes de acusar erro, explique ao aluno POR QUE o agente fez o que fez.
+- Testar com um modelo fraco fez o agente errar duração, nome do serviço e planilha. Modelo bom no agente não é luxo.
 
-**Quando pular:** negócio sem hora marcada (ex.: loja que só tira dúvida) → pule para o 11, avisando: os passos 18 (remarcar/cancelar) e parte do 20 (régua de "disse que agendou") deixam de existir para ele.
+**Quando pular:** negócio sem hora marcada (ex.: loja que só tira dúvida) → faça só a pausa 1 e a parte da planilha da pausa 2, pule para o 11 e avise: os passos 18 (remarcar/cancelar) e parte do 20 (régua de "disse que agendou") deixam de existir para ele.
 
 ---
 
@@ -221,22 +216,19 @@ Depois da implementação, pergunte ao construtor os NOMES EXATOS que as ferrame
 
 **Por quê:** todo cliente que chama é um contato que vale ouro — a planilha guarda TODOS automaticamente, para promoção e remarketing depois, sem depender de ninguém anotar.
 
-**Antes, clique a clique (rápido, aproveita o projeto do passo 10):**
-1. No `console.cloud.google.com`, mesmo projeto → Biblioteca → "Google Sheets API" → **Ativar**.
-2. Criar uma planilha nova no Google Sheets (ex.: "clientes [negócio]") → **Compartilhar** → colar o mesmo `client_email` → permissão **Editor**.
-3. Copiar o ID da planilha (o trecho comprido da barra de endereço, entre `/d/` e `/edit`) → você adiciona `GOOGLE_SHEETS_ID="..."` no `.env`.
+**O guia lê antes:** `GOOGLE_SHEETS_ID` já está no `.env` e a planilha já está compartilhada (passo 10). Não há pausa humana aqui.
 
-**Pedido pronto pra colar:**
-> Nova função: salvar todo cliente novo na planilha do Google (`.env`). Faça híbrido: o próprio servidor cria a linha no primeiro contato, com telefone/identificação e data — garantido, sem depender do modelo; e o atendente ganha uma ferramenta `salvar_cliente` para completar a MESMA linha com nome, interesse e se agendou, quando descobrir esses dados na conversa. Se o atendente marcar "agendou: sim" sem existir o horário de verdade na agenda, grave "não" e avise-o. Não altere o prompt — eu adiciono a ferramenta lá.
+**O guia executa:**
+> Nova função: salvar todo cliente novo na planilha do Google (`.env`). Híbrido: o próprio servidor cria a linha no primeiro contato, com telefone/identificação e data — garantido, sem depender do modelo; e o atendente ganha uma ferramenta `salvar_cliente` para completar a MESMA linha com nome, interesse e se agendou, quando descobrir esses dados na conversa. Se o atendente marcar "agendou: sim" sem existir o horário de verdade na agenda, gravar "não" e avisá-lo. Reiniciar o servidor.
 
-Adicione você o `salvar_cliente` na seção Ferramentas do prompt.
+Insira `salvar_cliente` na seção Ferramentas do prompt e mostre.
 
-**Teste que prova:** abrir a planilha numa aba e o sandbox na outra; conversar como cliente NOVO → a linha aparece sozinha na primeira mensagem; dizer o nome e o interesse → as células se preenchem na frente dele.
+**O guia testa e mostra:** conversa pela API como cliente NOVO ("TESTE Planilha") → leia a planilha pela API e mostre a linha criada na primeira mensagem; diga o nome e o interesse → mostre as células preenchidas. Diga: "abra a planilha e veja a linha; não precisa me responder". Apague a linha de teste ao fim e registre.
 
 **Se falhar:**
 1. Planilha não compartilhada como Editor com o `client_email`.
 2. Sheets API não ativada (é uma ativação SEPARADA da Calendar).
-3. ID errado (pegaram o nome, não o trecho da URL).
+3. ID errado (pegou o nome, não o trecho do link).
 
 **Armadilha real:** a checagem "agendou sim só se a agenda confirmar" nasceu de teste real — o agente dizia "sim" na planilha sem o evento existir. Código confere o que é fato; IA interpreta o que é conversa. Essa divisão (código pro garantido, IA pro interpretado) é a regra de ouro do projeto inteiro.
 
@@ -248,19 +240,17 @@ Adicione você o `salvar_cliente` na seção Ferramentas do prompt.
 
 **Por quê:** gente de verdade manda áudio e foto no WhatsApp — o agente precisa transformar os dois em texto ANTES de pensar, senão metade das mensagens reais cai no vazio.
 
-**Antes:** nada novo (usa o OpenRouter que já existe).
+**O guia executa:**
+> Logo no INÍCIO do fluxo, antes do atendente pensar: identificar se a mensagem é texto, áudio ou imagem. Texto passa direto. Áudio é transcrito para texto. Imagem vira uma descrição objetiva mais a transcrição de qualquer texto visível nela, e a legenda que o cliente mandou junto é preservada. Usar exatamente o modelo `google/gemini-3.5-flash` pelo OpenRouter para transcrever e analisar. Marcar no texto final se veio de áudio ou de imagem, e o restante do fluxo só vê texto. Isso NÃO é ferramenta do atendente — é uma etapa fixa antes dele. Adicionar no chat de teste um jeito de enviar áudio e imagem. Reiniciar o servidor.
 
-**Pedido pronto pra colar:**
-> Logo no INÍCIO do fluxo, antes do atendente pensar: identifique se a mensagem é texto, áudio ou imagem. Texto passa direto. Áudio é transcrito para texto. Imagem vira uma descrição objetiva mais a transcrição de qualquer texto visível nela, e a legenda que o cliente mandou junto é preservada. Use exatamente o modelo `google/gemini-3.5-flash` pelo OpenRouter para transcrever e analisar. Marque no texto final se veio de áudio ou de imagem, e o restante do fluxo só vê texto. Isso NÃO é ferramenta do atendente — é uma etapa fixa antes dele. Adicione no chat de teste um jeito de eu enviar áudio e imagem para testar.
+Insira no prompt (seção "Como agir") a linha: tratar as marcações de áudio/imagem como fala normal do cliente, sem nunca mencioná-las. Mostre.
 
-Adicione você no prompt (seção "Como agir") uma linha: tratar as marcações de áudio/imagem como fala normal do cliente, sem nunca mencioná-las.
-
-**Teste que prova:** gravar um áudio no sandbox perguntando algo do negócio → resposta correta como se fosse texto; enviar uma foto com texto (ex.: um cartaz de promoção) e perguntar sobre ela → o agente lê o conteúdo da imagem.
+**O guia testa e mostra:** gere um áudio de teste por código (a voz do Windows, via System.Speech, dizendo uma pergunta do negócio, ex.: "quanto custa o [serviço]?") e passe pela API → cole a transcrição e a resposta. Gere uma imagem por código (um PNG com um texto de promoção) e envie com a pergunta "o que diz aí?" → cole a leitura. Diga: "grave um áudio no chat do navegador quando quiser; não precisa me responder".
 
 **Se falhar:**
 1. Modelo de transcrição sem as capacidades certas (ver armadilha) — o nome tem que ser o de um modelo que aceite áudio E imagem.
-2. Crédito do OpenRouter (transcrição também consome).
-3. O construtor fez a triagem como ferramenta do agente em vez de etapa fixa — mandar mover para o início do fluxo.
+2. Crédito do OpenRouter (transcrição também consome) — confira pela API.
+3. A triagem foi feita como ferramenta do agente em vez de etapa fixa — mover para o início do fluxo.
 
 **Armadilha real:** o modelo principal do agente (Claude Sonnet) QUASE foi usado para transcrever — mas ele não ouve áudio. Foi preciso conferir na página do OpenRouter quais modalidades cada modelo aceita e escolher um que cobre áudio + imagem. Antes de escolher modelo para qualquer tarefa, confira o que ele enxerga.
 
@@ -270,12 +260,14 @@ Adicione você no prompt (seção "Como agir") uma linha: tratar as marcações 
 
 ## ⛔ O PORTÃO — fim da fase 1
 
-Antes de abrir a fase 2, faça o aluno passar o agente por esta prova de fogo no sandbox, como se fosse um cliente chato:
+Antes de abrir a fase 2, VOCÊ passa o agente pela prova de fogo no sandbox, como se fosse um cliente chato, e entrega o relatório com as respostas literais:
 
 - Perguntar preço de um serviço → responde o valor da constituição, sem inventar.
 - Pedir algo que o negócio NÃO faz → nega com elegância, sem inventar serviço.
-- Agendar, de ponta a ponta → evento na agenda + linha na planilha, conferidos NO Google.
-- Mandar um áudio → entendido.
-- Voltar no dia seguinte (ou nova conversa) → é reconhecido.
+- Agendar, de ponta a ponta → evento lido pela API da agenda + linha lida pela API da planilha (IDs no relatório).
+- Mandar um áudio sintético → entendido.
+- Nova conversa com o mesmo cliente → é reconhecido.
 
-Se qualquer item falhar, volte ao passo correspondente. Diga a frase da casa: **"errar aqui custou um prompt; errar no WhatsApp custa dinheiro e pode custar o número"**. Só com os cinco itens verdes, atualize o progresso e abra `referencias/fase-2.md`.
+Apague os dados de teste e registre. Se qualquer item falhar, volte ao passo correspondente.
+
+**Pausa humana (a, d) — a única desta fase que é decisão:** mostre o relatório e pergunte: "o agente convence? A partir do próximo passo começa a custar dinheiro (hospedagem) e, depois, o número de verdade. Quer ajustar algo antes de sair do laboratório?" Diga a frase da casa: **"errar aqui custou um prompt; errar no WhatsApp custa dinheiro e pode custar o número"**. Só com o sim dele, atualize o progresso e abra `referencias/fase-2.md`.

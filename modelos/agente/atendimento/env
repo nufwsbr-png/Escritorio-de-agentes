@@ -1,0 +1,36 @@
+# Conexões de {{NOME}} (atendimento no WhatsApp). Valor entre aspas.
+# Cole os valores pelo editor e salve. NUNCA cole chave no chat.
+# Este é o único tipo de agente com chave de modelo: o cérebro é o OpenRouter.
+
+# --- cérebro (componente 4). Sem a chave, o chat de teste usa o Claude Code da máquina.
+OPENROUTER_API=""
+# OPENROUTER_MODELO="anthropic/claude-sonnet-5"
+
+# --- memória por conversa (componente 5)
+SUPABASE_URL=""
+SUPABASE_ANON_KEY=""
+SUPABASE_SERVICE_ROLE_KEY=""
+SUPABASE_DB_PASSWORD=""
+
+# --- agenda e planilha (componentes 7 e 8); google-credentials.json fica ao lado, fora do git
+GOOGLE_CALENDAR_ID=""
+GOOGLE_SHEETS_ID=""
+# GOOGLE_CREDENCIAIS_JSON=""   (conteúdo do arquivo, só na hospedagem)
+
+# --- WhatsApp (componente 12): preencha o caminho escolhido
+# API oficial da Meta
+# WHATSAPP_TOKEN=""
+# WHATSAPP_PHONE_NUMBER_ID=""
+# WHATSAPP_WABA_ID=""
+# WHATSAPP_VERIFY_TOKEN=""
+# WHATSAPP_APP_SECRET=""
+# WAHA (não oficial, número dedicado)
+# WAHA_URL=""
+# WAHA_KEY=""
+
+# --- tranca do painel (componente 18) e chave do webhook
+PAINEL_SENHA=""
+GATILHO_CHAVE=""
+
+# --- porta do escritório, para os avisos (padrão 4321)
+# ESCRITORIO_PORTA="4321"

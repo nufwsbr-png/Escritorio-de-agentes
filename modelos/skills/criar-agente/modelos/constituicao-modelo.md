@@ -1,9 +1,11 @@
 # Constituição — [NOME DO NEGÓCIO]
 
 <!-- GUIA: copie este arquivo para skills/constituicao.md no projeto do aluno e
-     preencha COM ELE, seção por seção, perguntando. NUNCA invente um dado.
-     O que o aluno não souber agora fica como [A PREENCHER] — o agente foi
-     instruído a responder "confirmo com a equipe" nesses casos.
+     RASCUNHE a partir do material que ele mandou (PDF, site, texto corrido) —
+     o aluno não responde seção por seção. NUNCA invente um dado: o que não
+     estiver no material fica como [A PREENCHER]. Mostre o rascunho com a
+     lista das lacunas e peça UMA confirmação; o agente foi instruído a
+     responder "confirmo com a equipe" nos campos vazios.
      Apague estes comentários do arquivo final. -->
 
 ## 1. Sobre o negócio
@@ -17,6 +19,8 @@
 - **Instagram / redes:** [@PERFIL]
 
 ### Horário de funcionamento
+
+<!-- GUIA: o passo 10 (agenda) lê o expediente daqui — não pergunte de novo lá. -->
 
 | Dia | Horário |
 |---|---|
@@ -41,7 +45,8 @@
 ## 2. Serviços, preços e duração
 
 <!-- GUIA: é a tabela mais importante do arquivo — o agente SÓ pode citar
-     preços e serviços que estejam aqui. Duração alimenta a agenda. -->
+     preços e serviços que estejam aqui. A duração alimenta a agenda (passo 10
+     lê a duração padrão daqui). -->
 
 | Serviço | Descrição em uma frase | Preço | Duração |
 |---|---|---|---|
@@ -50,8 +55,9 @@
 
 ## 3. Perguntas frequentes
 
-<!-- GUIA: pergunte ao aluno "o que os clientes mais perguntam no WhatsApp?"
-     e escreva pergunta e resposta. 5 a 10 já mudam o agente de patamar. -->
+<!-- GUIA: se o material não trouxer, deixe as duas primeiras como [A PREENCHER]
+     e sugira na confirmação: "o que os clientes mais perguntam no WhatsApp?"
+     5 a 10 já mudam o agente de patamar. -->
 
 - **[PERGUNTA FREQUENTE 1]?** [RESPOSTA]
 - **[PERGUNTA FREQUENTE 2]?** [RESPOSTA]
@@ -59,6 +65,8 @@
 - **Quais formas de pagamento?** [A PREENCHER]
 
 ## 4. Políticas
+
+<!-- GUIA: o passo 10 lê a antecedência mínima de agendamento daqui. -->
 
 - **Agendamento:** [antecedência mínima, o que é preciso informar]
 - **Remarcação e cancelamento:** [com quanto tempo de antecedência? tem custo?]
@@ -69,7 +77,7 @@
 ## 5. Promoções vigentes
 
 <!-- GUIA: promoção SEM validade escrita é promoção eterna na boca do agente.
-     Exija a data. O agente é instruído a nunca oferecer promoção vencida. -->
+     Exija a data na confirmação. O agente é instruído a nunca oferecer promoção vencida. -->
 
 | Promoção | Condição | Válida até |
 |---|---|---|

@@ -5,6 +5,18 @@ google-credentials.json
 
 # o que o agente produz operando
 log.txt
-registro/
+saidas/
+quarentena/
+entrada-lida/
+memoria/entidades/
+memoria/execucoes.log
+memoria/sessoes.json
+memoria/aprovacoes.json
 testes/
 node_modules/
+
+# dados reais de clientes nas amostras: só cópias anonimizadas entram
+amostras/*/entrada/
+
+# a amostra de demonstracao entra no git
+!amostras/caso-01/entrada/

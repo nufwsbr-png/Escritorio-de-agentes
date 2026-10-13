@@ -128,8 +128,8 @@ const CONVERSA = (() => {
     // não há nada mais importante para dizer, senão apaga o aviso de login
     if (!e.historico.length && !e.rodando && !semLogin && !(claude && !claude.instalado) && !e.erro) {
       html = modo === 'construir'
-        ? `<div class="cv-msg sistema">Modo Construir: a skill da pasta conduz a jornada, um passo por vez.
-           Diga "vamos continuar de onde paramos" — ela lê o progresso e retoma.</div>`
+        ? `<div class="cv-msg sistema">Modo Construir: a ANATOMIA do escritório conduz, um componente por vez, com a skill da pasta como referência.
+           Diga "vamos continuar de onde paramos" — ele lê o progresso e retoma.</div>`
         : `<div class="cv-msg sistema">Pergunte alguma coisa. Ele abre o projeto,
            roda os scripts de diagnóstico e responde com o que achou.</div>`;
     }

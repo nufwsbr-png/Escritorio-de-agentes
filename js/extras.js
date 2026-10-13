@@ -1,7 +1,7 @@
 /* ===========================================================
    extras.js — os painéis laterais do monitor
 
-   memoria   o que o agente aprendeu (memoria.md), editável pelo admin
+   memoria   o que o agente anotou no escritório (memoria/escritorio.md), editável pelo admin
    recados   a caixa de recados dele, e o dono pode escrever um
    propostas mudanças que ele sugeriu no prompt ou na constituição: o dono
              aprova ou recusa; nada entra sozinho
@@ -48,7 +48,7 @@ const EXTRAS = (() => {
   async function pintarMemoria() {
     const r = await api(`/api/agentes/${id}/memoria`);
     const pode = ADMIN.ehAdmin();
-    el().innerHTML = cabeca('🧠 Memória', 'memoria.md da pasta do agente — entra em toda conversa, reunião e teste') +
+    el().innerHTML = cabeca('🧠 Memória', 'memoria/escritorio.md da pasta do agente — o que ele anotou nas conversas e reuniões; entra em toda chamada do escritório. As lições de trabalho ficam em memoria/licoes.md e entram pelas Propostas') +
       (r.texto == null ? '<p class="hint" style="padding:16px">Esse agente não tem pasta local, então não tem memória.</p>' :
       `<textarea class="ex-texto" id="ex-mem" ${pode ? '' : 'readonly'}>${esc(r.texto)}</textarea>
        <div class="ex-baixo">

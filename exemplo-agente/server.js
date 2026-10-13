@@ -1,278 +1,153 @@
 /* ===========================================================
-   server.js — o sistema próprio deste agente (esqueleto do escritório).
+   server.js — o sistema próprio deste agente de tarefa: o painel do dono
 
    Contrato com o Escritório de Agentes (não quebre):
-     GET /saude   JSON com { ok, nome, setor, desde }  — o escritório vigia
-     GET /painel  página inteira, só leitura           — o monitor embute
-     GET /log     últimas linhas de log.txt            — o botão Log
-     GET /        chat de teste (sandbox)
-     POST /chat   { texto } -> { resposta }
+     GET /saude   JSON { ok, nome, setor, desde, resumo }  — sem dado de cliente
+     GET /painel  o painel do dono, página inteira        — o monitor embute
+     GET /log     últimas linhas de log.txt
    Porta pela variável PORT. Escuta só em 127.0.0.1.
 
-   Cérebro:
-     - sem OPENROUTER_API no .env  -> Claude Code da máquina (claude -p).
-       É o padrão dos agentes de setor. Não usa chave de modelo.
-     - com OPENROUTER_API no .env  -> OpenRouter (agente de atendimento).
-   Nos dois casos o prompt de sistema é prompt-agente.md, relido a cada
-   mensagem, e a constituição (skills/constituicao.md) é FERRAMENTA: o
-   modelo a lê quando precisa, ela nunca entra no prompt.
+   O painel só LÊ o que o lançador (rodar.js) já guardou em memoria/ e
+   saidas/. As únicas escritas são as ações do dono: rodar, aprovar, rejeitar,
+   responder, corrigir, assumir, devolver, aprovar/rejeitar lição, editar a
+   constituição. Com PAINEL_SENHA no .env, tudo isso exige sessão, conferida
+   aqui no servidor, rota a rota. /saude continua aberto.
+   Gatilho externo: POST /gatilho { entidade } com o cabeçalho x-chave =
+   GATILHO_CHAVE.
    =========================================================== */
 const http = require('http');
-const https = require('https');
-const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const { spawn } = require('child_process');
+const base = require('./agente-base');
+const rodar = require('./rodar');
 
-const PASTA = __dirname;
-const arq = (...p) => path.join(PASTA, ...p);
-
-/* ---------------- .env: conexões de trabalho ---------------- */
-function carregarEnv() {
-  let txt = '';
-  try { txt = fs.readFileSync(arq('.env'), 'utf8'); } catch (e) { return; }
-  for (const linha of txt.split(/\r?\n/)) {
-    const m = linha.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
-    if (!m || linha.trim().startsWith('#')) continue;
-    let v = m[2].trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (process.env[m[1]] === undefined) process.env[m[1]] = v;
-  }
-}
-carregarEnv();
-
-const AGENTE = (() => {
-  try { return JSON.parse(fs.readFileSync(arq('agente.json'), 'utf8')); }
-  catch (e) { return { nome: path.basename(PASTA), setor: 'agente', negocio: '', trilha: 'setor' }; }
-})();
-const PORT = Number(process.env.PORT) || Number(AGENTE.porta) || 4401;
+const { AGENTE, PORT, esc, ESTILO } = base;
 const inicio = Date.now();
+const COR = { 'nova': '', 'em andamento': 'warn', 'ensaiada': '', 'aguardando aprovação': 'warn', 'aguardando pergunta': 'warn', 'pronta': 'ok', 'com erro': 'bad', 'com o dono': '' };
 
-/* ---------------- log ---------------- */
-function log(linha) {
-  const l = '[' + new Date().toLocaleString('pt-BR') + '] ' + String(linha).replace(/\s+/g, ' ').slice(0, 400);
-  try { fs.appendFileSync(arq('log.txt'), l + '\n'); } catch (e) { /* log não derruba o agente */ }
-}
-const tail = (n) => {
-  try { return fs.readFileSync(arq('log.txt'), 'utf8').split(/\r?\n/).filter(Boolean).slice(-n); }
-  catch (e) { return []; }
-};
-
-/* ---------------- arquivos do agente ---------------- */
-const ler = (rel, padrao = '') => { try { return fs.readFileSync(arq(rel), 'utf8'); } catch (e) { return padrao; } };
-
-function progresso() {
-  const t = ler('progresso-do-agente.md');
-  const feitos = (t.match(/^- \[x\]/gim) || []).length;
-  const abertos = (t.match(/^- \[ \]/gim) || []).length;
-  return { passo: feitos, total: feitos + abertos,
-           portao: /PORT[ÃA]O:\s*aprovad/i.test(t) || /^## CONCLU[IÍ]DO/im.test(t),
-           concluido: /^## CONCLU[IÍ]DO/im.test(t) };
-}
-
-/** o prompt de sistema: prompt-agente.md + o que o agente já aprendeu */
-function promptDeSistema() {
-  const prompt = ler('prompt-agente.md', 'Você é ' + AGENTE.nome + '.')
-    .replace(/<!--[\s\S]*?-->/g, '').trim();
-  const memoria = ler('memoria.md').replace(/<!--[\s\S]*?-->/g, '').trim().slice(-3000);
-  return prompt +
-    '\n\nREGRAS DO ESCRITÓRIO: a base de conhecimento do negócio está na ferramenta "constituicao" ' +
-    '(o arquivo skills/constituicao.md). Sempre que a resposta depender de dado, regra, preço ou nome do ' +
-    'negócio, consulte-a ANTES de responder. Se o dado não estiver lá ou estiver como [A PREENCHER], diga ' +
-    'que confirma com a equipe — nunca invente. Não cite caminhos de arquivo nem fale de ferramentas com ' +
-    'quem conversa. Responda em português do Brasil, curto.' +
-    (memoria ? '\n\nMEMÓRIA DO AGENTE (o que você já aprendeu):\n' + memoria : '');
-}
-
-/* ---------------- sessões do chat de teste ---------------- */
-const sessoes = new Map();   // cookie -> { claude: session_id | null, historico: [] }
-function sessaoDe(req, res) {
-  const m = /(?:^|;\s*)sessao=([a-f0-9]{24})/.exec(req.headers.cookie || '');
-  let id = m && m[1];
-  if (!id || !sessoes.has(id)) {
-    id = crypto.randomBytes(12).toString('hex');
-    sessoes.set(id, { claude: null, historico: [] });
-    res.setHeader('Set-Cookie', 'sessao=' + id + '; Path=/; HttpOnly; SameSite=Lax');
-  }
-  return sessoes.get(id);
-}
-
-/* ---------------- cérebro 1: Claude Code da máquina ---------------- */
-const CLAUDE_BIN = (() => {
-  const casa = process.env.USERPROFILE || process.env.HOME || '';
-  for (const t of [path.join(casa, '.local', 'bin', 'claude.exe'), path.join(casa, '.local', 'bin', 'claude')])
-    if (fs.existsSync(t)) return t;
-  return process.platform === 'win32' ? 'claude.exe' : 'claude';
-})();
-
-function perguntarClaudeCode(sessao, texto) {
-  return new Promise(resolve => {
-    const args = ['-p', '--output-format', 'json', '--model', process.env.MODELO || 'sonnet',
-                  '--permission-mode', 'default',
-                  // a constituição é lida com a ferramenta Read: é assim que ela vira ferramenta
-                  '--allowedTools', 'Read', 'Glob', 'Grep',
-                  '--append-system-prompt', promptDeSistema()];
-    if (sessao.claude) args.push('--resume', sessao.claude);
-    let saida = '', erro = '';
-    const p = spawn(CLAUDE_BIN, args, { cwd: PASTA, env: process.env, stdio: ['pipe', 'pipe', 'pipe'] });
-    const corta = setTimeout(() => { try { p.kill(); } catch (e) {} }, 4 * 60000);
-    p.stdin.on('error', () => {});
-    p.stdin.end(texto, 'utf8');
-    p.stdout.on('data', d => saida += d);
-    p.stderr.on('data', d => erro += d);
-    p.on('error', e => { clearTimeout(corta); resolve({ erro: 'não consegui executar o Claude Code: ' + e.message }); });
-    p.on('exit', () => {
-      clearTimeout(corta);
-      let j = null; try { j = JSON.parse(saida); } catch (e) {}
-      if (!j) return resolve({ erro: (erro || saida || 'sem resposta').slice(0, 300) });
-      if (/not logged in|\/login/i.test(String(j.result))) return resolve({ erro: 'O Claude Code não está conectado nesta máquina. Rode "claude auth login" num terminal.' });
-      if (j.session_id) sessao.claude = j.session_id;
-      resolve({ resposta: String(j.result || '').trim(), custo: j.total_cost_usd || 0 });
-    });
-  });
-}
-
-/* ---------------- cérebro 2: OpenRouter (atendimento) ---------------- */
-function chamarOpenRouter(mensagens, tools) {
-  return new Promise(resolve => {
-    const corpo = JSON.stringify({ model: process.env.OPENROUTER_MODELO || 'anthropic/claude-sonnet-5',
-                                   messages: mensagens, tools, tool_choice: tools ? 'auto' : undefined });
-    const req = https.request('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENROUTER_API,
-        'Content-Type': 'application/json', 'HTTP-Referer': 'http://localhost:' + PORT, 'X-Title': AGENTE.nome }
-    }, r => { let s = ''; r.on('data', c => s += c); r.on('end', () => { try { resolve(JSON.parse(s)); } catch (e) { resolve({ error: { message: s.slice(0, 200) } }); } }); });
-    req.on('error', e => resolve({ error: { message: e.message } }));
-    req.end(corpo);
-  });
-}
-
-async function perguntarOpenRouter(sessao, texto) {
-  const tools = [{ type: 'function', function: { name: 'constituicao',
-    description: 'Tudo sobre ' + (AGENTE.negocio || 'o negócio') + ': dados, serviços, preços, dúvidas frequentes, políticas e promoções. Consulte sempre que a resposta depender de informação do negócio.',
-    parameters: { type: 'object', properties: {} } } }];
-  sessao.historico.push({ role: 'user', content: texto });
-  sessao.historico = sessao.historico.slice(-20);
-  const msgs = [{ role: 'system', content: promptDeSistema() }, ...sessao.historico];
-  for (let i = 0; i < 4; i++) {
-    const r = await chamarOpenRouter(msgs, tools);
-    if (r.error) return { erro: 'OpenRouter: ' + (r.error.message || 'erro') };
-    const m = r.choices && r.choices[0] && r.choices[0].message;
-    if (!m) return { erro: 'OpenRouter não respondeu' };
-    if (m.tool_calls && m.tool_calls.length) {
-      msgs.push(m);
-      for (const tc of m.tool_calls) {
-        log('ferramenta: ' + tc.function.name);
-        msgs.push({ role: 'tool', tool_call_id: tc.id, content: ler('skills/constituicao.md', '[constituição vazia]') });
-      }
-      continue;
-    }
-    sessao.historico.push({ role: 'assistant', content: m.content || '' });
-    return { resposta: String(m.content || '').trim() };
-  }
-  return { erro: 'o modelo não concluiu a resposta' };
-}
-
-const usaOpenRouter = () => !!process.env.OPENROUTER_API;
-const perguntar = (sessao, texto) => usaOpenRouter() ? perguntarOpenRouter(sessao, texto) : perguntarClaudeCode(sessao, texto);
-
-/* ---------------- páginas ---------------- */
-const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const ESTILO = `
-  :root{--bg:#0a0c14;--card:#10131f;--line:#222941;--txt:#e8ecf7;--dim:#8b93ad;--acc:#7c6cff;--alt:#38bdf8;--ok:#23e08a;--warn:#ffb020}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 'Segoe UI',system-ui,sans-serif}
-  .topo{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:#0d1019}
-  .topo h1{margin:0;font-size:17px} .topo .dim{color:var(--dim);font-size:12.5px}
-  .topo a{color:var(--alt);text-decoration:none;margin-left:auto;font-size:13px}
-  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;padding:18px 22px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
-  .card h2{margin:0 0 8px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim)}
-  .num{font-size:30px;font-weight:700;color:var(--alt);line-height:1.1} .num small{font-size:12px;color:var(--dim);font-weight:500;margin-left:6px}
-  pre{margin:0;white-space:pre-wrap;font:12px/1.55 Consolas,ui-monospace,monospace;color:#9fe8c4;max-height:260px;overflow:auto}
-  .bar{height:6px;background:#161a2c;border-radius:6px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--acc)}
-  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;background:rgba(124,108,255,.15);color:#c4b8ff;font-weight:700}
-  .tag.ok{background:rgba(35,224,138,.14);color:var(--ok)}
-  .chat{max-width:760px;margin:0 auto;padding:18px 22px;display:flex;flex-direction:column;height:calc(100vh - 64px)}
-  .linhas{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
-  .msg{max-width:84%;padding:10px 13px;border-radius:12px;white-space:pre-wrap} .msg.eu{align-self:flex-end;background:#2a1d4a;border:1px solid #3b3164}
-  .msg.ele{align-self:flex-start;background:var(--card);border:1px solid var(--line)} .msg.erro{align-self:center;color:#ffd98a;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);font-size:12.5px}
-  form{display:flex;gap:8px} input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--txt);font:inherit}
-  button{background:linear-gradient(135deg,#7c6cff,#9d8cff);border:0;border-radius:10px;color:#fff;padding:0 18px;font-weight:700;cursor:pointer} button:disabled{opacity:.5}`;
-
-function paginaChat() {
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(AGENTE.nome)} · chat de teste</title><style>${ESTILO}</style></head><body>
-<div class="topo"><h1>${esc(AGENTE.nome)}</h1><span class="dim">${esc(AGENTE.setor)} · chat de teste · cérebro: ${usaOpenRouter() ? 'OpenRouter' : 'Claude Code da máquina'}</span><a href="/painel">painel do dono →</a></div>
-<div class="chat"><div class="linhas" id="l"><div class="msg erro">Este é o sandbox: converse com o agente como se fosse ${AGENTE.trilha === 'atendimento' ? 'um cliente' : 'o dono'}. Errar aqui custa um prompt.</div></div>
-<form id="f"><input id="t" placeholder="Escreva e aperte Enter…" autocomplete="off" autofocus><button id="b">Enviar</button></form></div>
-<script>
-const l=document.getElementById('l'),t=document.getElementById('t'),b=document.getElementById('b');
-const add=(c,x)=>{const d=document.createElement('div');d.className='msg '+c;d.textContent=x;l.appendChild(d);l.scrollTop=l.scrollHeight;return d};
-document.getElementById('f').onsubmit=async e=>{e.preventDefault();const v=t.value.trim();if(!v)return;t.value='';add('eu',v);b.disabled=true;const p=add('ele','…');
-try{const r=await (await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:v})})).json();
-p.textContent=r.resposta||'';if(r.erro){p.className='msg erro';p.textContent=r.erro}}catch(x){p.className='msg erro';p.textContent='o agente não respondeu'}b.disabled=false;t.focus()};
-</script></body></html>`;
-}
-
-function paginaPainel() {
-  const pr = progresso();
-  const linhas = tail(200);
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const tarefasHoje = linhas.filter(l => l.startsWith('[' + hoje)).length;
-  const memoria = ler('memoria.md').split(/\r?\n/).filter(l => l.startsWith('- ')).slice(-8);
-  const minutos = Math.floor((Date.now() - inicio) / 60000);
+/* ---------------- o painel ---------------- */
+function painel(aviso) {
+  const pr = base.progresso();
+  const ents = rodar.listar();
+  const res = rodar.resumo();
+  const fila = ents.filter(e => ['nova', 'em andamento'].includes(e.status));
+  const perguntas = ents.filter(e => e.status === 'aguardando pergunta');
+  const propostas = base.licoesPropostas();
+  const licoes = base.licoes();
   const pct = pr.total ? Math.round(pr.passo / pr.total * 100) : 0;
+  const minutos = Math.floor((Date.now() - inicio) / 60000);
+  const tag = (s) => `<span class="tag ${COR[s] || ''}">${esc(s)}</span>`;
+  const form = (tipo, ent, rotulo, classe = '', campo = null) =>
+    `<form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="${tipo}"><input type="hidden" name="entidade" value="${esc(ent)}">` +
+    (campo ? `<input name="texto" placeholder="${esc(campo)}" required style="min-width:220px">` : '') + `<button class="${classe}">${rotulo}</button></form>`;
+  const acoes = (e) => {
+    const s = e.status;
+    if (s === 'em andamento') return '<span class="dimtxt">rodando…</span>';
+    if (s === 'aguardando aprovação') return form('aprovar', e.id, 'Aprovar e aplicar', 'ok') + form('rejeitar', e.id, 'Rejeitar', 'bad', 'motivo');
+    if (s === 'aguardando pergunta') return form('responder', e.id, 'Responder', 'ok', 'sua resposta');
+    if (s === 'com o dono') return form('devolver', e.id, 'Devolver ao agente', '', 'o que você mudou (opcional)').replace(' required', '');
+    return form('rodar', e.id, 'Rodar (ensaio)', 'fraco') + form('rodar-proposta', e.id, 'Rodar em proposta') +
+      (s === 'pronta' || s === 'com erro' ? form('corrigir', e.id, 'Corrigir', 'fraco', 'o que estava errado') : '') + form('assumir', e.id, 'Assumir', 'fraco');
+  };
+  const ultima = (e) => e.rodadas.length ? e.rodadas[e.rodadas.length - 1] : null;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(AGENTE.nome)} · painel</title><meta http-equiv="refresh" content="30"><style>${ESTILO}</style></head><body>
-<div class="topo"><h1>${esc(AGENTE.nome)}</h1><span class="dim">${esc(AGENTE.setor)}${AGENTE.negocio ? ' · ' + esc(AGENTE.negocio) : ''}</span>
-  <span class="tag ${pr.concluido ? 'ok' : ''}">${pr.concluido ? 'em serviço' : pr.portao ? 'portão aprovado' : 'em treinamento'}</span><a href="/">chat de teste →</a></div>
+<title>${esc(AGENTE.nome)} · painel</title><meta http-equiv="refresh" content="45"><style>${ESTILO}</style></head><body>
+<div class="topo"><h1>${esc(AGENTE.nome)}</h1><span class="dim">${esc(AGENTE.setor)}${AGENTE.negocio ? ' · ' + esc(AGENTE.negocio) : ''} · agente de tarefa</span>
+  <span class="tag ${pr.concluido ? 'ok' : ''}">${pr.concluido ? 'em serviço' : pr.portao ? 'portão aprovado' : 'em construção ' + pr.passo + '/' + pr.total}</span>
+  <nav><a href="#entidades">entidades</a><a href="#licoes">lições</a><a href="#conhecimento">conhecimento</a><a href="#rodadas">rodadas</a>${base.temSenha() ? '<a href="/sair">sair</a>' : ''}</nav></div>
+${aviso ? '<div class="msg" style="margin-top:14px">' + esc(aviso) + '</div>' : ''}
+${!base.temSenha() && pr.passo >= 10 ? '<div class="msg" style="margin-top:14px">Painel sem senha: defina PAINEL_SENHA no .env antes de entregar (componente 17).</div>' : ''}
 <div class="grade">
-  <div class="card"><h2>No ar</h2><div class="num">${minutos >= 60 ? Math.floor(minutos / 60) + ' h' : minutos + ' min'}<small>porta ${PORT}</small></div></div>
-  <div class="card"><h2>Registros hoje</h2><div class="num">${tarefasHoje}<small>linhas no log</small></div></div>
-  <div class="card"><h2>Construção</h2><div class="num">${pr.passo}<small>de ${pr.total || '?'} passos</small></div><div class="bar"><i style="width:${pct}%"></i></div></div>
-  <div class="card" style="grid-column:1/-1"><h2>Últimas tarefas e conversas</h2><pre>${esc(linhas.slice(-25).join('\n')) || '(nada registrado ainda)'}</pre></div>
-  <div class="card" style="grid-column:1/-1"><h2>O que ele aprendeu (memoria.md)</h2><pre>${esc(memoria.join('\n')) || '(nada ainda — o escritório alimenta a cada conversa e reunião)'}</pre></div>
+  <div class="card"><h2>Resumo</h2>
+    ${Object.entries(res.porStatus).map(([s, n]) => tag(s) + ' <b>' + n + '</b>').join(' &nbsp; ') || '<span class="dimtxt">nenhuma entidade ainda</span>'}
+    <div class="dimtxt" style="margin-top:8px">${res.hoje} rodadas hoje (limite ${res.limiteDia}) · ${res.aprovacoesSeguidas} aprovações seguidas (${rodar.APROVACOES_PARA_REAL} liberam o real) · no ar há ${minutos >= 60 ? Math.floor(minutos / 60) + ' h' : minutos + ' min'} · porta ${PORT}</div></div>
+  <div class="card"><h2>Construção</h2><div class="num">${pr.passo}<small>de ${pr.total} componentes</small></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+  <div class="card"><h2>Rodar uma entidade</h2>
+    <form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="rodar"><input name="entidade" placeholder="ex.: amostras/caso-01 ou o ID" required style="min-width:240px"><button class="fraco">Ensaio</button></form>
+    <form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="rodar-proposta"><input name="entidade" placeholder="entidade" required style="min-width:240px"><button>Proposta</button></form>
+    <div class="dimtxt">Ensaio só lê. Proposta escreve em saidas/ e espera sua aprovação. O real só liga com MODO_REAL=sim no .env e 10 aprovações seguidas.</div></div>
+
+  <div class="card larga" id="perguntas"><h2>Perguntas do agente (${perguntas.length})</h2>
+    ${perguntas.length ? perguntas.map(e => `<div style="margin-bottom:10px"><b>${esc(e.id)}</b> · ${esc(e.pergunta ? e.pergunta.texto : '')}<br>${form('responder', e.id, 'Responder', 'ok', 'sua resposta')}${e.perguntas >= 3 ? ' <span class="tag warn">já perguntou ' + e.perguntas + ' vezes: é regra faltando na constituição</span>' : ''}</div>`).join('') : '<span class="dimtxt">nenhuma pergunta pendente</span>'}</div>
+
+  <div class="card larga" id="entidades"><h2>Entidades (${ents.length}) · fila: ${fila.length}</h2>
+    <table><tr><th>Entidade</th><th>Status</th><th>Última rodada</th><th>Ações</th></tr>
+    ${ents.map(e => { const u = ultima(e); return `<tr><td><b>${esc(e.id)}</b>${e.erro ? '<br><span style="color:var(--bad);font-size:12px">' + esc(e.erro).slice(0, 200) + '</span>' : ''}</td><td>${tag(e.status)}</td>
+      <td>${u ? esc(u.modo) + ' · ' + esc(new Date(u.quando).toLocaleString('pt-BR')) + (u.feitos && u.feitos.length ? '<br><span class="dimtxt">' + u.feitos.length + ' FEITO</span>' : '') + (u.pasta ? ' <span class="dimtxt">' + esc(u.pasta) + '</span>' : '') : '<span class="dimtxt">—</span>'}</td><td>${acoes(e)}</td></tr>`; }).join('') || '<tr><td colspan="4" class="dimtxt">rode a primeira amostra acima</td></tr>'}</table></div>
+
+  <div class="card larga" id="licoes"><h2>Lições propostas (${propostas.length}) · aprovadas (${licoes.length})</h2>
+    ${propostas.map(l => `<div style="margin-bottom:6px">${esc(l)}<br><form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="licao-aprovar"><input type="hidden" name="texto" value="${esc(l)}"><button class="ok">Aprovar</button></form>
+      <form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="licao-rejeitar"><input type="hidden" name="texto" value="${esc(l)}"><button class="bad">Rejeitar</button></form></div>`).join('') || '<span class="dimtxt">nenhuma proposta. Elas nascem quando você corrige um resultado ou rejeita uma proposta.</span>'}
+    <h2 style="margin-top:14px">Aprovadas</h2><pre>${esc(licoes.join('\n')) || '(nenhuma ainda)'}</pre>${licoes.length > 40 ? '<div class="msg">Mais de 40 lições: hora da curadoria — fundir, promover para a constituição, apagar.</div>' : ''}</div>
+
+  <div class="card larga" id="conhecimento"><h2>Conhecimento — skills/constituicao.md</h2>
+    <form method="post" action="/acao"><input type="hidden" name="tipo" value="constituicao"><textarea name="texto">${esc(base.ler('skills/constituicao.md'))}</textarea>
+    <div style="display:flex;gap:8px;margin-top:8px"><button>Salvar (vale na próxima rodada)</button></div></form>
+    <form class="inl" method="post" action="/acao" style="margin-top:6px"><input type="hidden" name="tipo" value="constituicao-voltar"><button class="fraco">Voltar para a versão anterior</button></form>
+    <div class="dimtxt">Cada salvamento valida o formato e grava uma versão no git da pasta. O prompt-agente.md não se edita por aqui.</div></div>
+
+  <div class="card larga" id="rodadas"><h2>Últimas rodadas (memoria/execucoes.log)</h2><pre>${esc(rodar.execucoes(25).join('\n')) || '(nenhuma rodada ainda)'}</pre></div>
+  <div class="card larga"><h2>Log</h2><pre>${esc(base.tail(30).join('\n')) || '(vazio)'}</pre></div>
 </div></body></html>`;
 }
 
+/* ---------------- ações do dono ---------------- */
+async function agir(b) {
+  const t = String(b.tipo || ''), ent = String(b.entidade || '').trim(), texto = String(b.texto || '').trim();
+  const bg = (p, oq) => { p.then(r => base.log(oq + ': ' + (r && r.ok ? r.status || 'ok' : (r && r.motivo) || 'falhou'))).catch(e => base.log(oq + ' falhou: ' + e.message)); return oq + ' iniciado; o painel atualiza sozinho'; };
+  if (!ent && !/^(licao-|constituicao)/.test(t)) return 'diga a entidade';
+  switch (t) {
+    case 'rodar': return bg(rodar.rodar(ent), 'ensaio de ' + ent);
+    case 'rodar-proposta': return bg(rodar.rodar(ent, { proposta: true }), 'proposta de ' + ent);
+    case 'aprovar': return bg(rodar.aprovar(ent), 'aprovação de ' + ent);
+    case 'rejeitar': return bg(rodar.rejeitar(ent, texto || 'sem motivo'), 'rejeição de ' + ent);
+    case 'responder': if (!texto) return 'escreva a resposta'; return bg(rodar.responder(ent, texto), 'resposta para ' + ent);
+    case 'corrigir': if (!texto) return 'escreva o que estava errado'; return bg(rodar.corrigir(ent, texto), 'correção de ' + ent);
+    case 'assumir': { const r = rodar.assumir(ent); return r.ok ? ent + ' está com você; o agente fica quieto nela' : r.motivo; }
+    case 'devolver': { const r = rodar.devolver(ent, texto); return r.ok ? ent + ' devolvida ao agente' : r.motivo; }
+    case 'licao-aprovar': { const r = base.decidirLicao(texto, true); return r.ok ? 'lição aprovada' : r.motivo; }
+    case 'licao-rejeitar': { const r = base.decidirLicao(texto, false); return r.ok ? 'lição rejeitada' : r.motivo; }
+    case 'constituicao': { const r = base.salvarConstituicao(texto); return r.ok ? 'constituição salva' + (r.aviso ? ' — ' + r.aviso : '') : 'não salvei: ' + r.erros.join('; '); }
+    case 'constituicao-voltar': { const r = base.voltarConstituicao(); return r.ok ? 'constituição voltou para a versão anterior' : r.motivo; }
+    default: return 'ação desconhecida';
+  }
+}
+
 /* ---------------- servidor ---------------- */
-http.createServer((req, res) => {
+const html = (res, t, extra = {}) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...extra }); res.end(t); };
+const vaiPara = (res, para, extra = {}) => { res.writeHead(303, { Location: para, ...extra }); res.end(); };
+let ultimoAviso = '';
+
+http.createServer(async (req, res) => {
   const rota = req.url.split('?')[0];
   if (rota === '/saude') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ ok: true, nome: AGENTE.nome, setor: AGENTE.setor, trilha: AGENTE.trilha,
-      desde: new Date(inicio).toISOString(), cerebro: usaOpenRouter() ? 'openrouter' : 'claude-code', progresso: progresso() }));
+    return res.end(JSON.stringify({ ok: true, nome: AGENTE.nome, setor: AGENTE.setor, trilha: 'tarefa', desde: new Date(inicio).toISOString(),
+      cerebro: 'claude-code', progresso: base.progresso(), resumo: rodar.resumo().porStatus, trancado: base.temSenha() }));
   }
-  if (rota === '/log') {
-    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    return res.end(tail(200).join('\n'));
+  if (rota === '/log') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end(base.tail(200).join('\n')); }
+  if (rota === '/gatilho' && req.method === 'POST') {
+    if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
+    const b = await base.lerCorpo(req);
+    const ent = String(b.entidade || '').trim();
+    if (!ent) { res.writeHead(400); return res.end('entidade?'); }
+    rodar.rodar(ent, { proposta: process.env.MODO === 'proposta' }).then(r => base.log('gatilho: ' + ent + ' -> ' + (r.status || r.motivo)));
+    res.writeHead(202, { 'Content-Type': 'application/json' }); return res.end('{"ok":true}');
   }
-  if (rota === '/painel') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(paginaPainel());
+  if (rota === '/entrar') {
+    if (req.method === 'POST') { const b = await base.lerCorpo(req); const tk = base.entrar(b.senha); return tk ? vaiPara(res, '/painel', { 'Set-Cookie': base.cookieSessao(tk) }) : html(res, base.paginaLogin('senha errada')); }
+    return html(res, base.paginaLogin());
   }
-  if (rota === '/chat' && req.method === 'POST') {
-    let corpo = '';
-    req.on('data', d => { corpo += d; if (corpo.length > 20000) req.destroy(); });
-    req.on('end', async () => {
-      let b = {}; try { b = JSON.parse(corpo || '{}'); } catch (e) {}
-      const texto = String(b.texto || '').trim().slice(0, 4000);
-      if (!texto) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"erro":"mensagem vazia"}'); }
-      const sessao = sessaoDe(req, res);
-      const r = await perguntar(sessao, texto);
-      log('conversa: "' + texto.slice(0, 80) + '" -> ' + (r.erro ? 'ERRO ' + r.erro : (r.resposta || '').slice(0, 120)));
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(r));
-    });
-    return;
+  if (rota === '/sair') return vaiPara(res, '/entrar', { 'Set-Cookie': 'painel=; Path=/; Max-Age=0' });
+  if (!base.sessaoValida(req)) { if (req.method === 'POST') { res.writeHead(401); return res.end('entre no painel primeiro'); } return html(res, base.paginaLogin()); }
+  if (rota === '/acao' && req.method === 'POST') {
+    const b = await base.lerCorpo(req);
+    try { ultimoAviso = await agir(b); } catch (e) { ultimoAviso = 'erro: ' + e.message; }
+    base.log('ação do dono: ' + (b.tipo || '?') + (b.entidade ? ' ' + b.entidade : '') + ' -> ' + ultimoAviso);
+    return vaiPara(res, '/painel?aviso=1');
   }
-  if (rota === '/') {
-    sessaoDe(req, res);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(paginaChat());
-  }
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('404');
+  if (rota === '/painel' || rota === '/') { const a = /aviso=1/.test(req.url) ? ultimoAviso : ''; ultimoAviso = ''; return html(res, painel(a)); }
+  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('404');
 }).listen(PORT, '127.0.0.1', () => {
-  log('servidor subiu na porta ' + PORT + ' (cérebro: ' + (usaOpenRouter() ? 'OpenRouter' : 'Claude Code') + ')');
-  console.log(AGENTE.nome + ' -> http://localhost:' + PORT + '  (painel em /painel)');
+  base.log('painel subiu na porta ' + PORT + (base.temSenha() ? ' (trancado)' : ' (SEM senha: defina PAINEL_SENHA antes de entregar)'));
+  console.log(AGENTE.nome + ' -> http://localhost:' + PORT + '/painel');
 });

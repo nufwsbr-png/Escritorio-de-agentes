@@ -8,10 +8,10 @@ log, conversar com ele pelo Claude Code, ver o que ele aprendeu, aprovar o que
 ele propõe e testá-lo.
 
 - Diretoria, sala de serviço com 18 estações, lounge, sala de reunião e recepção.
-- **Contratar é construir:** todo agente novo nasce com pasta própria, sistema
-  próprio e a skill que conduz a construção, um passo por vez.
-- Os agentes **lembram** (memória por agente), **deixam recados** uns para os
-  outros e **propõem** mudanças que só entram com a sua aprovação.
+- **Contratar é construir:** todo agente novo nasce com a **anatomia padrão**
+  do escritório, pasta própria, sistema próprio e a skill de referência.
+- Os agentes **lembram** (memória em camadas), **deixam recados** uns para os
+  outros, **propõem** lições e mudanças que só entram com a sua aprovação.
 - O escritório sobe os sistemas locais, vigia quem caiu, religa sozinho e
   avisa no celular.
 - Dois perfis: o **cliente** opera, o **administrador** constrói.
@@ -40,7 +40,8 @@ npm start
 
 Abra **http://localhost:4321**. Todo escritório novo vem com **um** agente, o
 de exemplo (pasta `exemplo-agente`). Clique no computador dele e em **Ligar**
-para ver o fluxo completo: o painel embutido, o chat de teste, a memória.
+para ver o painel do dono; nele, rode `amostras/caso-01` em **Ensaio** e veja o
+agente ler um pedido de cliente e planejar o resumo sem tocar em nada.
 
 No Windows:
 - **`INICIAR ESCRITORIO.cmd`** sobe o escritório e o religa se ele cair.
@@ -71,18 +72,49 @@ Com senha:
 A verificação é no servidor, rota a rota. A senha fica em `data/admin.json`
 como hash e a sessão dura 7 dias.
 
-Essa tranca é do escritório. Cada agente tem a própria, no último passo da
-skill dele (`PAINEL_SENHA` no `.env`), para o painel dele continuar protegido
-se um dia for publicado fora daqui.
+Essa tranca é do escritório. Cada agente tem a própria, no painel dele
+(`PAINEL_SENHA` no `.env`), porque o painel do agente aprova propostas e
+responde perguntas em nome do dono.
+
+## A anatomia de um agente
+
+As duas skills que ensinam a construir agentes de IA (`criar-agente`, do
+atendente de WhatsApp, e `criar-agente-tarefa`, do agente que executa uma
+tarefa) foram destiladas em **15 componentes** que todo agente do escritório
+precisa ter. A lista completa, com o porquê de cada um, está em
+[`modelos/ANATOMIA.md`](modelos/ANATOMIA.md). Em resumo:
+
+| # | Componente | Onde fica |
+|---|---|---|
+| 1 | Identidade escrita pelo dono | `prompt-agente.md` |
+| 2 | Base de conhecimento como ferramenta, nunca no prompt | `skills/constituicao.md` |
+| 3 | Ferramentas em código, com cerca dentro (escopo, nunca apaga, nunca sobrescreve) | `tools/`, `tools/base.js` |
+| 4 | Três modos: ensaio, proposta, real (dois interruptores para o real) | `rodar.js`, `.env` |
+| 5 | Pós-verificação: o que disse que fez tem que existir | `rodar.js` |
+| 6 | Memória em camadas, só o recorte da vez | `memoria/` |
+| 7 | Lições que o dono aprova; o agente só propõe | `memoria/licoes.md`, `memoria/licoes-propostas.md` |
+| 8 | Segredos só no `.env`, nunca impressos | `.env` |
+| 9 | Cercas por configuração, não só por texto | `cercas.json` |
+| 10 | Humano no circuito: perguntar, assumir e devolver, aprovar e corrigir | painel |
+| 11 | Painel do dono, trancado, com constituição editável e histórico em git | `server.js` |
+| 12 | Avisos saem do sistema, nunca do agente | `/api/avisar` do escritório |
+| 13 | Bancada com gabarito e portão antes do dado real | `amostras/` |
+| 14 | Testador com duas réguas e instrução plantada | botão 🧪 |
+| 15 | Registro do que foi feito | `progresso-do-agente.md`, `log.txt` |
+
+A construção no escritório é essa lista, um componente por vez, com teste no
+fim de cada um. As skills ficam na pasta do agente, em `.claude/skills/`,
+como material de consulta do construtor: armadilhas que aconteceram de
+verdade, catálogo de módulos de ferramenta e o clique a clique dos sites.
 
 ## Contratar um agente
 
 Na aba **Contratar**, **＋ contratar agente**. A primeira pergunta é o tipo:
 
-| Tipo | Jornada | Cérebro | Contas que o cliente precisa ter |
+| Tipo | Cérebro | Componentes | Contas que o cliente precisa ter |
 |---|---|---|---|
-| **Atendimento no WhatsApp** | skill `criar-agente`, 23 passos (sandbox, memória, prompt, constituição, agenda, planilha, áudio, WhatsApp, painel, templates, testador, tranca) | **OpenRouter**, chave no `.env` do agente | OpenRouter (crédito pré-pago), Supabase (grátis), Google (agenda e planilha), Meta WhatsApp Business ou WAHA |
-| **Outro setor** (lista configurável por cliente, ou um nome seu) | skill `criar-agente-setor`, 14 passos (trabalho, conexões, cérebro, constituição, ferramenta, memória, rotina, painel, portão, testador, tranca, entrega) | **Claude Code da máquina**, sem chave de modelo | só o que o trabalho pedir (CRM, planilha, pasta…) |
+| **Atendimento no WhatsApp** | **OpenRouter**, chave no `.env` do agente | 18 | OpenRouter (crédito pré-pago), Supabase (grátis), Google (agenda e planilha), Meta WhatsApp Business ou WAHA |
+| **Agente de tarefa** (por setor: lista configurável por cliente, ou um nome seu) | **Claude Code da máquina**, em rodadas isoladas pelo `rodar.js`, sem chave de modelo | 17 | só o que a tarefa pedir (pasta, CRM, planilha, e-mail…) |
 
 Os setores da segunda linha vêm de `data/config.json` (`setores`). Sem a
 chave, valem os padrões: Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados
@@ -91,31 +123,31 @@ diferentes; troque a lista por cliente.
 
 Depois: nome do agente, negócio, porta e, se quiser, uma pasta fora do
 padrão. O escritório cria a pasta em `agentes/<nome-em-slug>/` ("Tati Teste"
-vira `agentes/tati-teste`) com a estrutura padrão:
+vira `agentes/tati-teste`) com a anatomia:
 
 ```
-agente.json              nome, setor, negócio, porta, trilha
-CLAUDE.md                o contrato com o escritório (leia primeiro)
-server.js                o sistema próprio: /saude, /painel, /log e o chat de teste em /
-prompt-agente.md         a identidade — o DONO escreve; o construtor nunca preenche sozinho
-skills/constituicao.md   a base de conhecimento — é FERRAMENTA, nunca entra no prompt
-tools/                   o código das ações (código para o garantido, IA para o interpretado)
-.env                     as conexões de trabalho (token do CRM, Google, planilha…) — nunca no chat
-memoria.md               o que ele aprende operando
-progresso-do-agente.md   onde a jornada parou
-.claude/skills/<skill>/  a skill que conduz a construção
+agente.json                 nome, setor, negócio, porta, trilha
+CLAUDE.md                   o contrato com o escritório e o mapa da pasta (não é a identidade)
+ANATOMIA.md                 os 15 componentes
+prompt-agente.md            1. identidade — o dono escreve
+skills/constituicao.md      2. base de conhecimento — ferramenta
+tools/                      3. as mãos, com cerca; base.js e arquivos.js prontos
+rodar.js                    4, 5, 10. o lançador (agente de tarefa)
+memoria/                    6, 7. lições, lições propostas, estado por entidade, execuções, memória do escritório
+amostras/ saidas/ quarentena/   13. bancada, o que cada rodada produziu, o que seria apagado
+cercas.json                 9. permissões do Claude Code por rodada
+.env                        8. segredos e escopo
+server.js                   11. painel trancado, /saude, /log (e o chat de teste, no atendente)
+progresso-do-agente.md      15. a lista dos componentes e onde parou
+.claude/skills/<skill>/     a skill de referência da trilha
 ```
 
 O sistema é registrado em `data/sistemas.json`, o boneco entra pela recepção
-**em treinamento** (o balão mostra "passo N de M", lido do progresso) e o
-monitor abre em **Conversar › Construir**: a skill lê o progresso e conduz um
-passo por vez, com teste no fim de cada um. Quando o progresso registra o
-portão aprovado, o boneco vira funcionário; quando registra `## CONCLUÍDO`, a
-construção acabou.
-
-A skill `criar-agente` é a sua, copiada inteira. A `criar-agente-setor` foi
-derivada dela para trabalho interno e ainda está marcada como **proposta**
-dentro do próprio arquivo: revise-a no primeiro agente de setor que construir.
+**em treinamento** (o balão mostra "N de M", lido do progresso) e o monitor
+abre em **Conversar › Construir**: o construtor lê o contrato, a anatomia e o
+progresso e conduz um componente por vez, com teste no fim. Quando o
+componente **PORTÃO** é marcado, o boneco vira funcionário; quando o progresso
+registra `## CONCLUÍDO`, a construção acabou.
 
 Um robô que você já construiu fora daqui entra por **＋ cadastrar sistema**:
 pasta, comando e porta, ou um endereço publicado. O escritório só o liga,
@@ -126,12 +158,12 @@ vigia e embute.
 | Botão | O que faz |
 |---|---|
 | **▶ Ligar / ■ Desligar** | sobe e derruba o sistema (processo solto: reiniciar o escritório não derruba ninguém) |
-| **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a skill. A sessão sobrevive a reinício |
+| **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a anatomia. A sessão sobrevive a reinício |
 | **📋 Ficha** | a constituição seção por seção, para o dono do negócio preencher sem abrir arquivo |
-| **🧠 Memória** | `memoria.md`: o que ele aprendeu. Entra em toda conversa, reunião e teste; o administrador pode corrigir |
+| **🧠 Memória** | `memoria/escritorio.md`: o que ele anotou nas conversas e reuniões. Entra em toda chamada do escritório; o administrador pode corrigir |
 | **✉️ Recados** | o que outros agentes e o dono deixaram para ele. Quem deixa recado anda até a mesa do outro |
-| **📝 Propostas** | mudanças que ele sugeriu no prompt ou na constituição. Nada entra sem **aprovar** |
-| **🧪 Testar** | o testador: clientes ou tarefas difíceis simulados, duas réguas (constituição e fato), relatório e comparação com a rodada anterior |
+| **📝 Propostas** | lições e mudanças no prompt ou na constituição que ele sugeriu. Nada entra sem **aprovar** |
+| **🧪 Testar** | o testador: casos difíceis, inclusive com instrução plantada, duas réguas (constituição e fato), relatório com triagem e comparação com a rodada anterior |
 | **📜 Log** | as últimas linhas do log |
 
 **Resolver** e **Construir** rodam o Claude Code com uma lista fixa de
@@ -143,11 +175,13 @@ ferramentas: editar arquivos, buscar na web e rodar `node`, `npm`, `git`,
 Ao responder (conversa, reunião, testador), um agente pode terminar com blocos
 que o escritório retira do texto e trata:
 
-- `<memoria>…</memoria>` vai para `memoria.md` com a data.
+- `<memoria>…</memoria>` vai para `memoria/escritorio.md` com a data.
 - `<mensagem para="id">…</mensagem>` é entregue no próximo prompt do destinatário.
-- `<proposta arquivo="prompt-agente.md" secao="Nunca faça isso" titulo="…">…</proposta>`
-  fica pendente até o dono aprovar. É a regra da skill: o construtor nunca
-  escreve o prompt do dono.
+- `<proposta arquivo="memoria/licoes.md" titulo="…">- Quando X, então Y.</proposta>`
+  propõe uma lição; com `arquivo="prompt-agente.md"` e `secao`, uma mudança
+  no prompt; com `arquivo="skills/constituicao.md"`, na constituição. Tudo
+  fica pendente até o dono aprovar. É a regra das skills: o construtor nunca
+  escreve a identidade do dono, e o agente nunca escreve as próprias lições.
 
 Os sistemas também podem pedir um aviso no celular:
 
@@ -169,15 +203,16 @@ uma meta.
 
 ## Como cada agente é testado
 
-1. **Durante a construção:** cada passo da skill termina com um teste concreto;
-   o portão no fim da fase do sandbox impede de avançar sem provar.
-2. **Antes de entrar em serviço:** o botão **🧪 Testar** solta clientes (30) ou
-   tarefas (10) difíceis simulados, julgados por duas réguas: o que ele afirma
-   bate com a constituição, e o que ele diz ter feito existe de verdade. Sai um
-   relatório com o resumo de falhas graves e leves. O testador **não conserta
-   nada**: abra **Conversar** e peça o que corrigir; o agente propõe, você
-   aprova uma a uma. Uma nova rodada, com casos diferentes, tem que ter menos
-   falhas graves que a anterior.
+1. **Durante a construção:** cada componente termina com um teste concreto;
+   o portão impede de tocar em dado real sem passar na bancada.
+2. **Antes de entrar em serviço:** o botão **🧪 Testar** gera casos difíceis
+   (30 no atendimento, 10 no agente de tarefa), pelo menos três com instrução
+   plantada, julgados por duas réguas: o que ele afirma bate com a
+   constituição, e o que ele diz ter feito existe de verdade. Sai um
+   relatório com a triagem de cada falha: lição, regra da constituição ou
+   cerca no código. O testador **não conserta nada**: você aprova as
+   correções como propostas. Uma nova rodada tem que ter menos falhas graves
+   e zero instrução obedecida.
 3. **Em serviço:** o escritório lê a rota de saúde, religa quem caiu, avisa no
    celular, e a reunião cobra o número prometido.
 
@@ -188,15 +223,16 @@ Copie `data/config.exemplo.json` para `data/config.json` e ajuste:
 - `nome`, `subtitulo`, `dono`, `empresa`, `porta`.
 - `marca.logo` (arquivo em `data/marca/`) e `marca.cores` (variáveis do tema):
   marca branca para cada cliente sem tocar no código.
-- `setores`: a lista que a aba Contratar oferece em "Outro setor".
+- `setores`: a lista que a aba Contratar oferece para agentes de tarefa.
 - `reuniao.automatica`, `dias`, `hora`, `foco`, `meta`.
 
 ## Avisos no celular
 
 **🔔 Avisos** manda notificação pelo app gratuito [ntfy](https://ntfy.sh) ou
 pelo WhatsApp via CallMeBot, para **mais de um destino**: o celular do cliente
-e o seu. Avisa quando um sistema caiu e não voltou, quando a reunião terminou
-e quando uma ação da agenda rodou.
+e o seu. Avisa quando um sistema caiu e não voltou, quando a reunião terminou,
+quando uma ação da agenda rodou e quando um agente pede um aviso (rodada com
+erro, pergunta ao dono).
 
 ## Agenda
 
@@ -232,8 +268,9 @@ Na máquina do cliente, nesta ordem:
 ## Custos
 
 Tudo que chama o Claude Code gasta a cota da conta logada na máquina do
-cliente: Conversar, Construir, reunião, testador e o chat dos agentes de
-setor. Decida antes de instalar:
+cliente: Conversar, Construir, reunião, testador e cada rodada dos agentes de
+tarefa (o lançador tem limite de rodadas por dia no `.env`). Decida antes de
+instalar:
 
 - **Conta do cliente:** ele paga o plano, você não divide cota com ninguém.
   É o padrão recomendado.
@@ -259,19 +296,20 @@ não caem com isso: são processos soltos.
 
 O que **não** se atualiza sozinho: a pasta de cada agente já contratado.
 Mudanças em `modelos/agente/` valem só para agentes novos. Se quiser levar
-uma melhoria do modelo a um agente existente, use **Conversar › Resolver**
+uma melhoria do molde a um agente existente, use **Conversar › Resolver**
 nele.
 
 ## Hospedagem
 
-O escritório e os agentes de setor rodam na máquina do cliente e não precisam
-de endereço público.
+O escritório e os agentes de tarefa rodam na máquina do cliente e não precisam
+de endereço público. A máquina que roda um agente de tarefa com gatilho não
+pode suspender.
 
 O atendente de WhatsApp precisa: a Meta e o WAHA entregam as mensagens por
 webhook. O padrão é rodar na mesma máquina com um túnel (Cloudflare Tunnel
 ou ngrok) apontando para a porta do agente. Railway é a alternativa quando a
-máquina não fica ligada: a skill cobre isso no passo 13, e o `.env` vai como
-variáveis do serviço, nunca pelo git.
+máquina não fica ligada: a skill de referência cobre isso, e o `.env` vai
+como variáveis do serviço, nunca pelo git.
 
 ## O que fica fora do git
 
@@ -279,7 +317,7 @@ Tudo que é seu ou do cliente: `data/` (configuração, equipe, avisos, senha,
 sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
 (as pastas dos agentes contratados, com `.env` e tudo). Só os dois
 `*.exemplo.json` são versionados. No `exemplo-agente/`, ficam de fora o
-`.env`, o log e o que ele produz operando.
+`.env`, o log, as saídas e o estado das entidades.
 
 ## Problemas comuns
 
@@ -291,6 +329,10 @@ sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
   agente e religue.
 - **Agente aparece desligado logo depois de Ligar:** abra **📜 Log**. Em geral
   é dependência faltando na pasta do agente ou `.env` vazio.
+- **Rodada do agente de tarefa termina "com erro: falha de verificação":** o
+  agente disse que gravou e o arquivo não existe. É a pós-verificação
+  funcionando. Veja a rodada em `saidas/` e corrija a ferramenta ou a
+  descrição dela no prompt.
 - **Cliente não consegue contratar:** correto. Contratar é do administrador.
 
 ## Estrutura
@@ -298,16 +340,17 @@ sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
 ```
 server.js          servidor: tela, API, sobe/vigia sistemas, espelho, tranca
 admin.js           senha e sessão do administrador
-agentes.js         contratar é construir: pasta padrão, setores, progresso, ficha
-memoria.js         memória por agente, recados e propostas
-testador.js        o exame do agente, com duas réguas
+agentes.js         contratar é construir: anatomia, trilhas, setores, progresso, ficha
+memoria.js         memória do escritório, lições, recados e propostas
+testador.js        o exame do agente, com duas réguas e instrução plantada
 reuniao.js         reunião dos agentes, com memória das atas
 avisos.js          ntfy e CallMeBot, vários destinos
 index.html, css/   a tela e o tema
 js/                motor isométrico, salas, móveis, bonecos, painéis, admin, contratação, extras
-modelos/agente/    o que toda pasta de agente nova recebe
-modelos/skills/    criar-agente (atendimento) e criar-agente-setor (outros setores)
-exemplo-agente/    o único agente que vem no escritório, na estrutura padrão
+modelos/ANATOMIA.md    os 15 componentes de todo agente
+modelos/agente/        o molde da pasta: comum/, tarefa/ e atendimento/
+modelos/skills/        criar-agente (atendimento) e criar-agente-tarefa (tarefa), as skills de referência
+exemplo-agente/    o único agente que vem no escritório, na anatomia padrão
 data/              seus dados (fora do git, menos os exemplos)
 agentes/           os agentes contratados (fora do git)
 ```

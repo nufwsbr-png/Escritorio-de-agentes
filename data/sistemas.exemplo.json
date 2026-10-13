@@ -1,11 +1,11 @@
 {
   "_leia": [
     "Registro dos sistemas dos seus agentes. Na primeira vez que o escritório sobe, este arquivo é copiado para data/sistemas.json, e é esse que vale.",
-    "Todo escritório novo vem com UM agente: o exemplo. Os outros entram pela aba Contratar, que cria a pasta (em agentes/), o sistema próprio e a skill da trilha, e grava aqui.",
+    "Todo escritório novo vem com UM agente: o exemplo. Os outros entram pela aba Contratar, que cria a pasta (em agentes/) com a anatomia do escritório, o sistema próprio e a skill de referência da trilha, e grava aqui.",
     "tipo 'local': o escritório sobe o sistema. Campos: pasta (absoluta, ou relativa à pasta do escritório), comando, args, porta, env (opcional), abre (página inicial, padrão '/').",
     "tipo 'web': só abre o endereço. Campos: url.",
     "embutir: true abre dentro do escritório; 'espelho' passa por um proxy local para sites que recusam iframe; false manda abrir em outra aba.",
-    "Agente contratado pelo escritório tem também: setor, setorId, trilha ('atendimento' ou 'setor') e negocio. A construção é lida de progresso-do-agente.md na pasta.",
+    "Agente contratado pelo escritório tem também: setor, setorId, trilha ('atendimento' ou 'tarefa') e negocio. A construção é lida de progresso-do-agente.md na pasta: a lista de componentes da ANATOMIA.",
     "Opcionais: sobre (texto que aparece no monitor), dicas (lista de frases), aviso (faixa de alerta no monitor).",
     "O escritório só executa o que está neste arquivo, e recusa comando com & | ; < > ` $."
   ],
@@ -15,18 +15,18 @@
     "pasta": "exemplo-agente",
     "comando": "node",
     "args": ["server.js"],
-    "env": { "PORT": "4401" },
+    "env": { "PORT": "4401", "ESCRITORIO_PORTA": "4321" },
     "porta": 4401,
     "abre": "/painel",
     "setor": "Agente de demonstração",
     "setorId": "outro",
-    "trilha": "setor",
+    "trilha": "tarefa",
     "negocio": "Escritório de Agentes",
-    "sobre": "O menor agente pronto, na estrutura padrão do escritório: prompt do dono, constituição como ferramenta, chat de teste pelo Claude Code da máquina, painel em /painel, memória e progresso. Copie a pasta como ponto de partida, ou contrate um agente novo pela aba Contratar.",
+    "sobre": "O menor agente de tarefa pronto, na anatomia padrão do escritório: identidade do dono, constituição como ferramenta, lançador com modos ensaio/proposta/real e pós-verificação, memória em camadas, lições aprovadas pelo dono e painel trancável. Copie a pasta como ponto de partida, ou contrate um agente novo pela aba Contratar.",
     "dicas": [
-      "Clique em Ligar: o escritório sobe o node server.js desta pasta e embute o painel",
-      "Em Nova aba, a página inicial é o chat de teste: pergunte \"o que é este escritório?\" e ele responde pela constituição",
-      "Em Conversar, o Claude Code abre dentro da pasta e responde sobre o sistema; o que ele aprende vai para memoria.md",
+      "Clique em Ligar: o escritório sobe o node server.js desta pasta e embute o painel do dono",
+      "No painel, rode amostras/caso-01 em Ensaio: o Claude Code da máquina lê o pedido e escreve o plano, sem tocar em nada",
+      "Em Conversar, o Claude Code abre dentro da pasta e responde sobre o sistema; o que ele anota vai para memoria/escritorio.md",
       "Para tirar o exemplo, demita o agente e apague a entrada \"exemplo\" deste arquivo"
     ]
   }

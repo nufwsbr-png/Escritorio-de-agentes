@@ -16,5 +16,11 @@ agentes/
 # o que o agente de exemplo produz operando
 exemplo-agente/.env
 exemplo-agente/log.txt
-exemplo-agente/registro/
+exemplo-agente/saidas/
+exemplo-agente/quarentena/
+exemplo-agente/entrada-lida/
+exemplo-agente/memoria/entidades/
+exemplo-agente/memoria/execucoes.log
+exemplo-agente/memoria/sessoes.json
+exemplo-agente/memoria/aprovacoes.json
 exemplo-agente/testes/

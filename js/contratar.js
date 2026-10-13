@@ -55,11 +55,11 @@ const CONTRATAR = (() => {
           <span class="emo">${atend ? atend.emoji : '🎧'}</span>
           <b>Atendimento no WhatsApp</b>
           <small>${esc(atend ? atend.desc : '')}</small>
-          <em>skill criar-agente · 23 passos · OpenRouter</em>
+          <em>${atend ? atend.passos : 18} componentes · OpenRouter · referência: criar-agente</em>
         </button>
         <div class="setor-outros">
-          <b>Outro setor</b>
-          <small>Trabalho interno. Cérebro pelo Claude Code desta máquina; as conexões ficam no .env do agente. 14 passos.</small>
+          <b>Agente de tarefa (por setor)</b>
+          <small>Executa uma tarefa interna: organiza, redige, lança, confere. Cérebro pelo Claude Code desta máquina em rodadas isoladas; as conexões ficam no .env do agente. ${outros[0] ? outros[0].passos : 17} componentes · referência: criar-agente-tarefa.</small>
           <div class="chips">
             ${outros.map(s => `<button class="chip" data-s="${esc(s.id)}">${s.emoji} ${esc(s.nome)}</button>`).join('')}
           </div>
@@ -90,8 +90,8 @@ const CONTRATAR = (() => {
       <label class="opt" style="margin-top:4px"><input type="checkbox" id="ct-reun" checked> Participa da reunião dos agentes</label>
       <p class="hint" style="margin-top:10px;line-height:1.6">O escritório cria a pasta com <code>skills/</code>, <code>tools/</code>, <code>prompt-agente.md</code>,
         constituição, <code>.env</code>, memória, progresso e um <code>server.js</code> com o contrato do escritório. A skill
-        <b>${esc(s.skill)}</b> vai junto e o monitor abre em <b>Construir</b> para ela conduzir, um passo por vez.
-        ${s.trilha === 'atendimento' ? 'Este agente usa OpenRouter: a chave vai no <code>.env</code>, no passo 4.' : 'O cérebro é o Claude Code desta máquina; não há chave de modelo.'}</p>
+        <b>${esc(s.skill)}</b> vai junto como referência e o monitor abre em <b>Construir</b>: a ANATOMIA do escritório conduz, um componente por vez, com teste no fim de cada um (${s.passos} componentes).
+        ${s.trilha === 'atendimento' ? 'Este agente usa OpenRouter: a chave vai no <code>.env</code>, no componente 2.' : 'O cérebro é o Claude Code desta máquina, em rodadas isoladas pelo <code>rodar.js</code>; não há chave de modelo.'}</p>
       <div id="ct-msg" class="hint" style="color:#ff7a6b;margin-top:6px"></div>
       <div class="mactions">
         <button class="btn primary" id="ct-ok">Criar e começar a construção</button>
