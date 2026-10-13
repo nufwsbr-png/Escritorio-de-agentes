@@ -1,6 +1,8 @@
 # Conexões e escopo de {{NOME}} (agente de tarefa). Valor entre aspas.
 # Cole os valores pelo editor e salve. NUNCA cole chave no chat.
 # O cérebro deste agente é o Claude Code da máquina: não há chave de modelo aqui.
+# Logo abaixo deste cabeçalho o ESCRITÓRIO grava o bloco "plataformas do escritório" com as
+# plataformas permitidas a este agente (🔌 Plataformas). Não edite o bloco à mão; o resto é seu.
 
 # --- escopo: só aqui dentro o agente pode ler e escrever (caminhos absolutos, separados por ;)
 PASTAS_AUTORIZADAS=""

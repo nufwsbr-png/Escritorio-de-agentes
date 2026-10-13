@@ -6,6 +6,9 @@
      MODO_RODADA = ensaio | proposta | real
      ENTIDADE    = a entidade da rodada
    O escopo vem do .env (PASTAS_AUTORIZADAS, separadas por ;).
+   As plataformas que o agente pode usar vêm de PLATAFORMAS_PERMITIDAS, posta
+   no .env pelo escritório (bloco gerenciado). Toda ferramenta que fala com
+   uma plataforma chama exigePlataforma(id) antes: sem permissão, recusa.
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +28,11 @@ function dentroDoEscopo(caminho) {
   const internas = [path.join(PASTA, 'amostras'), path.join(PASTA, 'saidas'), path.join(PASTA, 'entrada-lida')];
   return [...escopo(), ...internas].some(p => c === p || c.startsWith(p + path.sep));
 }
+
+/* ---------------- plataformas permitidas (vêm do escritório) ---------------- */
+const plataformasPermitidas = () => String(process.env.PLATAFORMAS_PERMITIDAS || '').split(';').map(s => s.trim()).filter(Boolean);
+const exigePlataforma = (id) => plataformasPermitidas().includes(String(id));
+const recusaSemPlataforma = (id) => resultado('recusado', 'plataforma não permitida para este agente: ' + id + ' (o administrador marca no escritório, em 🔌 Plataformas)');
 
 /* ---------------- nunca apaga, nunca sobrescreve ---------------- */
 function semSobrescrever(destino) {
@@ -62,4 +70,4 @@ const registrar = (ferramenta, r) => base.log('tools/' + ferramenta + ' [' + r.m
 /** imprime o resultado em uma linha de JSON e encerra: é o que o agente lê */
 function responder(ferramenta, r) { registrar(ferramenta, r); process.stdout.write(JSON.stringify(r) + '\n'); process.exit(r.estado === 'erro' ? 1 : 0); }
 
-module.exports = { PASTA, slug, modo, entidade, escopo, dentroDoEscopo, semSobrescrever, quarentena, pastaProposta, destinoNoModo, resultado, registrar, responder, log: base.log };
+module.exports = { PASTA, slug, modo, entidade, escopo, dentroDoEscopo, plataformasPermitidas, exigePlataforma, recusaSemPlataforma, semSobrescrever, quarentena, pastaProposta, destinoNoModo, resultado, registrar, responder, log: base.log };

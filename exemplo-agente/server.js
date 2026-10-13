@@ -61,6 +61,7 @@ ${!base.temSenha() && pr.passo >= 10 ? '<div class="msg" style="margin-top:14px"
     ${Object.entries(res.porStatus).map(([s, n]) => tag(s) + ' <b>' + n + '</b>').join(' &nbsp; ') || '<span class="dimtxt">nenhuma entidade ainda</span>'}
     <div class="dimtxt" style="margin-top:8px">${res.hoje} rodadas hoje (limite ${res.limiteDia}) · ${res.aprovacoesSeguidas} aprovações seguidas (${rodar.APROVACOES_PARA_REAL} liberam o real) · no ar há ${minutos >= 60 ? Math.floor(minutos / 60) + ' h' : minutos + ' min'} · porta ${PORT}</div></div>
   <div class="card"><h2>Construção</h2><div class="num">${pr.passo}<small>de ${pr.total} componentes</small></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+  <div class="card"><h2>Plataformas</h2><div class="num">${(process.env.PLATAFORMAS_PERMITIDAS || '').split(';').filter(Boolean).length}<small>${(process.env.PLATAFORMAS_PERMITIDAS || '').split(';').filter(Boolean).join(', ') || 'nenhuma permitida; o administrador marca no escritório'}</small></div></div>
   <div class="card"><h2>Rodar uma entidade</h2>
     <form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="rodar"><input name="entidade" placeholder="ex.: amostras/caso-01 ou o ID" required style="min-width:240px"><button class="fraco">Ensaio</button></form>
     <form class="inl" method="post" action="/acao"><input type="hidden" name="tipo" value="rodar-proposta"><input name="entidade" placeholder="entidade" required style="min-width:240px"><button>Proposta</button></form>

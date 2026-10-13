@@ -50,7 +50,7 @@ rotas e a porta pela variável `PORT`.
 | `memoria/entidades/` | o lançador | estado de cada entidade, a partir da pós-verificação, nunca só do relato |
 | `memoria/escritorio.md` | o escritório | o que o agente anotou nas conversas e reuniões do escritório |
 | `cercas.json` | o construtor | permissões do Claude Code por rodada. Fica aqui, não em `.claude/settings.json`, para não travar o construtor |
-| `.env` | o dono | segredos e escopo. Nunca imprima um valor: no chat, no progresso e no log só os NOMES |
+| `.env` | o dono e o escritório | segredos e escopo. O bloco entre `# >>> plataformas do escritório` e `# <<< plataformas do escritório <<<` é do ESCRITÓRIO: traz as plataformas permitidas (`PLATAFORMAS_PERMITIDAS`) e as variáveis delas; não edite à mão, não acrescente plataforma fora dele. O resto é do dono. Nunca imprima um valor: no chat, no progresso e no log só os NOMES |
 | `progresso-do-agente.md` | o construtor | a lista dos componentes. O escritório conta os `[x]` e procura o PORTÃO marcado e `## CONCLUÍDO` |
 | `log.txt` | o servidor e o lançador | cada rodada e cada conversa, uma linha com data |
 | `agente.json` | o escritório | nome, setor, negócio, porta, trilha |
@@ -63,6 +63,7 @@ rotas e a porta pela variável `PORT`.
 - O que o agente diz que fez tem que existir: o lançador confere as linhas `FEITO:` do relato.
 - Uma mudança por vez: altera, reinicia, testa, registra no progresso, só então a próxima. Um servidor só no ar.
 - Chave é segredo: `.env`, e só lá.
+- Plataforma (CRM, planilha, agenda, pasta, WhatsApp, e-mail) só pelo escritório: as que este agente pode usar estão em `PLATAFORMAS_PERMITIDAS`, e nada além dessas existe para ele. Toda ferramenta que fala com uma plataforma chama `exigePlataforma(id)` de `tools/base.js` antes. Endereço e chave de trabalho novos entram pelo botão 🔌 Plataformas do escritório, nunca à mão no `.env`.
 
 ## Como o agente fala com o escritório
 
