@@ -33,6 +33,13 @@ function variaveisVazias() {
   return txt.split(/\r?\n/).map(l => /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(""|''|)\s*$/.exec(l)).filter(Boolean).map(m => m[1]);
 }
 
+/** o executável do Claude Code nesta máquina (cópia de util.js do escritório: a pasta do agente não depende dele) */
+function acharClaude() {
+  const casa = process.env.USERPROFILE || process.env.HOME || '';
+  for (const t of [path.join(casa, '.local', 'bin', 'claude.exe'), path.join(casa, '.local', 'bin', 'claude')]) if (casa && fs.existsSync(t)) return t;
+  return process.platform === 'win32' ? 'claude.exe' : 'claude';
+}
+
 const AGENTE = (() => {
   try { return JSON.parse(fs.readFileSync(arq('agente.json'), 'utf8')); }
   catch (e) { return { nome: path.basename(PASTA), setor: 'agente', negocio: '', trilha: 'tarefa' }; }
@@ -208,7 +215,7 @@ ${erro ? '<span style="color:var(--bad);font-size:12.5px">' + esc(erro) + '</spa
 }
 
 module.exports = {
-  PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias,
+  PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias, acharClaude,
   ler, escrever, semComentarios, hoje, log, tail, progresso,
   identidade, licoes, licoesPropostas, proporLicao, decidirLicao,
   validarConstituicao, salvarConstituicao, voltarConstituicao, commitar,

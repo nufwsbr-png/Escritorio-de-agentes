@@ -29,11 +29,7 @@ const base = require('./agente-base');
 const PASTA = base.PASTA;
 const slug = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'entidade';
 const carimbo = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-const CLAUDE_BIN = (() => {
-  const casa = process.env.USERPROFILE || process.env.HOME || '';
-  for (const t of [path.join(casa, '.local', 'bin', 'claude.exe'), path.join(casa, '.local', 'bin', 'claude')]) if (fs.existsSync(t)) return t;
-  return process.platform === 'win32' ? 'claude.exe' : 'claude';
-})();
+const CLAUDE_BIN = base.acharClaude();
 const LIMITE_MIN = Number(process.env.LIMITE_MINUTOS) || 10;
 const LIMITE_DIA = Number(process.env.LIMITE_RODADAS_DIA) || 50;
 const APROVACOES_PARA_REAL = 10;

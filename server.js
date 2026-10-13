@@ -101,8 +101,7 @@ function lerRegistro() {
 }
 
 /* ---------------- cadastrar e tirar sistema pela tela ---------------- */
-const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'agente';
+const slug = t => UTIL.slug(t) || 'agente';
 
 function lerRegistroBruto() {
   try { return JSON.parse(fs.readFileSync(REGISTRO, 'utf8')); } catch (e) { return {}; }
@@ -573,14 +572,7 @@ const FERRAMENTAS = ['Edit', 'Write', 'Read', 'Glob', 'Grep', 'MultiEdit', 'Note
    Node escapar os argumentos. Com shell:true no Windows eles são só
    concatenados: a pergunta quebrava no primeiro espaço e qualquer & ou |
    digitado na caixa de texto viraria comando na máquina. */
-const CLAUDE_BIN = (() => {
-  const tentativas = [
-    path.join(process.env.USERPROFILE || process.env.HOME || '', '.local', 'bin', 'claude.exe'),
-    path.join(process.env.USERPROFILE || process.env.HOME || '', '.local', 'bin', 'claude')
-  ];
-  for (const t of tentativas) { if (t && fs.existsSync(t)) return t; }
-  return process.platform === 'win32' ? 'claude.exe' : 'claude';   // deixa o PATH resolver
-})();
+const CLAUDE_BIN = UTIL.acharClaude();
 const LIMITE_CONVERSA = 6 * 60 * 1000;
 const LIMITE_CONSTRUIR = 25 * 60 * 1000;   // um passo da jornada pode instalar e subir servidor
 

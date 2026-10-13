@@ -39,8 +39,7 @@ const SETORES_PADRAO = [
   { id: 'dados',      nome: 'Dados & Relatórios',        emoji: '🧮', desc: 'Junta os números dos outros sistemas num painel e explica o que mudou.' },
   { id: 'qa',         nome: 'QA de Sistemas',            emoji: '🧪', desc: 'Roda build, typecheck e teste antes de qualquer deploy dos outros agentes.' }
 ];
-const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+const { slug } = require('./util');
 const comTrilha = (s) => ({ ...s, skill: TRILHAS[s.trilha].skill, passos: TRILHAS[s.trilha].passos });
 
 /** a lista que a tela mostra: atendimento, os setores do cliente (ou os padrões) e "outro" */

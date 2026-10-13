@@ -5,7 +5,8 @@
   "description": "Escritório isométrico no navegador para acompanhar e operar seus agentes de IA: cada agente tem uma mesa, e o computador dele abre o sistema dele.",
   "license": "MIT",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test \"testes/unidade/*.test.js\""
   },
   "engines": {
     "node": ">=18"

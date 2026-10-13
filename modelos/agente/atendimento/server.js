@@ -56,11 +56,7 @@ function sessaoDe(req, res) {
 }
 
 /* ---------------- cérebro provisório: Claude Code da máquina ---------------- */
-const CLAUDE_BIN = (() => {
-  const casa = process.env.USERPROFILE || process.env.HOME || '';
-  for (const t of [path.join(casa, '.local', 'bin', 'claude.exe'), path.join(casa, '.local', 'bin', 'claude')]) if (fs.existsSync(t)) return t;
-  return process.platform === 'win32' ? 'claude.exe' : 'claude';
-})();
+const CLAUDE_BIN = base.acharClaude();
 function perguntarClaudeCode(sessao, texto) {
   return new Promise(resolve => {
     const args = ['-p', '--output-format', 'json', '--model', process.env.MODELO || 'sonnet', '--permission-mode', 'dontAsk',
