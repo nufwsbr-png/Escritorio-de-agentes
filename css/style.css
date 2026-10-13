@@ -493,3 +493,16 @@ button{font-family:inherit;color:inherit}
 .ex-ficha textarea{font:12.5px/1.55 ui-monospace,Consolas,monospace}
 .cv-notas{margin-top:8px;font-size:11px;color:var(--alt-1);opacity:.9}
 .cv-op.hidden{display:none}
+
+/* ---- plataformas: o cadastro único e as permissões por agente ---- */
+.pl-lista{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;margin:4px 0 6px}
+.pl-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.pl-item .pl-txt{flex:1;min-width:0;font-size:13px;line-height:1.5} .pl-item .pl-txt b{font-size:13.5px}
+.pl-item .hint{word-break:break-all} .pl-item code{font-size:11px;background:rgba(255,255,255,.05);padding:1px 4px;border-radius:4px}
+.pl-emo{font-size:20px;line-height:1;flex:none;width:28px;text-align:center}
+.pl-var{display:flex;gap:6px;margin-bottom:6px} .pl-var .pl-k{flex:0 0 42%;font-family:var(--f-mono,monospace);font-size:12px;text-transform:uppercase}
+.pl-var .pl-v{flex:1;font-family:var(--f-mono,monospace);font-size:12px} .pl-var .btn{padding:0 9px;flex:none}
+.pl-var input{background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--txt)}
+.pl-caixas{margin-top:4px} .pl-caixas .opt small{margin-left:4px}
+.pl-linha{align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);line-height:1.45}
+.pl-linha input{margin-top:3px}

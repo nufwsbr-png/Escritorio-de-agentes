@@ -39,7 +39,7 @@ const CONTRATAR = (() => {
     const corpo = $('#modal-body');
     corpo.innerHTML = '<p class="hint">carregando setores…</p>';
     $('#modal').classList.remove('hidden');
-    carregar().then(passo1);
+    Promise.all([carregar(), PLATAFORMAS_UI.carregar()]).then(passo1);
   }
 
   function passo1() {
@@ -88,6 +88,7 @@ const CONTRATAR = (() => {
         <div class="frow"><label>Pasta (opcional)</label><input id="ct-pasta" placeholder="padrão: agentes/${esc(slug(sugerirNome()))}"></div>
       </div>
       <label class="opt" style="margin-top:4px"><input type="checkbox" id="ct-reun" checked> Participa da reunião dos agentes</label>
+      ${PLATAFORMAS_UI.caixas([])}
       <p class="hint" style="margin-top:10px;line-height:1.6">O escritório cria a pasta com <code>skills/</code>, <code>tools/</code>, <code>prompt-agente.md</code>,
         constituição, <code>.env</code>, memória, progresso e um <code>server.js</code> com o contrato do escritório. A skill
         <b>${esc(s.skill)}</b> vai junto como referência e o monitor abre em <b>Construir</b>: a ANATOMIA do escritório conduz, um componente por vez, com teste no fim de cada um (${s.passos} componentes).
@@ -104,7 +105,8 @@ const CONTRATAR = (() => {
       const corpoReq = {
         nome, negocio: $('#ct-neg').value.trim(), setor: s.id,
         setorNome: s.id === 'outro' ? $('#ct-setor').value.trim() : s.nome,
-        porta: Number($('#ct-porta').value), pasta: $('#ct-pasta').value.trim() || ''
+        porta: Number($('#ct-porta').value), pasta: $('#ct-pasta').value.trim() || '',
+        plataformas: PLATAFORMAS_UI.marcadas()
       };
       $('#ct-ok').disabled = true; $('#ct-msg').textContent = 'criando a pasta e copiando a skill…';
       let r;

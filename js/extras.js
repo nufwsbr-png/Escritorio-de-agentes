@@ -7,6 +7,7 @@
              aprova ou recusa; nada entra sozinho
    testes    o testador (duas réguas) e a comparação com a rodada anterior
    ficha     a ficha do negócio: a constituição, seção por seção
+   plataformas as plataformas que o agente pode usar (PLATAFORMAS_UI.painelDoAgente)
    =========================================================== */
 const EXTRAS = (() => {
   const $ = s => document.querySelector(s);
@@ -41,6 +42,7 @@ const EXTRAS = (() => {
       else if (tipo === 'propostas') await pintarPropostas();
       else if (tipo === 'testes') await pintarTestes();
       else if (tipo === 'ficha') await pintarFicha();
+      else if (tipo === 'plataformas') await PLATAFORMAS_UI.painelDoAgente(id, el(), cabeca, fechaBotao);
     } catch (e) { el().innerHTML = cabeca('Não consegui carregar', esc(e.message)); fechaBotao(); }
   }
 

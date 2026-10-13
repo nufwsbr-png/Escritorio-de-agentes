@@ -1333,7 +1333,7 @@ $('#mon-chat').addEventListener('click', () => {
   CONVERSA.abrir(mon.id);
 });
 // os painéis extras: um por vez, por cima do quadro do sistema
-for (const [botao, tipo] of [['ficha', 'ficha'], ['memoria', 'memoria'], ['recados', 'recados'], ['propostas', 'propostas'], ['testar', 'testes']]) {
+for (const [botao, tipo] of [['ficha', 'ficha'], ['memoria', 'memoria'], ['recados', 'recados'], ['propostas', 'propostas'], ['plataformas', 'plataformas'], ['testar', 'testes']]) {
   $('#mon-' + botao).addEventListener('click', () => {
     if (EXTRAS.aberto() && EXTRAS.tipo === tipo) { EXTRAS.fechar(); return; }
     if (!mon.id) return;
@@ -1545,6 +1545,7 @@ $('#btn-allwork').addEventListener('click', () => { setAll('trabalhando'); toast
 $('#btn-allrest').addEventListener('click', () => { setAll('descanso'); toast('Equipe liberada para o lounge.'); });
 $('#btn-report').addEventListener('click', openReport);
 $('#btn-avisos').addEventListener('click', () => AVISOS_UI.abrir());
+$('#btn-plataformas').addEventListener('click', () => PLATAFORMAS_UI.abrir());
 $('#btn-quadro').addEventListener('click', openQuadro);
 $('#btn-voice').addEventListener('click', toggleVoice);
 $('#btn-speak').addEventListener('click', () => speak(buildReport().fala));
