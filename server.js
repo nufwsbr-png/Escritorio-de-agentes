@@ -46,6 +46,31 @@ if (!fs.existsSync(REGISTRO)) {
 const EQUIPE     = path.join(ROOT, 'data', 'equipe.json');
 const EQUIPE_BAK = path.join(ROOT, 'data', 'equipe.bak.json');
 
+/* ---------------- os módulos do escritório ----------------
+   admin    — senha e sessão do administrador (a tranca)
+   memoria  — memória por agente, recados entre agentes e propostas
+   agentes  — contratar é construir: pasta padrão + skill da trilha
+   testador — o exame do agente, com duas réguas                      */
+const ADMIN = require('./admin').init(ROOT);
+const equipeDoDisco = () => {
+  try { return (JSON.parse(fs.readFileSync(EQUIPE, 'utf8')).team) || []; }
+  catch (e) { return []; }
+};
+const nomeDoAgente = (idSistema) => {
+  const a = equipeDoDisco().find(x => x.sistema === idSistema);
+  return a ? a.name : null;
+};
+const MEMORIA = require('./memoria').init({ ROOT, lerRegistro, nomeDe: nomeDoAgente });
+const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig });
+
+/* lê o corpo JSON de um POST/PUT, com limite de tamanho */
+const corpoJson = (req, limite = 1e5) => new Promise((resolve, reject) => {
+  let bruto = '';
+  req.on('data', c => { bruto += c; if (bruto.length > limite) { req.destroy(); reject(new Error('corpo grande demais')); } });
+  req.on('end', () => { try { resolve(bruto ? JSON.parse(bruto) : {}); } catch (e) { reject(new Error('json inválido')); } });
+  req.on('error', reject);
+});
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
@@ -450,6 +475,11 @@ async function estado() {
     const item = {
       id, nome: s.nome, tipo: s.tipo, sobre: s.sobre || '', dicas: s.dicas || [],
       aviso: s.aviso || null,
+      // agente construído pelo escritório: setor, trilha e onde a construção está
+      setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null,
+      construcao: AGENTES.progressoDe(s.pasta, s.trilha),
+      propostasPendentes: MEMORIA.propostas(id).filter(p => p.estado === 'pendente').length,
+      recadosNovos: MEMORIA.pendentesPara(id, false).length,
       // true = abre direto no quadro; "espelho" = passa pelo proxy local;
       // false = o navegador recusa mesmo, então o monitor manda abrir fora
       embutir: s.embutir === undefined ? true : s.embutir,
@@ -509,6 +539,36 @@ async function estado() {
    =========================================================== */
 const conversas = new Map();   // id -> { sessionId, historico, rodando, proc, erro }
 
+/* A sessão sobrevive a reinício: antes o id ficava só nesta memória e
+   reiniciar o escritório zerava toda conversa. Agora vai para o disco. */
+const CONVERSAS_ARQ = path.join(ROOT, 'data', 'conversas.json');
+function lerConversas() {
+  try {
+    const d = JSON.parse(fs.readFileSync(CONVERSAS_ARQ, 'utf8'));
+    for (const [id, c] of Object.entries(d))
+      conversas.set(id, { sessionId: c.sessionId || null, historico: c.historico || [], rodando: false, proc: null, erro: null });
+  } catch (e) { /* primeira vez */ }
+}
+let gravandoConversas = null;
+function gravarConversas() {
+  clearTimeout(gravandoConversas);
+  gravandoConversas = setTimeout(() => {
+    const d = {};
+    for (const [id, c] of conversas) d[id] = { sessionId: c.sessionId, historico: c.historico.slice(-40) };
+    try { fs.writeFileSync(CONVERSAS_ARQ, JSON.stringify(d, null, 2) + '\n'); } catch (e) {}
+  }, 300);
+}
+lerConversas();
+
+/* O que o Claude pode fazer sozinho nos modos que alteram o projeto
+   (resolver, construir, testar). Em -p não há quem responda a um pedido
+   de permissão, então o que não está aqui é simplesmente negado. */
+const FERRAMENTAS = ['Edit', 'Write', 'Read', 'Glob', 'Grep', 'MultiEdit', 'NotebookEdit', 'WebFetch', 'WebSearch', 'TodoWrite', 'Skill',
+  'Bash(node:*)', 'Bash(npm:*)', 'Bash(npx:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(git:*)', 'Bash(curl:*)',
+  'Bash(mkdir:*)', 'Bash(dir:*)', 'Bash(ls:*)', 'Bash(cat:*)', 'Bash(type:*)', 'Bash(copy:*)', 'Bash(cp:*)', 'Bash(move:*)', 'Bash(mv:*)',
+  'Bash(del:*)', 'Bash(rm:*)', 'Bash(echo:*)', 'Bash(where:*)', 'Bash(which:*)', 'Bash(findstr:*)', 'Bash(grep:*)',
+  'Bash(netstat:*)', 'Bash(taskkill:*)', 'Bash(timeout:*)', 'Bash(sleep:*)', 'Bash(powershell:*)', 'Bash(claude:*)'];
+
 /* O claude é um .exe de verdade, então roda SEM shell — e é isso que faz o
    Node escapar os argumentos. Com shell:true no Windows eles são só
    concatenados: a pergunta quebrava no primeiro espaço e qualquer & ou |
@@ -522,12 +582,8 @@ const CLAUDE_BIN = (() => {
   return process.platform === 'win32' ? 'claude.exe' : 'claude';   // deixa o PATH resolver
 })();
 const LIMITE_CONVERSA = 6 * 60 * 1000;
+const LIMITE_CONSTRUIR = 25 * 60 * 1000;   // um passo da jornada pode instalar e subir servidor
 
-/* a reunião diária dos agentes — ver reuniao.js */
-const equipeDoDisco = () => {
-  try { return (JSON.parse(fs.readFileSync(EQUIPE, 'utf8')).team) || []; }
-  catch (e) { return []; }
-};
 /* o resumo diário do celular: quem caiu e não voltou */
 const AVISOS = require('./avisos').init(ROOT, {
   nome: () => lerConfig().nome,
@@ -535,8 +591,11 @@ const AVISOS = require('./avisos').init(ROOT, {
     .map(x => (x.nome || x.id) + ' está fora do ar.')
 });
 const REUNIAO = require('./reuniao').init({ ROOT, lerRegistro, CLAUDE_BIN, config: lerConfig,
-  avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}) });
+  avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
+  contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 REUNIAO.agendar(equipeDoDisco);
+const TESTADOR = require('./testador').init({ ROOT, CLAUDE_BIN, lerRegistro, FERRAMENTAS,
+  contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 
 const PAPEL =
   'Você é o agente responsável por este sistema dentro do escritório de agentes, ' +
@@ -560,15 +619,28 @@ function perguntar(id, texto, modo) {
   const c = conversaDe(id);
   if (c.rodando) return { ok: false, motivo: 'ele ainda está respondendo a anterior' };
 
+  /* construir: a skill da trilha conduz a jornada dentro da pasta do agente.
+     Pode editar e rodar comandos; o que ela não pode é escrever o prompt do
+     dono — isso está na própria skill e no CLAUDE.md da pasta. */
+  const papel = (modo === 'construir'
+    ? 'Você é o construtor do agente ' + (s.nome || id) + ' dentro do escritório de agentes. A skill da jornada está em ' +
+      '.claude/skills/ desta pasta (' + (s.trilha === 'atendimento' ? 'criar-agente' : 'criar-agente-setor') + '): leia o SKILL.md, ' +
+      'o CLAUDE.md e o progresso-do-agente.md e conduza UM passo por vez, em português do Brasil. Nunca preencha prompt-agente.md ' +
+      'além do OBJETIVO que o dono ditar; nunca cole chave no chat; mantenha /saude, /painel e /log no server.js.'
+    : PAPEL) + MEMORIA.contextoDe(id);
+
   // -p sem valor lê o prompt da entrada padrão: a pergunta nunca passa
   // pela linha de comando, então não precisa de escape nenhum
+  const altera = modo === 'resolver' || modo === 'construir';
   const args = ['-p', '--output-format', 'json',
-                '--permission-mode', modo === 'resolver' ? 'acceptEdits' : 'plan',
-                '--append-system-prompt', PAPEL];
+                '--permission-mode', altera ? 'acceptEdits' : 'plan',
+                '--append-system-prompt', papel];
+  if (altera) args.push('--allowedTools', ...FERRAMENTAS);
   if (c.sessionId) args.push('--resume', c.sessionId);
 
   c.rodando = true; c.erro = null;
-  c.historico.push({ quem: 'voce', texto, quando: Date.now() });
+  c.historico.push({ quem: 'voce', texto, quando: Date.now(), modo });
+  gravarConversas();
 
   let saida = '', erroSaida = '';
   const proc = spawn(CLAUDE_BIN, args, {
@@ -583,7 +655,7 @@ function perguntar(id, texto, modo) {
   const prazo = setTimeout(() => {
     try { proc.kill(); } catch (e) { /* já morreu */ }
     c.erro = 'demorou demais e foi interrompido';
-  }, LIMITE_CONVERSA);
+  }, modo === 'construir' ? LIMITE_CONSTRUIR : LIMITE_CONVERSA);
 
   proc.stdout.on('data', d => { saida += d; });
   proc.stderr.on('data', d => { erroSaida += d; });
@@ -595,21 +667,25 @@ function perguntar(id, texto, modo) {
     try { j = JSON.parse(saida); } catch (e) { /* saída não era JSON */ }
 
     if (j && j.session_id) c.sessionId = j.session_id;
-    const resposta = j ? String(j.result || '') : (saida || erroSaida || '(sem resposta)');
+    const bruta = j ? String(j.result || '') : (saida || erroSaida || '(sem resposta)');
 
-    if (/not logged in|please run \/login/i.test(resposta)) {
+    if (/not logged in|please run \/login/i.test(bruta)) {
       c.precisaLogin = true;
       loginCache = { quando: 0, dados: null };
       c.erro = 'O Claude Code não está autenticado nesta máquina.';
       c.sessionId = null;
+      gravarConversas();
       return;
     }
     c.precisaLogin = false;
+    // os blocos <memoria>, <mensagem> e <proposta> saem do texto e vão para o lugar deles
+    const { texto: resposta, notas } = MEMORIA.processarBlocos(id, bruta);
     c.historico.push({
-      quem: 'agente', texto: resposta, quando: Date.now(),
+      quem: 'agente', texto: resposta, quando: Date.now(), notas,
       modo, custo: j ? j.total_cost_usd : null, erro: j ? !!j.is_error : false
     });
     if (c.historico.length > 40) c.historico.splice(0, c.historico.length - 40);
+    gravarConversas();
   });
 
   console.log(`  💬 ${id}: "${texto.slice(0, 60)}" (${modo})`);
@@ -628,6 +704,7 @@ function esquecerConversa(id) {
   const c = conversaDe(id);
   if (c.proc) { try { c.proc.kill(); } catch (e) { /* já morreu */ } }
   conversas.set(id, { sessionId: null, historico: [], rodando: false, proc: null, erro: null });
+  gravarConversas();
   return { ok: true };
 }
 
@@ -688,13 +765,92 @@ const servidor = http.createServer(async (req, res) => {
     return json(res, 403, { ok: false, motivo: 'origem não permitida' });
   }
 
-  /* configuração pública para a tela: nome, dono, reunião (sem segredo) */
+  /* configuração pública para a tela: nome, dono, marca (sem segredo) */
   if (rota === '/config.js') {
     const c = lerConfig();
-    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa };
+    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {} };
     res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('window.ESCRITORIO = ' + JSON.stringify(pub) + ';\n');
     return;
+  }
+
+  /* ---- a tranca ----
+     Rotas de administrador exigem sessão quando há senha. A verificação é
+     aqui, não na tela: chamar o endereço direto também é recusado. */
+  const admin = ADMIN.ehAdmin(req);
+  const soAdmin = () => { json(res, 403, { ok: false, motivo: 'só o administrador faz isso — entre em 🔐 Admin', precisaAdmin: true }); return true; };
+
+  if (rota === '/api/admin' && req.method === 'GET') return json(res, 200, ADMIN.estado(req));
+  if (rota === '/api/admin/entrar' && req.method === 'POST') {
+    return corpoJson(req, 1e4).then(b => {
+      if (!ADMIN.temSenha()) return json(res, 200, { ok: true, aberto: true });
+      if (!ADMIN.conferir(b.senha || '')) return json(res, 401, { ok: false, motivo: 'senha errada' });
+      res.setHeader('Set-Cookie', ADMIN.cookie(ADMIN.criarSessao()));
+      json(res, 200, { ok: true });
+    }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  if (rota === '/api/admin/sair' && req.method === 'POST') {
+    const t = ADMIN.tokenDe(req); if (t) ADMIN.encerrar(t);
+    res.setHeader('Set-Cookie', ADMIN.cookieVazio());
+    return json(res, 200, { ok: true });
+  }
+  if (rota === '/api/admin/senha' && req.method === 'POST') {
+    // definir a primeira senha é livre; trocar exige ser administrador
+    if (ADMIN.temSenha() && !admin) return soAdmin();
+    return corpoJson(req, 1e4).then(b => {
+      const r = ADMIN.definirSenha(b.senha);
+      if (!r.ok) return json(res, 400, r);
+      res.setHeader('Set-Cookie', ADMIN.cookie(ADMIN.criarSessao()));
+      json(res, 200, r);
+    }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+
+  /* ---- contratar é construir ---- */
+  if (rota === '/api/setores' && req.method === 'GET') return json(res, 200, { setores: AGENTES.SETORES });
+  if (rota === '/api/contratar' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return corpoJson(req, 2e4).then(b => json(res, 200, AGENTES.criarAgente(b)))
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+
+  /* ---- memória, constituição, recados, propostas e testes de um agente ---- */
+  const ma = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/(memoria|constituicao|mensagens|testes|testar|testar\/parar)$/i);
+  if (ma) {
+    const [, id, acao] = ma;
+    if (acao === 'memoria') {
+      if (req.method === 'GET') return json(res, 200, { texto: MEMORIA.lerMemoria(id) });
+      if (!admin) return soAdmin();
+      return corpoJson(req, 1e5).then(b => json(res, 200, MEMORIA.gravarMemoria(id, b.texto || '')))
+        .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    if (acao === 'constituicao') {
+      if (req.method === 'GET') return json(res, 200, AGENTES.lerConstituicao(id));
+      // a ficha do negócio é do dono do negócio: o cliente preenche sem senha
+      return corpoJson(req, 4e5).then(b => json(res, 200, AGENTES.gravarConstituicao(id, b)))
+        .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    if (acao === 'mensagens') {
+      if (req.method === 'GET') return json(res, 200, { mensagens: MEMORIA.caixaDe(id) });
+      return corpoJson(req, 1e4).then(b => json(res, 200, MEMORIA.enviar({ de: 'dono', para: id, texto: b.texto || '' })))
+        .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    if (acao === 'testes') return json(res, 200, TESTADOR.estado(id));
+    if (!admin) return soAdmin();
+    if (acao === 'testar/parar') return json(res, 200, TESTADOR.parar(id));
+    return corpoJson(req, 1e4).then(b => json(res, 200, TESTADOR.rodar(id, b.n)))
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  if (rota === '/api/mensagens' && req.method === 'GET') {
+    const desde = Number(url.searchParams.get('desde') || 0);
+    return json(res, 200, { mensagens: MEMORIA.novos(desde), agora: Date.now() });
+  }
+  if (rota === '/api/propostas' && req.method === 'GET') {
+    return json(res, 200, { propostas: MEMORIA.propostas(url.searchParams.get('agente') || null) });
+  }
+  const mp = rota.match(/^\/api\/propostas\/([a-f0-9]+)\/(aprovar|recusar)$/i);
+  if (mp && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return json(res, 200, MEMORIA.decidir(mp[1], mp[2] === 'aprovar' ? 'aprovada' : 'recusada'));
   }
 
   /* ---- API ---- */
@@ -704,6 +860,8 @@ const servidor = http.createServer(async (req, res) => {
   if ((rota === '/api/avisos' && req.method === 'PUT') ||
       (rota === '/api/avisos/testar' && req.method === 'POST') ||
       (rota === '/api/avisar' && req.method === 'POST')) {
+    // mudar para onde o escritório avisa (e a chave do CallMeBot) é coisa de administrador
+    if (rota !== '/api/avisar' && !admin) return soAdmin();
     let bruto = '';
     req.on('data', c => { bruto += c; if (bruto.length > 1e5) req.destroy(); });
     req.on('end', async () => {
@@ -779,6 +937,14 @@ const servidor = http.createServer(async (req, res) => {
             return json(res, 409, { ok: false, motivo: 'recusei apagar a equipe do disco com uma lista vazia' });
         } catch (e) { /* não havia nada mesmo */ }
       }
+      // o cliente muda situação e horário; contratar e demitir (mudar QUEM está
+      // no quadro) é de administrador
+      if (!admin) {
+        const atuais = new Set(equipeDoDisco().map(a => a.id));
+        const novos = new Set(d.team.map(a => a.id));
+        const mudouQuadro = atuais.size !== novos.size || [...novos].some(x => !atuais.has(x));
+        if (mudouQuadro && atuais.size) return soAdmin();
+      }
       try {
         fs.mkdirSync(path.dirname(EQUIPE), { recursive: true });
         if (fs.existsSync(EQUIPE)) fs.copyFileSync(EQUIPE, EQUIPE_BAK);
@@ -793,6 +959,7 @@ const servidor = http.createServer(async (req, res) => {
     return json(res, 200, await estado());
   }
   if (rota === '/api/sistemas' && req.method === 'POST') {
+    if (!admin) return soAdmin();        // cadastrar um comando que roda aqui: só administrador
     let bruto = '';
     req.on('data', c => { bruto += c; if (bruto.length > 2e4) req.destroy(); });
     req.on('end', () => {
@@ -803,7 +970,7 @@ const servidor = http.createServer(async (req, res) => {
     return;
   }
   const md = rota.match(/^\/api\/sistemas\/([a-z0-9_-]+)$/i);
-  if (md && req.method === 'DELETE') return json(res, 200, tirarSistema(md[1]));
+  if (md && req.method === 'DELETE') return admin ? json(res, 200, tirarSistema(md[1])) : soAdmin();
   const m = rota.match(/^\/api\/sistemas\/([a-z0-9_-]+)\/(ligar|desligar|log)$/i);
   if (m) {
     const [, id, acao] = m;
@@ -827,7 +994,10 @@ const servidor = http.createServer(async (req, res) => {
       try { b = JSON.parse(corpo || '{}'); } catch (e) { /* corpo inválido */ }
       const texto = String(b.texto || '').trim();
       if (!texto) return json(res, 400, { ok: false, motivo: 'pergunta vazia' });
-      json(res, 200, perguntar(id, texto, b.modo === 'resolver' ? 'resolver' : 'investigar'));
+      const modo = b.modo === 'resolver' ? 'resolver' : b.modo === 'construir' ? 'construir' : 'investigar';
+      // investigar só lê; resolver e construir alteram o projeto, então pedem administrador
+      if (modo !== 'investigar' && !admin) return soAdmin();
+      json(res, 200, perguntar(id, texto, modo));
     });
     return;
   }
@@ -835,10 +1005,14 @@ const servidor = http.createServer(async (req, res) => {
 
   /* ---- estáticos ---- */
   const rel = rota === '/' ? '/index.html' : rota;
-  if (!/^\/(index\.html|favicon\.svg|css\/|js\/)/.test(rel)) {
+  // /marca/ serve o logo e as imagens da marca do cliente, que ficam em data/marca/
+  if (!/^\/(index\.html|favicon\.svg|css\/|js\/|marca\/)/.test(rel)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('404'); return;
   }
-  const arquivo = path.join(ROOT, path.normalize(rel).replace(/^(\.\.[/\\])+/, ''));
+  const limpo = path.normalize(rel).replace(/^(\.\.[/\\])+/, '');
+  const arquivo = rel.startsWith('/marca/')
+    ? path.join(ROOT, 'data', limpo)
+    : path.join(ROOT, limpo);
   if (!arquivo.startsWith(ROOT)) { res.writeHead(403).end('forbidden'); return; }
 
   fs.readFile(arquivo, (err, buf) => {
@@ -987,5 +1161,7 @@ readotarVivos();   // reencontra o que ficou de pé do reinício anterior
 servidor.listen(PORT, '127.0.0.1', () => {
   const n = Object.keys(lerRegistro()).length;
   console.log(`\n  ${lerConfig().nome.toUpperCase()} -> http://localhost:${PORT}`);
-  console.log(`  ${n} sistemas no registro (data/sistemas.json)\n`);
+  console.log(`  ${n} sistemas no registro (data/sistemas.json)`);
+  console.log(ADMIN.temSenha() ? '  tranca: senha de administrador definida\n'
+                               : '  tranca: SEM senha de administrador — defina em 🔐 Admin antes de entregar a um cliente\n');
 });

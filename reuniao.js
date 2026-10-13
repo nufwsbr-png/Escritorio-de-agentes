@@ -103,8 +103,40 @@ function participantesDe(equipe) {
   return { dentro, fora };
 }
 
+/* ---------------- memória de reunião ----------------
+   Antes, cada reunião nascia do zero: o agente prometia e ninguém cobrava.
+   Agora as últimas atas entram no prompt: o que ele disse, o briefing
+   anterior, e a cobrança explícita do que cumpriu. */
+function memoriaDeReuniao(nome, n = 3) {
+  const dias = historico(n + 1).map(h => h.dia).filter(d => d !== hojeISO()).slice(0, n);
+  const partes = [];
+  for (const dia of dias) {
+    const ata = lerAta(dia);
+    if (!ata) continue;
+    const minhas = (ata.falas || []).filter(f => f.quem === nome && f.texto);
+    if (minhas.length)
+      partes.push('Reunião de ' + dia.split('-').reverse().join('/') + ' — você disse:\n' + minhas.map(f => f.texto).join('\n'));
+  }
+  const ultima = dias.map(lerAta).find(a => a && a.briefing);
+  if (ultima) partes.push('Briefing da última reunião (' + ultima.dia.split('-').reverse().join('/') + '):\n' + ultima.briefing);
+  return partes.length ? '\n\nMEMÓRIA DAS ÚLTIMAS REUNIÕES:\n' + partes.join('\n\n').slice(0, 5000) +
+    '\n\nComece dizendo, em uma linha, o que você cumpriu ou não do que prometeu.' : '';
+}
+
 /* ---------------- falar com um agente ---------------- */
-function perguntaAoAgente(pasta, prompt, papel, limiteMs) {
+function perguntaAoAgente(pasta, prompt, papel, limiteMs, id) {
+  // memória do agente, recados pendentes e as instruções dos blocos
+  if (id && dep.contextoDe) papel += dep.contextoDe(id);
+  return perguntaBruta(pasta, prompt, papel, limiteMs).then(r => {
+    if (id && dep.processarBlocos && r.texto) {
+      const { texto, notas } = dep.processarBlocos(id, r.texto);
+      r.texto = texto + (notas.length ? '\n\n' + notas.join(' · ') : '');
+    }
+    return r;
+  });
+}
+
+function perguntaBruta(pasta, prompt, papel, limiteMs) {
   return new Promise(resolve => {
     const args = ['-p', '--output-format', 'json',
                   '--permission-mode', 'plan',       // reunião é conversa, não obra
@@ -194,8 +226,9 @@ async function rodar(equipe, opcoes = {}) {
       `Consulte o projeto no máximo duas vezes. Responda em até 6 linhas, nesta ordem:\n` +
       `1. O número que você controla hoje (dado real do projeto; se não houver, diga).\n` +
       `2. A MELHORIA no seu próprio sistema que mais ajudaria na meta — uma só.\n` +
-      `3. O que você precisa de outro agente ou do dono para isso (diga de quem).`;
-    const r = await perguntaAoAgente(ag.pasta, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 5 * 60000));
+      `3. O que você precisa de outro agente ou do dono para isso (diga de quem; se for de outro agente, deixe o recado com <mensagem>).` +
+      memoriaDeReuniao(ag.nome);
+    const r = await perguntaAoAgente(ag.pasta, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 5 * 60000), ag.id);
     estado.custo += r.custo;
     fala(ag.nome, ag.papel, r.texto, 1, r.erro);
   }
@@ -218,7 +251,7 @@ async function rodar(equipe, opcoes = {}) {
         `1. O que muda no SEU plano depois de ler isso.\n` +
         `2. Onde você se encaixa com outro time (diga o nome de quem).\n` +
         `3. Com o que você se compromete ESTA SEMANA, com número.`;
-      const r = await perguntaAoAgente(ag.pasta, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 4 * 60000));
+      const r = await perguntaAoAgente(ag.pasta, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 4 * 60000), ag.id);
       estado.custo += r.custo;
       fala(ag.nome, ag.papel, r.texto, 2, r.erro);
     }
@@ -239,7 +272,7 @@ async function rodar(equipe, opcoes = {}) {
       `**TRAVA** — a única coisa que, se não for resolvida, derruba a semana.\n` +
       `**O DONO PRECISA DECIDIR** — o que depende dele e não dos agentes. Se não houver nada, escreva "nada hoje".\n\n` +
       `Sem enrolação, sem repetir o que já está escrito acima. Se os times se contradisseram, aponte.`;
-    const r = await perguntaAoAgente(dep.ROOT, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 5 * 60000));
+    const r = await perguntaBruta(dep.ROOT, prompt, PAPEL_REUNIAO(), Math.min(sobra(), 5 * 60000));
     estado.custo += r.custo;
     estado.briefing = r.texto;
     if (r.erro) estado.erro = r.erro;

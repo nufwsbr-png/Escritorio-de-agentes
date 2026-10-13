@@ -428,3 +428,68 @@ button{font-family:inherit;color:inherit}
 .rn-fora{color:var(--tx3,#646d84);font-size:11.5px;line-height:1.6;margin-top:14px;
   border-top:1px solid var(--line,#262b3d);padding-top:12px}
 .rn-custo{color:var(--tx3,#646d84);font-size:11px}
+
+/* ===========================================================
+   TRANCA, CONTRATAÇÃO E PAINÉIS EXTRAS DO MONITOR
+   =========================================================== */
+.btn.aberto{color:var(--warn);border-color:rgba(255,176,32,.45);animation:cadeado 2.4s infinite}
+@keyframes cadeado{50%{box-shadow:0 0 0 5px rgba(255,176,32,.12)}}
+.badge{display:inline-block;min-width:16px;padding:0 5px;margin-left:5px;border-radius:10px;font-size:10px;line-height:16px;
+  background:var(--acc-1);color:#fff;text-align:center;vertical-align:1px}
+.mon-acoes{flex-wrap:wrap;justify-content:flex-end;row-gap:6px}
+
+/* treinamento: o boneco está na mesa, mas em construção */
+.pill.treinamento{background:rgba(192,132,252,.16);color:#c084fc}
+.card.s-treinamento::before{background:#c084fc;box-shadow:0 0 12px #c084fc}
+.passo{height:4px;background:var(--bg-2);border-radius:4px;overflow:hidden;margin-top:6px}
+.passo i{display:block;height:100%;background:#c084fc}
+
+/* assistente de contratação */
+.setor-grid{display:flex;flex-direction:column;gap:10px}
+.setor-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px;border-radius:12px;cursor:pointer;
+  background:var(--bg-2);border:1px solid var(--line);font-family:inherit}
+.setor-card:hover{border-color:#3d477a}
+.setor-card.destaque{background:linear-gradient(135deg,rgba(20,184,166,.14),rgba(124,108,255,.1));border-color:rgba(20,184,166,.4)}
+.setor-card .emo{font-size:22px} .setor-card b{font-size:14px} .setor-card small{color:var(--txt-dim);font-size:12px;line-height:1.45}
+.setor-card em{font-style:normal;font-size:10.5px;color:var(--alt-1);text-transform:uppercase;letter-spacing:.6px;margin-top:4px}
+.setor-outros{padding:14px;border-radius:12px;background:var(--bg-2);border:1px solid var(--line)}
+.setor-outros b{display:block;font-size:14px} .setor-outros small{display:block;color:var(--txt-dim);font-size:12px;line-height:1.45;margin:3px 0 10px}
+.setor-outros .chips{display:flex;flex-wrap:wrap;gap:6px}
+.setor-outros .chip{font-size:12px;color:var(--txt)}
+.setor-outros .chip:hover{border-color:var(--acc-1);color:var(--acc-3)}
+
+/* painéis extras (memória, recados, propostas, testes, ficha) */
+.extra{position:absolute;inset:0;display:flex;flex-direction:column;background:#080a11}
+.extra.hidden{display:none}
+.ex-top{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:#0b0e17}
+.ex-top b{display:block;font-family:var(--f-display);font-size:14px}
+.ex-top span{display:block;font-size:12px;color:var(--txt-dim)}
+.ex-top .btn{margin-left:auto}
+.ex-texto{flex:1;margin:0;border:0;resize:none;background:#06070c;color:#d9e0f5;padding:16px 20px;
+  font:12.5px/1.6 ui-monospace,Consolas,monospace;outline:none}
+.ex-baixo{display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);background:#0b0e17}
+.ex-baixo input{background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;color:var(--txt);font-family:inherit;font-size:13.5px}
+.ex-baixo .hint{flex:1}
+.ex-lista{flex:1;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+.ex-rec{max-width:min(720px,88%);padding:10px 13px;border-radius:12px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;
+  background:var(--panel-2);border:1px solid var(--line)}
+.ex-rec.tx{align-self:flex-end;background:linear-gradient(135deg,#2a1d4a,#1d1832);border-color:#3b3164}
+.ex-rec .qm,.ex-prop .qm,.ex-relatorio .qm{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;color:var(--txt-dim);margin-bottom:5px}
+.ex-prop{padding:12px 14px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--acc-1)}
+.ex-prop.aprovada{border-left-color:var(--ok);opacity:.75} .ex-prop.recusada{border-left-color:#ff7a6b;opacity:.55}
+.ex-prop pre{margin:6px 0 0;white-space:pre-wrap;font:12.5px/1.55 ui-monospace,Consolas,monospace;color:#d9e0f5}
+.ex-prop .acts{display:flex;gap:6px;margin-top:10px}
+.ex-testes{flex:1;overflow:auto;padding:16px 20px}
+.ex-rodar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line)}
+.ex-rodar label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt-dim)}
+.ex-rodar input{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--txt);font-family:inherit}
+.ex-rodar .hint{flex:1 1 100%}
+.ex-compara{margin-top:12px;padding:10px 14px;border-radius:10px;font-weight:700;font-size:13px;background:var(--panel-2);border:1px solid var(--line)}
+.ex-compara.melhor{color:var(--ok);border-color:rgba(35,224,138,.4)} .ex-compara.pior{color:#ff7a6b;border-color:rgba(255,80,60,.4)}
+.ex-relatorio{margin-top:12px}
+.ex-relatorio pre{margin:0;padding:12px 14px;border-radius:10px;background:#06070c;border:1px solid var(--line);
+  white-space:pre-wrap;font:12px/1.55 ui-monospace,Consolas,monospace;color:#d9e0f5;max-height:60vh;overflow:auto}
+.ex-ficha{flex:1;overflow:auto;padding:16px 20px;max-width:860px;width:100%;margin:0 auto}
+.ex-ficha textarea{font:12.5px/1.55 ui-monospace,Consolas,monospace}
+.cv-notas{margin-top:8px;font-size:11px;color:var(--alt-1);opacity:.9}
+.cv-op.hidden{display:none}

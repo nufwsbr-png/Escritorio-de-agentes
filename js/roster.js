@@ -28,60 +28,32 @@ const ROSTER = (() => {
 
   /* ===========================================================
      BANCO DE TALENTOS
-     'detectado' = tem sistema no registro (data/sistemas.json)
-     'sugerido'  = vaga de ideia; contrate e depois ligue um sistema a ela
+     Todo escritório nasce com UM agente: o exemplo. Os outros entram pela
+     contratação (contratar.js), que cria a pasta, o sistema e a jornada —
+     os setores vêm do servidor (GET /api/setores). Não existe mais "vaga
+     sem sistema": todo agente termina com sistema próprio.
      =========================================================== */
   const CATALOG = [
     {
       key: 'exemplo', name: 'EXEMPLO', role: 'Agente de demonstração', emoji: '🤖',
       cat: 'detectado', system: 'Agente de exemplo', sistema: 'exemplo',
-      desc: 'Um sistema mínimo que vem junto, na pasta exemplo-agente: sobe na porta 4401 e mostra uma página.',
-      why: 'Serve de molde. Clique no computador dele para ver o escritório ligar, embutir e conversar com um sistema. Depois cadastre os seus.',
+      desc: 'O menor agente pronto, na pasta exemplo-agente: estrutura padrão, chat de teste pelo Claude Code da máquina e painel em /painel.',
+      why: 'Serve de molde. Clique no computador dele para ver o escritório ligar, embutir, conversar e lembrar. Depois contrate os seus.',
       look: { skin: '#c9854f', hair: '#140f0c', style: 'cacheado', shirt: '#38bdf8', pants: '#26304a', glasses: null, beard: null }
-    },
-    {
-      key: 'sdr', name: 'Léo', role: 'Prospecção & SDR', emoji: '🎯', cat: 'sugerido',
-      desc: 'Encontra clientes em potencial, qualifica e prepara a primeira abordagem.',
-      why: 'É o topo do funil: sem entrada de oportunidade nova, o resto da equipe fica sem trabalho.',
-      look: { skin: '#f0c29b', hair: '#241a13', style: 'fade', shirt: '#6366f1', pants: '#1b2030', glasses: null, beard: 'cavanhaque' }
-    },
-    {
-      key: 'atendimento', name: 'Bia', role: 'Atendimento & Suporte', emoji: '🎧', cat: 'sugerido',
-      desc: 'Responde dúvidas, resolve problemas e encaminha o que precisa de gente.',
-      why: 'Resposta rápida segura cliente. Um agente de primeira linha tira o volume repetitivo de você.',
-      look: { skin: '#7a4a2c', hair: '#140f0c', style: 'coque', shirt: '#14b8a6', pants: '#1b2030', glasses: 'redondo', beard: null }
-    },
-    {
-      key: 'conteudo', name: 'Nico', role: 'Conteúdo & Redes Sociais', emoji: '📱', cat: 'sugerido',
-      desc: 'Planeja o calendário, escreve legendas e acompanha o que funcionou.',
-      why: 'Constância nas redes custa tempo. Com pauta e rascunho prontos, você só aprova.',
-      look: { skin: '#e0a878', hair: '#5a3a22', style: 'longo', shirt: '#f472b6', pants: '#26304a', glasses: null, beard: null }
-    },
-    {
-      key: 'copy', name: 'Duda', role: 'Copywriter', emoji: '✍️', cat: 'sugerido',
-      desc: 'Escreve anúncios, páginas e e-mails e testa variações.',
-      why: 'Texto é o que converte. Ter variações prontas acelera qualquer teste.',
-      look: { skin: '#f7d7bd', hair: '#8b5a2b', style: 'curto', shirt: '#f59e0b', pants: '#1b2030', glasses: 'retangular', beard: null }
-    },
-    {
-      key: 'financeiro', name: 'Rafa', role: 'Financeiro', emoji: '🧾', cat: 'sugerido',
-      desc: 'Acompanha entradas, saídas e o caixa, e avisa quando algo foge do previsto.',
-      why: 'Número do caixa em dia evita surpresa e mostra o que dá para investir.',
-      look: { skin: '#c9854f', hair: '#1a120d', style: 'curto', shirt: '#22c55e', pants: '#26304a', glasses: 'retangular', beard: 'cheia' }
-    },
-    {
-      key: 'dados', name: 'Cami', role: 'Dados & Relatórios', emoji: '🧮', cat: 'sugerido',
-      desc: 'Junta os números dos outros sistemas num painel e explica o que mudou.',
-      why: 'Com vários agentes trabalhando, alguém precisa olhar o todo e dizer o que está funcionando.',
-      look: { skin: '#f0c29b', hair: '#140f0c', style: 'longo', shirt: '#8b5cf6', pants: '#1b2030', glasses: 'redondo', beard: null }
-    },
-    {
-      key: 'qa', name: 'Dan', role: 'QA de Sistemas', emoji: '🧪', cat: 'sugerido',
-      desc: 'Roda build, typecheck e teste antes de qualquer deploy dos outros agentes.',
-      why: 'Com vários agentes mexendo em código, alguém precisa ser o freio antes de subir para produção.',
-      look: { skin: '#f7d7bd', hair: '#8e8e93', style: 'curto', shirt: '#0ea5e9', pants: '#26304a', glasses: 'redondo', beard: null }
     }
   ];
+
+  /* a cara de cada setor: o boneco nasce com a cor do setor dele */
+  const LOOKS_SETOR = {
+    atendimento: { shirt: '#14b8a6', style: 'coque', glasses: 'redondo' },
+    sdr:         { shirt: '#6366f1', style: 'fade', beard: 'cavanhaque' },
+    conteudo:    { shirt: '#f472b6', style: 'longo' },
+    copy:        { shirt: '#f59e0b', style: 'curto', glasses: 'retangular' },
+    financeiro:  { shirt: '#22c55e', style: 'curto', glasses: 'retangular', beard: 'cheia' },
+    dados:       { shirt: '#8b5cf6', style: 'longo', glasses: 'redondo' },
+    qa:          { shirt: '#0ea5e9', style: 'curto', glasses: 'redondo' },
+    outro:       { shirt: '#7c6cff' }
+  };
 
   /* ===========================================================
      ESTADO
@@ -203,10 +175,11 @@ const ROSTER = (() => {
       emoji: data.emoji || '🤖',
       system: data.system || null, path: data.path || null,
       sistema: data.sistema || null, reuniao: data.reuniao !== false,
+      setor: data.setor || null, trilha: data.trilha || null,
       brief: data.brief || '',
       dept: 'servico', slotId: null, status: 'trabalhando',
       boss: false, locked: false, custom: true,
-      look: AVATAR.makeLook(key, data.look || {})
+      look: AVATAR.makeLook(key, Object.assign({}, LOOKS_SETOR[data.setor] || {}, data.look || {}))
     };
     team.push(a); save();
     return a;
@@ -224,6 +197,6 @@ const ROSTER = (() => {
   const isHired = (key) => team.some(a => a.key === key);
   const count = (st) => team.filter(a => a.status === st).length;
 
-  return { BOSSES, CATALOG, load, save, reset, hire, hireCustom, fire,
+  return { BOSSES, CATALOG, LOOKS_SETOR, load, save, reset, hire, hireCustom, fire,
            get, all, isHired, count, fromCatalog };
 })();

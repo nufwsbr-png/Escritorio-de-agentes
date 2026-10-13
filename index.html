@@ -36,6 +36,7 @@
     </div>
 
     <div class="topactions">
+      <button id="btn-admin" class="btn ghost" title="Administrador">🔐 Admin</button>
       <button id="btn-quadro" class="btn primary" title="Ideias e agenda da Diretoria">📌 Quadro</button>
       <button id="btn-avisos" class="btn" title="Avisos no celular">🔔 Avisos</button>
       <button id="btn-report" class="btn" title="Relatório do gerente">📋 Relatório</button>
@@ -89,14 +90,9 @@
     <!-- CONTRATAR -->
     <section class="tabpane" id="pane-contratar">
       <div class="panehead">
-        <h2>Banco de talentos</h2>
+        <h2>Contratar</h2>
       </div>
-      <p class="hint">O agente de exemplo e vagas sugeridas para começar. Use <b>+ Cadastrar</b> para trazer o seu. Clique para contratar — ele entra pela recepção e vai andando até a mesa.</p>
-      <div class="filterbar">
-        <button class="chip active" data-cat="todos">todos</button>
-        <button class="chip" data-cat="detectado">com sistema</button>
-        <button class="chip" data-cat="sugerido">sugestões do gerente</button>
-      </div>
+      <p class="hint">Contratar é construir: o agente nasce com pasta, sistema próprio e a skill que conduz a construção, um passo por vez. Ele entra pela recepção em treinamento e vira funcionário quando passa no portão.</p>
       <div id="hire-list" class="list"></div>
     </section>
 
@@ -137,6 +133,11 @@
       <button class="btn" id="mon-ligar">▶ Ligar</button>
       <button class="btn ghost" id="mon-desligar">■ Desligar</button>
       <button class="btn ghost" id="mon-chat">💬 Conversar</button>
+      <button class="btn ghost" id="mon-ficha" title="A constituição do agente, seção por seção">📋 Ficha</button>
+      <button class="btn ghost" id="mon-memoria" title="O que ele aprendeu">🧠 Memória</button>
+      <button class="btn ghost" id="mon-recados" title="Recados entre agentes">✉️ Recados<span class="badge hidden" id="bd-recados"></span></button>
+      <button class="btn ghost" id="mon-propostas" title="Mudanças que ele propôs, para você aprovar">📝 Propostas<span class="badge hidden" id="bd-propostas"></span></button>
+      <button class="btn ghost" id="mon-testar" title="O testador: duas réguas">🧪 Testar</button>
       <button class="btn ghost" id="mon-log">📜 Log</button>
       <button class="btn ghost" id="mon-aba">↗ Nova aba</button>
       <button class="btn ghost" id="mon-x">✕</button>
@@ -146,12 +147,14 @@
     <iframe id="mon-frame" title="sistema do agente"></iframe>
     <div class="mon-vazio" id="mon-vazio"></div>
     <pre class="mon-log hidden" id="mon-saida"></pre>
+    <section class="extra hidden" id="mon-extra"></section>
     <section class="conversa hidden" id="mon-conversa">
       <div class="cv-linhas" id="cv-linhas"></div>
       <div class="cv-baixo">
         <div class="cv-modo">
           <button class="cv-op on" data-modo="investigar">🔍 Investigar<small>só olha e explica</small></button>
           <button class="cv-op" data-modo="resolver">🔧 Resolver<small>pode alterar o projeto</small></button>
+          <button class="cv-op" data-modo="construir">🏗️ Construir<small>a skill conduz a jornada</small></button>
         </div>
         <div class="cv-envio">
           <textarea id="cv-texto" rows="2" placeholder="Pergunte algo ao agente…"></textarea>
@@ -202,6 +205,9 @@
 <script src="js/roster.js"></script>
 <script src="js/reuniao.js"></script>
 <script src="js/avisos.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/contratar.js"></script>
+<script src="js/extras.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

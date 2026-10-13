@@ -1,0 +1,10 @@
+{
+  "nome": "Exemplo",
+  "setor": "Agente de demonstração",
+  "setorId": "outro",
+  "trilha": "setor",
+  "negocio": "Escritório de Agentes",
+  "porta": 4401,
+  "criadoEm": "2026-10-13T12:00:00.000Z",
+  "trabalho": "Mostrar como um agente do escritório funciona: identidade no prompt, conhecimento na constituição, chat de teste, painel e memória."
+}

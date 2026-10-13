@@ -6,6 +6,8 @@
    próprio projeto e responde sobre o que encontrou.
 
    Investigar = só leitura.  Resolver = pode mexer no projeto.
+   Construir  = a skill da trilha conduz a construção, um passo por vez.
+   A sessão agora sobrevive a reinício do escritório (fica em disco).
    =========================================================== */
 const CONVERSA = (() => {
 
@@ -28,12 +30,16 @@ const CONVERSA = (() => {
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
 
-  /* sugestões que dependem do que o sistema é */
+  /* sugestões que dependem do modo */
   const ATALHOS = {
-    // atalhos só para um sistema: use o id dele (data/sistemas.json) como chave
-    padrao:    ['Faça um diagnóstico rápido do sistema',
-                'Tem algum erro nos logs?',
-                'O que esse projeto faz, em 5 linhas?']
+    investigar: ['Faça um diagnóstico rápido do sistema',
+                 'Tem algum erro nos logs?',
+                 'O que esse projeto faz, em 5 linhas?'],
+    resolver:   ['Corrija o erro que aparece no log',
+                 'Deixe o painel em /painel mais claro, sem mexer na lógica'],
+    construir:  ['Vamos continuar de onde paramos',
+                 'Em que passo estamos e o que falta?',
+                 'Pode executar']
   };
 
   let claude = null;   // { instalado, conectado }
@@ -43,14 +49,27 @@ const CONVERSA = (() => {
     catch (e) { claude = null; }
   }
 
-  function abrir(sistemaId) {
+  function setModo(m) {
+    modo = m;
+    document.querySelectorAll('.cv-op').forEach(x => x.classList.toggle('on', x.dataset.modo === m));
+    pintarAtalhos();
+  }
+
+  /** abre a conversa; `modoInicial` e `primeira` servem ao Construir recém-contratado */
+  function abrir(sistemaId, modoInicial, primeira) {
     id = sistemaId;
     el.painel().classList.remove('hidden');
-    pintarAtalhos();
+    const s = SISTEMAS.porId(id);
+    // o botão Construir só faz sentido para agente com jornada na pasta
+    const temJornada = !!(s && s.trilha);
+    const bc = document.querySelector('.cv-op[data-modo="construir"]');
+    if (bc) bc.classList.toggle('hidden', !temJornada);
+    setModo(modoInicial || (temJornada && s.construcao && !s.construcao.concluido ? 'construir' : 'investigar'));
     checarLogin().then(atualizar);
     atualizar();
     clearInterval(timer);
     timer = setInterval(atualizar, 2500);
+    if (primeira) setTimeout(() => enviarTexto(primeira), 400);
   }
 
   function fechar() {
@@ -61,7 +80,7 @@ const CONVERSA = (() => {
   const aberto = () => !el.painel().classList.contains('hidden');
 
   function pintarAtalhos() {
-    const lista = ATALHOS[id] || ATALHOS.padrao;
+    const lista = ATALHOS[modo] || ATALHOS.investigar;
     el.atalhos().innerHTML = lista.map(t => `<button>${esc(t)}</button>`).join('');
     el.atalhos().querySelectorAll('button').forEach((b, i) =>
       b.addEventListener('click', () => { el.texto().value = lista[i]; el.texto().focus(); }));
@@ -84,8 +103,9 @@ const CONVERSA = (() => {
 
     let html = e.historico.map(m => {
       const quem = m.quem === 'voce' ? 'Você' : 'Agente';
-      const tag = m.modo === 'resolver' ? ' · modo resolver' : '';
-      return `<div class="cv-msg ${m.quem}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}</div>`;
+      const tag = m.modo === 'resolver' ? ' · modo resolver' : m.modo === 'construir' ? ' · construindo' : '';
+      const notas = (m.notas || []).length ? `<div class="cv-notas">${m.notas.map(esc).join(' · ')}</div>` : '';
+      return `<div class="cv-msg ${m.quem}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}</div>`;
     }).join('');
 
     const semLogin = e.precisaLogin || (claude && claude.instalado && !claude.conectado);
@@ -102,13 +122,16 @@ const CONVERSA = (() => {
       html += `<div class="cv-msg sistema">${esc(e.erro)}</div>`;
     }
     if (e.rodando) {
-      html += `<div class="cv-pensando"><i></i>investigando o projeto…</div>`;
+      html += `<div class="cv-pensando"><i></i>${modo === 'construir' ? 'construindo… um passo pode levar alguns minutos' : 'investigando o projeto…'}</div>`;
     }
     // atenção: aqui é atribuição, não concatenação — só pode entrar quando
     // não há nada mais importante para dizer, senão apaga o aviso de login
     if (!e.historico.length && !e.rodando && !semLogin && !(claude && !claude.instalado) && !e.erro) {
-      html = `<div class="cv-msg sistema">Pergunte alguma coisa. Ele abre o projeto,
-        roda os scripts de diagnóstico e responde com o que achou.</div>`;
+      html = modo === 'construir'
+        ? `<div class="cv-msg sistema">Modo Construir: a skill da pasta conduz a jornada, um passo por vez.
+           Diga "vamos continuar de onde paramos" — ela lê o progresso e retoma.</div>`
+        : `<div class="cv-msg sistema">Pergunte alguma coisa. Ele abre o projeto,
+           roda os scripts de diagnóstico e responde com o que achou.</div>`;
     }
 
     c.innerHTML = html;
@@ -121,10 +144,10 @@ const CONVERSA = (() => {
   /** o usuário logou noutro terminal: rechecar sem recarregar a página */
   async function rechecar() { await checarLogin(); atualizar(); }
 
-  async function enviar() {
-    const t = el.texto().value.trim();
+  async function enviarTexto(t) {
     if (!t || !id) return;
-    el.texto().value = '';
+    // resolver e construir alteram o projeto: pedem administrador
+    if (modo !== 'investigar' && typeof ADMIN !== 'undefined' && !ADMIN.ehAdmin()) { ADMIN.abrir('O modo ' + modo + ' altera o projeto.'); return; }
     el.enviar().disabled = true;
     try {
       const r = await (await fetch(`/api/agentes/${id}/chat`, {
@@ -132,9 +155,16 @@ const CONVERSA = (() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texto: t, modo })
       })).json();
-      if (!r.ok && r.motivo) alertaSistema(r.motivo);
+      if (!r.ok && r.motivo) { alertaSistema(r.motivo); if (r.precisaAdmin) ADMIN.abrir(r.motivo); }
     } catch (e) { alertaSistema('não consegui falar com o servidor'); }
     atualizar();
+  }
+
+  async function enviar() {
+    const t = el.texto().value.trim();
+    if (!t) return;
+    el.texto().value = '';
+    enviarTexto(t);
   }
 
   function alertaSistema(txt) {
@@ -148,12 +178,8 @@ const CONVERSA = (() => {
     el.texto().addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
     });
-    document.querySelectorAll('.cv-op').forEach(b => b.addEventListener('click', () => {
-      document.querySelectorAll('.cv-op').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      modo = b.dataset.modo;
-    }));
+    document.querySelectorAll('.cv-op').forEach(b => b.addEventListener('click', () => setModo(b.dataset.modo)));
   }
 
-  return { abrir, fechar, aberto, ligarEventos, atualizar, rechecar };
+  return { abrir, fechar, aberto, ligarEventos, atualizar, rechecar, get modo() { return modo; } };
 })();

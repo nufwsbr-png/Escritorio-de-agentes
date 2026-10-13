@@ -80,9 +80,26 @@ class Actor {
     this.act = '';
     this.sx = 0; this.sy = 0;
     this.microBreak = 0;
+    this.visita = null;            // levando um recado até a mesa de outro
   }
 
   get id() { return this.a.id; }
+
+  /** a construção dele ainda não passou no portão? devolve o progresso */
+  treino() {
+    const s = this.a.sistema && typeof SISTEMAS !== 'undefined' ? SISTEMAS.porId(this.a.sistema) : null;
+    return s && s.construcao && s.construcao.emTreinamento ? s.construcao : null;
+  }
+
+  /** vai até a mesa de outro boneco entregar um recado e volta sozinho */
+  visitar(alvo) {
+    if (!alvo || alvo.hidden || this.hidden || this.a.status === 'offline') return false;
+    const perto = PATH.nearestWalkable(WORLD.walkable, WORLD.W, WORLD.H, { x: Math.round(alvo.x), y: Math.round(alvo.y) });
+    if (!perto) return false;
+    this.visita = { nome: alvo.a.name, ate: 0 };
+    this.goTo(perto.x + 0.5, perto.y + 0.5);
+    return true;
+  }
 
   /* ---------- escolha de destino ---------- */
   releaseSlot() {
@@ -159,6 +176,16 @@ class Actor {
         this.wait = 11 + Math.random() * 16;
         this.releaseSlot(); this.path = []; this.fine = null; this.seated = false;
       }
+    }
+
+    // recado: chegou na mesa do outro, fica um instante e só então volta
+    if (this.visita) {
+      if (!this.path.length && !this.fine) {
+        if (!this.visita.ate) this.visita.ate = performance.now() + 3500;
+        else if (performance.now() > this.visita.ate) { this.visita = null; this.seated = false; }
+      }
+      this.step(dt); this.describe();
+      return;
     }
 
     // destino
@@ -255,8 +282,11 @@ class Actor {
   describe() {
     const st = this.a.status;
     if (st === 'offline')      { this.act = 'fora do expediente'; return; }
+    if (this.visita)           { this.act = (this.moving ? 'levando um recado para ' : 'entregando um recado a ') + this.visita.nome; return; }
     if (this.microBreak > 0)   { this.act = 'pegando um café'; return; }
     if (this.moving)           { this.act = 'indo para ' + (this.slot ? (this.slot.label || 'a estação') : 'algum lugar'); return; }
+    const tr = st === 'trabalhando' ? this.treino() : null;
+    if (tr)                    { this.act = 'em treinamento · passo ' + tr.passo + ' de ' + (tr.total || '?'); return; }
     if (st === 'trabalhando')  { this.act = this.slot ? ('produzindo na ' + this.slot.label) : 'procurando mesa livre'; return; }
     if (st === 'reuniao')      { this.act = 'em reunião'; return; }
     if (st === 'descanso')     { this.act = this.slot ? this.slot.act : 'circulando no lounge'; return; }
@@ -300,7 +330,8 @@ class Actor {
     }
 
     // etiquetas empilhadas ACIMA da cabeça, nunca sobre o rosto
-    const col = STATUS_COLOR[this.a.status] || '#8b93ad';
+    const tr = this.a.status === 'trabalhando' ? this.treino() : null;
+    const col = tr ? STATUS_COLOR.treinamento : (STATUS_COLOR[this.a.status] || '#8b93ad');
     let stack = p.y - AVATAR.headTop(sitting) * SCALE - 8;
 
     if (opts.names) {
@@ -308,12 +339,15 @@ class Actor {
                               this.a.boss ? '#c4b8ff' : col,
                               this.a.boss ? 'DONO' : null) + 4;
     }
-    if (opts.status && !this.moving) {
-      const ic = this.a.status === 'trabalhando' ? '💻'
+    if (opts.status && (!this.moving || this.visita)) {
+      const ic = this.visita ? '✉️'
+               : tr ? '🎓'
+               : this.a.status === 'trabalhando' ? '💻'
                : this.a.status === 'descanso' ? '🎮'
                : this.a.status === 'reuniao' ? '🗣️' : '💤';
       AVATAR.bubble(ctx, p.x, stack, ic,
-                    this.microBreak > 0 ? 'pausa' : SHORT_ACT[this.a.status], col);
+                    this.visita ? 'recado' : tr ? 'passo ' + tr.passo + '/' + (tr.total || '?')
+                    : this.microBreak > 0 ? 'pausa' : SHORT_ACT[this.a.status], col);
     }
     void t;
   }
@@ -328,7 +362,7 @@ const SCALE = AVATAR.SCALE;
 const SIT_OVER = new Set(['sofa', 'beanbag']);
 
 const STATUS_COLOR = {
-  trabalhando: '#23e08a', descanso: '#ffb020', reuniao: '#38bdf8', offline: '#5a6280'
+  trabalhando: '#23e08a', descanso: '#ffb020', reuniao: '#38bdf8', offline: '#5a6280', treinamento: '#c084fc'
 };
 const SHORT_ACT = {
   trabalhando: 'trabalhando', descanso: 'descanso', reuniao: 'reunião', offline: 'offline'
@@ -598,16 +632,18 @@ function renderTeam() {
 
   for (const a of list) {
     const ac = actors.get(a.id);
+    const tr = ac && a.status === 'trabalhando' ? ac.treino() : null;
     const el = document.createElement('div');
-    el.className = 'card s-' + a.status;
+    el.className = 'card s-' + (tr ? 'treinamento' : a.status);
     el.innerHTML = `
       <canvas class="av"></canvas>
       <div class="info">
         <div class="nm">${esc(a.name)}</div>
         <div class="rl">${a.emoji || ''} ${esc(a.role)}</div>
         <div class="ac">${esc(ac ? ac.act : '')}</div>
+        ${tr ? `<div class="passo"><i style="width:${tr.pct}%"></i></div>` : ''}
       </div>
-      <div class="side"><span class="pill ${a.status}">${SHORT_ACT[a.status]}</span></div>
+      <div class="side"><span class="pill ${tr ? 'treinamento' : a.status}">${tr ? 'treinando' : SHORT_ACT[a.status]}</span></div>
       ${a.boss ? '<span class="boss">⚡</span>' : ''}`;
     AVATAR.portrait(el.querySelector('.av'), a.look);
     el.addEventListener('click', () => openAgent(a.id));
@@ -615,51 +651,67 @@ function renderTeam() {
   }
 }
 
-let hireCat = 'todos';
 function renderHire() {
   const box = $('#hire-list');
   box.innerHTML = '';
-  const list = ROSTER.CATALOG.filter(c => hireCat === 'todos' || c.cat === hireCat);
+  const admin = typeof ADMIN === 'undefined' || ADMIN.ehAdmin();
+  const cadeado = admin ? '' : ' <span class="tag sugerido" title="pede a senha de administrador">🔒</span>';
 
-  for (const c of list) {
-    const hired = ROSTER.isHired(c.key);
+  // contratar de verdade: pasta, sistema e jornada
+  const novo = document.createElement('div');
+  novo.className = 'hcard';
+  novo.innerHTML = `
+    <div class="top"><div class="emo">🏗️</div><div class="nm">Contratar agente novo${cadeado}</div></div>
+    <p class="desc">Atendimento no WhatsApp (skill criar-agente, 23 passos) ou um dos setores do escritório (14 passos).
+      O agente nasce com pasta, sistema próprio e a skill que conduz a construção.</p>
+    <p class="why"><b>Como funciona:</b> você escolhe o tipo, dá nome e porta. O boneco entra em treinamento e o monitor abre em Construir.</p>
+    <div class="acts"><button class="btn primary wide act" style="margin:0">＋ contratar agente</button></div>`;
+  novo.querySelector('.act').addEventListener('click', () => CONTRATAR.abrir());
+  box.appendChild(novo);
+
+  // quem está em construção agora
+  const treinando = ROSTER.all().filter(a => { const ac = actors.get(a.id); return ac && ac.treino(); });
+  if (treinando.length) {
     const el = document.createElement('div');
-    el.className = 'hcard' + (hired ? ' hired' : '');
+    el.className = 'hcard';
+    el.innerHTML = `<div class="top"><div class="emo">🎓</div><div class="nm">Em treinamento</div></div>` +
+      treinando.map(a => {
+        const tr = actors.get(a.id).treino();
+        return `<p class="desc" style="margin:8px 0 2px"><b>${esc(a.name)}</b> · ${esc(a.role)} — passo ${tr.passo} de ${tr.total || '?'}</p>
+                <div class="passo"><i style="width:${tr.pct}%"></i></div>`;
+      }).join('') +
+      `<div class="acts" style="margin-top:10px"><button class="mini act">abrir o monitor de ${esc(treinando[0].name)}</button></div>`;
+    el.querySelector('.act').addEventListener('click', () => abrirMonitor(treinando[0]));
+    box.appendChild(el);
+  }
+
+  // o exemplo, se foi demitido
+  for (const c of ROSTER.CATALOG) {
+    if (ROSTER.isHired(c.key)) continue;
+    const el = document.createElement('div');
+    el.className = 'hcard';
     el.innerHTML = `
-      <div class="top">
-        <div class="emo">${c.emoji}</div>
-        <div class="nm">${esc(c.name)} <span style="color:var(--txt-dim);font-weight:600">· ${esc(c.role)}</span></div>
-        <span class="tag ${c.cat}">${c.cat === 'detectado' ? 'na máquina' : 'sugestão'}</span>
-      </div>
+      <div class="top"><div class="emo">${c.emoji}</div><div class="nm">${esc(c.name)} <span style="color:var(--txt-dim);font-weight:600">· ${esc(c.role)}</span></div>
+        <span class="tag detectado">na máquina</span></div>
       <p class="desc">${esc(c.desc)}</p>
-      <p class="why"><b>Por que vale:</b> ${esc(c.why)}</p>
-      ${c.path ? `<p class="desc" style="font-family:monospace;font-size:10.5px;opacity:.6">${esc(c.path)}</p>` : ''}
-      <div class="acts">
-        <button class="mini act">${hired ? '✓ já contratado' : '＋ contratar'}</button>
-      </div>`;
-    const btn = el.querySelector('.act');
-    btn.disabled = hired;
-    btn.addEventListener('click', () => {
+      <div class="acts"><button class="mini act">＋ recontratar</button></div>`;
+    el.querySelector('.act').addEventListener('click', () => {
+      if (typeof ADMIN !== 'undefined' && !ADMIN.exigir('Contratar')) return;
       const a = ROSTER.hire(c.key);
       if (!a) return;
       syncActors(); renderAll();
-      toast(`${a.name} foi contratado(a) — entrando pela recepção.`);
-      const ac = actors.get(a.id);
-      if (ac) focusTile(ac.x, ac.y, 0.6);
+      toast(`${a.name} voltou — entrando pela recepção.`);
     });
     box.appendChild(el);
   }
 
-  // criar agente do zero
+  // um robô que você já construiu fora daqui
   const add = document.createElement('div');
   add.className = 'hcard';
   add.innerHTML = `
-    <div class="top">
-      <div class="emo">🤖</div>
-      <div class="nm">Cadastrar um agente meu</div>
-    </div>
-    <p class="desc">Tem um agente que não está na lista? Cadastre aqui com nome, função e visual próprio.</p>
-    <div class="acts"><button class="mini act">＋ cadastrar agente</button></div>`;
+    <div class="top"><div class="emo">🔌</div><div class="nm">Cadastrar sistema que já existe${cadeado}</div></div>
+    <p class="desc">Um robô ou painel pronto, nesta máquina ou publicado num endereço. O escritório só o liga, vigia e embute; não há jornada de construção.</p>
+    <div class="acts"><button class="mini act">＋ cadastrar sistema</button></div>`;
   add.querySelector('.act').addEventListener('click', openNew);
   box.appendChild(add);
 }
@@ -842,6 +894,7 @@ function openAgent(id) {
   });
   const fb = $('#f-fire');
   if (fb) fb.addEventListener('click', async () => {
+    if (!ADMIN.exigir('Demitir um agente')) return;
     if (!await confirmar('Desligar ' + a.name + '?',
         'Ele sai do quadro e a estação fica livre. Dá para contratar de novo depois.',
         'Desligar')) return;
@@ -853,21 +906,21 @@ function openAgent(id) {
 }
 
 function openNew() {
+  if (!ADMIN.exigir('Cadastrar um sistema')) return;
   mbody.innerHTML = `
-    <h3 style="font-family:var(--f-display);margin:0 0 4px">Cadastrar agente</h3>
-    <p class="hint" style="margin-bottom:16px">Ele entra pela recepção e vai até uma estação livre. Se ele tem um sistema,
-      cadastre junto: o computador dele passa a abrir esse sistema aqui dentro.</p>
+    <h3 style="font-family:var(--f-display);margin:0 0 4px">Cadastrar sistema que já existe</h3>
+    <p class="hint" style="margin-bottom:16px">Para um robô ou painel que você já construiu. O agente entra pela recepção e o
+      computador dele passa a abrir esse sistema aqui dentro. Para construir um agente novo, use <b>Contratar agente novo</b>.</p>
     <div class="frow"><label>Nome</label><input id="n-name" placeholder="ex.: Tati" maxlength="22"></div>
-    <div class="frow"><label>Função</label><input id="n-role" placeholder="ex.: Analista de Conteúdo" maxlength="48"></div>
+    <div class="frow"><label>Função</label><input id="n-role" placeholder="ex.: Fechador de pasta" maxlength="48"></div>
     <div class="frow"><label>Emoji</label><input id="n-emo" placeholder="🤖" maxlength="4" value="🤖"></div>
     <div class="frow"><label>O que ele faz</label><textarea id="n-brief" rows="2" placeholder="Uma frase sobre a função dele."></textarea></div>
     <div class="frow"><label>Sistema do agente</label>
       <div class="seg" id="n-tipo">
-        <button data-t="nenhum" class="on">Nenhum</button>
-        <button data-t="local">Roda nesta máquina</button>
+        <button data-t="local" class="on">Roda nesta máquina</button>
         <button data-t="web">Site / URL</button>
       </div></div>
-    <div id="n-local" class="hidden">
+    <div id="n-local">
       <div class="frow"><label>Pasta do projeto</label><input id="n-pasta" placeholder="C:\\projetos\\meu-agente"></div>
       <div class="two">
         <div class="frow"><label>Comando</label><input id="n-cmd" value="npm"></div>
@@ -891,7 +944,7 @@ function openNew() {
       <button class="btn" id="n-cancel">Cancelar</button>
     </div>`;
 
-  let tipo = 'nenhum';
+  let tipo = 'local';
   $$('#n-tipo button').forEach(b => b.addEventListener('click', () => {
     tipo = b.dataset.t;
     $$('#n-tipo button').forEach(x => x.classList.toggle('on', x === b));
@@ -919,7 +972,7 @@ function openNew() {
                                                body: JSON.stringify(corpo) })
         .then(x => x.json()).catch(() => ({ ok: false, motivo: 'o escritório não respondeu' }));
       $('#n-ok').disabled = false;
-      if (!r.ok) { $('#n-msg').textContent = r.motivo; return; }
+      if (!r.ok) { $('#n-msg').textContent = r.motivo; if (r.precisaAdmin) ADMIN.abrir(r.motivo); return; }
       sistema = r.id;
       await SISTEMAS.atualizar();
     }
@@ -1163,6 +1216,7 @@ async function abrirMonitor(agente) {
   mon.el.classList.remove('hidden');
   mon.saida.classList.add('hidden');
   CONVERSA.fechar();
+  EXTRAS.fechar();
 
   await SISTEMAS.atualizar();
   pintarMonitor();
@@ -1177,6 +1231,7 @@ async function abrirMonitor(agente) {
 
 function fecharMonitor() {
   CONVERSA.fechar();
+  EXTRAS.fechar();
   mon.el.classList.add('hidden');
   clearInterval(mon.timer);
   mon.frame.src = 'about:blank';
@@ -1191,19 +1246,27 @@ function pintarMonitor(soEstado) {
     luz.style.background = 'var(--off)'; txt.textContent = 'sem sistema';
     $('#mon-ligar').disabled = $('#mon-desligar').disabled = $('#mon-log').disabled = true;
     $('#mon-aba').disabled = $('#mon-chat').disabled = true;
+    for (const b of ['ficha', 'memoria', 'recados', 'propostas', 'testar']) $('#mon-' + b).disabled = true;
     mon.frame.style.display = 'none';
     mon.vazio.classList.add('on');
     mon.vazio.innerHTML = '<div><b>Esse agente ainda não tem sistema ligado a ele</b>' +
-      'Cadastre em <code>data/sistemas.json</code> e aponte o agente para o id dele.<br>' +
-      '<span class="dica">É assim que um agente novo ganha um computador que abre de verdade.</span></div>';
+      'Todo agente do escritório termina com sistema próprio: contrate pela aba Contratar, ou cadastre um sistema que já existe.<br>' +
+      '<span class="dica">É assim que um agente ganha um computador que abre de verdade.</span></div>';
     return;
   }
 
-  $('#mon-sis').textContent = s.nome;
+  $('#mon-sis').textContent = s.nome + (s.setor ? ' · ' + s.setor : '');
   luz.style.background = SISTEMAS.COR[s.estado] || 'var(--off)';
   luz.style.color = SISTEMAS.COR[s.estado] || 'var(--off)';
-  txt.textContent = s.tipo === 'web' ? 'site publicado'
-                  : s.externo ? 'no ar · fora daqui' : s.estado;
+  const tr = s.construcao;
+  txt.textContent = (s.tipo === 'web' ? 'site publicado' : s.externo ? 'no ar · fora daqui' : s.estado) +
+    (tr && tr.emTreinamento ? ' · em treinamento ' + tr.passo + '/' + (tr.total || '?') : tr && !tr.concluido ? ' · portão aprovado' : '');
+
+  // os painéis extras precisam da pasta; os crachás mostram o que espera por você
+  for (const b of ['ficha', 'memoria', 'recados', 'propostas', 'testar']) $('#mon-' + b).disabled = !s.pasta;
+  const crach = (id, n) => { const e = $('#' + id); e.textContent = n || ''; e.classList.toggle('hidden', !n); };
+  crach('bd-recados', s.recadosNovos);
+  crach('bd-propostas', s.propostasPendentes);
 
   const local = s.tipo === 'local';
   $('#mon-ligar').disabled = !local || s.estado === 'no ar' || s.estado === 'subindo';
@@ -1266,8 +1329,42 @@ $('#mon-chat').addEventListener('click', () => {
   if (CONVERSA.aberto()) { CONVERSA.fechar(); return; }
   if (!mon.id) { toast('Esse agente não tem sistema para investigar.'); return; }
   mon.saida.classList.add('hidden'); mon.vendoLog = false;
+  EXTRAS.fechar();
   CONVERSA.abrir(mon.id);
 });
+// os painéis extras: um por vez, por cima do quadro do sistema
+for (const [botao, tipo] of [['ficha', 'ficha'], ['memoria', 'memoria'], ['recados', 'recados'], ['propostas', 'propostas'], ['testar', 'testes']]) {
+  $('#mon-' + botao).addEventListener('click', () => {
+    if (EXTRAS.aberto() && EXTRAS.tipo === tipo) { EXTRAS.fechar(); return; }
+    if (!mon.id) return;
+    CONVERSA.fechar(); mon.saida.classList.add('hidden'); mon.vendoLog = false;
+    EXTRAS.abrir(mon.id, tipo);
+  });
+}
+// recém-contratado: entra pela recepção e o monitor já abre em Construir
+document.addEventListener('agente-contratado', async e => {
+  const { agente, sistema, trilha } = e.detail;
+  syncActors(); renderAll();
+  toast(`${agente.name} foi contratado(a) — entrando pela recepção, em treinamento.`);
+  await abrirMonitor(agente);
+  CONVERSA.abrir(sistema, 'construir',
+    trilha === 'atendimento'
+      ? 'quero criar meu agente de atendimento. Leia a skill criar-agente em .claude/skills e o progresso-do-agente.md e comece pelo primeiro passo em aberto.'
+      : 'quero construir este agente de setor. Leia a skill criar-agente-setor em .claude/skills, o CLAUDE.md e o progresso-do-agente.md e comece pelo primeiro passo em aberto.');
+});
+// recados: quem deixou um recado anda até a mesa do outro
+let marcaRecados = Date.now();
+setInterval(async () => {
+  let r;
+  try { r = await (await fetch('/api/mensagens?desde=' + marcaRecados)).json(); } catch (e) { return; }
+  marcaRecados = r.agora || Date.now();
+  for (const m of r.mensagens || []) {
+    if (m.de === 'dono') continue;
+    const de = ROSTER.all().find(a => a.sistema === m.de), para = ROSTER.all().find(a => a.sistema === m.para);
+    const acDe = de && actors.get(de.id), acPara = para && actors.get(para.id);
+    if (acDe && acPara && acDe.visitar(acPara)) toast(`${m.deNome} foi levar um recado para ${m.paraNome}.`);
+  }
+}, 5000);
 $('#mon-x').addEventListener('click', fecharMonitor);
 $('#mon-aba').addEventListener('click', () => {
   const s = SISTEMAS.porId(mon.id);
@@ -1275,7 +1372,7 @@ $('#mon-aba').addEventListener('click', () => {
 });
 $('#mon-log').addEventListener('click', async () => {
   mon.vendoLog = !mon.vendoLog;
-  if (mon.vendoLog) CONVERSA.fechar();
+  if (mon.vendoLog) { CONVERSA.fechar(); EXTRAS.fechar(); }
   mon.saida.classList.toggle('hidden', !mon.vendoLog);
   if (mon.vendoLog) mon.saida.textContent = (await SISTEMAS.log(mon.id)).join(String.fromCharCode(10)) || "(sem saída ainda)";
 });
@@ -1442,14 +1539,9 @@ $$('.tab').forEach(b => b.addEventListener('click', () => {
   $('#pane-' + b.dataset.tab).classList.add('active');
 }));
 
-$$('.chip').forEach(b => b.addEventListener('click', () => {
-  $$('.chip').forEach(x => x.classList.remove('active'));
-  b.classList.add('active');
-  hireCat = b.dataset.cat;
-  renderHire();
-}));
-
 $('#team-search').addEventListener('input', renderTeam);
+$('#btn-admin').addEventListener('click', () => ADMIN.abrir());
+ADMIN.onChange(() => renderAll());
 $('#btn-allwork').addEventListener('click', () => { setAll('trabalhando'); toast('Equipe convocada para as estações.'); });
 $('#btn-allrest').addEventListener('click', () => { setAll('descanso'); toast('Equipe liberada para o lounge.'); });
 $('#btn-report').addEventListener('click', openReport);
@@ -1498,6 +1590,7 @@ $('#file-import').addEventListener('change', e => {
   r.readAsText(f);
 });
 $('#btn-reset').addEventListener('click', async () => {
+  if (!ADMIN.exigir('Restaurar o quadro')) return;
   if (!await confirmar('Restaurar o quadro padrão?',
       'Os agentes que você cadastrou à mão serão perdidos. Exporte antes se quiser guardar.',
       'Restaurar')) return;
@@ -1517,12 +1610,23 @@ document.addEventListener('keydown', e => {
 /* ===========================================================
    BOOT
    =========================================================== */
-/* nome e subtítulo do topo vêm de data/config.json */
+/* nome, subtítulo e marca vêm de data/config.json: logo em data/marca/ e
+   cores por variável (marca.cores: { "acc-1": "#...", "alt-1": "#...", "ok": ... }) */
 (function marca() {
   const E = window.ESCRITORIO || {};
   if (E.nome) { document.title = E.nome; $('#brand-nome').textContent = E.nome.toUpperCase(); }
   if (E.subtitulo !== undefined) $('#brand-sub').textContent = E.subtitulo;
+  const m = E.marca || {};
+  const PERMITIDAS = ['bg', 'bg-2', 'panel', 'panel-2', 'line', 'txt', 'txt-dim', 'acc-1', 'acc-2', 'acc-3', 'alt-1', 'alt-2', 'ok', 'warn', 'off'];
+  for (const [k, v] of Object.entries(m.cores || {}))
+    if (PERMITIDAS.includes(k) && /^#[0-9a-f]{3,8}$/i.test(String(v))) document.documentElement.style.setProperty('--' + k, v);
+  if (m.logo && /^[a-z0-9._-]+$/i.test(m.logo)) {
+    const img = document.createElement('img');
+    img.src = '/marca/' + m.logo; img.alt = ''; img.className = 'bolt'; img.style.width = 'auto'; img.style.height = '34px';
+    const svg = document.querySelector('.brand .bolt'); if (svg) svg.replaceWith(img);
+  }
 })();
+ADMIN.atualizar();
 SISTEMAS.atualizar();
 setInterval(() => SISTEMAS.atualizar(), 15000);
 // a equipe vem do disco, então o boot espera por ela antes de montar o andar

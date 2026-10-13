@@ -25,9 +25,12 @@ const crypto = require('crypto');
 
 let ARQ = null;
 
+/* Mais de um destino: o aviso vai para o celular do cliente E para o de
+   quem cuida do escritório. ntfy aceita tópicos extras; o WhatsApp aceita
+   outros pares fone + apikey do CallMeBot. */
 const PADRAO = () => ({
-  ntfy: { ativo: false, topico: 'escritorio-' + crypto.randomBytes(6).toString('hex'), servidor: 'https://ntfy.sh' },
-  whatsapp: { ativo: false, fone: '', apikey: '' },
+  ntfy: { ativo: false, topico: 'escritorio-' + crypto.randomBytes(6).toString('hex'), servidor: 'https://ntfy.sh', extras: [] },
+  whatsapp: { ativo: false, fone: '', apikey: '', extras: [] },
   resumo: { ativo: true, hora: 9, minuto: 0 },
   historico: []
 });
@@ -71,20 +74,28 @@ const cabecalho = (t) => /^[\x20-\x7e]*$/.test(t) ? t : '=?UTF-8?B?' + Buffer.fr
 async function avisar(titulo, texto, prioridade = 'normal', forcar = false) {
   const c = ler();
   const res = {};
-  if (c.ntfy.ativo || forcar) {
-    const r = await pede(c.ntfy.servidor.replace(/\/+$/, '') + '/' + encodeURIComponent(c.ntfy.topico), {
+  const viaNtfy = async (topico) => {
+    const r = await pede(c.ntfy.servidor.replace(/\/+$/, '') + '/' + encodeURIComponent(topico), {
       metodo: 'POST', corpo: Buffer.from(texto, 'utf8'),
       headers: { 'Title': cabecalho(titulo), 'Priority': prioridade === 'alta' ? '4' : prioridade === 'baixa' ? '2' : '3',
                  'Tags': prioridade === 'alta' ? 'warning' : 'bell', 'Content-Type': 'text/plain; charset=utf-8' }
     });
-    res.ntfy = r.erro ? r.erro : (r.status < 300 ? 'ok' : 'HTTP ' + r.status);
+    return r.erro ? r.erro : (r.status < 300 ? 'ok' : 'HTTP ' + r.status);
+  };
+  const viaWhatsapp = async (fone, apikey) => {
+    const q = 'phone=' + encodeURIComponent(String(fone).replace(/\D/g, '')) +
+              '&text=' + encodeURIComponent('*' + titulo + '*\n' + texto) +
+              '&apikey=' + encodeURIComponent(apikey);
+    const r = await pede('https://api.callmebot.com/whatsapp.php?' + q);
+    return r.erro ? r.erro : (r.status < 300 && !/error|invalid/i.test(r.corpo) ? 'ok' : (r.corpo || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 160));
+  };
+  if (c.ntfy.ativo || forcar) {
+    res.ntfy = await viaNtfy(c.ntfy.topico);
+    for (const t of (c.ntfy.extras || [])) if (t) res['ntfy:' + t] = await viaNtfy(t);
   }
   if ((c.whatsapp.ativo || forcar) && c.whatsapp.fone && c.whatsapp.apikey) {
-    const q = 'phone=' + encodeURIComponent(c.whatsapp.fone.replace(/\D/g, '')) +
-              '&text=' + encodeURIComponent('*' + titulo + '*\n' + texto) +
-              '&apikey=' + encodeURIComponent(c.whatsapp.apikey);
-    const r = await pede('https://api.callmebot.com/whatsapp.php?' + q);
-    res.whatsapp = r.erro ? r.erro : (r.status < 300 && !/error|invalid/i.test(r.corpo) ? 'ok' : (r.corpo || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 160));
+    res.whatsapp = await viaWhatsapp(c.whatsapp.fone, c.whatsapp.apikey);
+    for (const e of (c.whatsapp.extras || [])) if (e && e.fone && e.apikey) res['whatsapp:' + e.fone] = await viaWhatsapp(e.fone, e.apikey);
   }
   c.historico.unshift({ quando: new Date().toISOString(), titulo, texto, res });
   c.historico = c.historico.slice(0, 50);
@@ -123,11 +134,22 @@ module.exports = {
     if (corpo.ntfy) {
       if (corpo.ntfy.ativo !== undefined) c.ntfy.ativo = !!corpo.ntfy.ativo;
       if (corpo.ntfy.topico) c.ntfy.topico = String(corpo.ntfy.topico).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || c.ntfy.topico;
+      if (Array.isArray(corpo.ntfy.extras))
+        c.ntfy.extras = corpo.ntfy.extras.map(t => String(t).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)).filter(Boolean).slice(0, 10);
     }
     if (corpo.whatsapp) {
       if (corpo.whatsapp.ativo !== undefined) c.whatsapp.ativo = !!corpo.whatsapp.ativo;
       if (corpo.whatsapp.fone !== undefined) c.whatsapp.fone = String(corpo.whatsapp.fone).replace(/\D/g, '').slice(0, 15);
       if (corpo.whatsapp.apikey) c.whatsapp.apikey = String(corpo.whatsapp.apikey).trim().slice(0, 40);
+      if (Array.isArray(corpo.whatsapp.extras)) {
+        // chave que não veio (campo vazio na tela) mantém a já guardada para o mesmo fone
+        const antigas = c.whatsapp.extras || [];
+        c.whatsapp.extras = corpo.whatsapp.extras.map(e => {
+          const fone = String(e.fone || '').replace(/\D/g, '').slice(0, 15);
+          const guardada = antigas.find(a => a.fone === fone);
+          return { fone, apikey: String(e.apikey || (guardada && guardada.apikey) || '').trim().slice(0, 40) };
+        }).filter(e => e.fone).slice(0, 10);
+      }
     }
     if (corpo.resumo) {
       if (corpo.resumo.ativo !== undefined) c.resumo.ativo = !!corpo.resumo.ativo;
@@ -139,7 +161,9 @@ module.exports = {
   /* o que a tela pode ver: a chave do CallMeBot não volta para o navegador */
   publico() {
     const c = ler();
-    return { ntfy: c.ntfy, whatsapp: { ativo: c.whatsapp.ativo, fone: c.whatsapp.fone, temChave: !!c.whatsapp.apikey },
+    return { ntfy: c.ntfy,
+             whatsapp: { ativo: c.whatsapp.ativo, fone: c.whatsapp.fone, temChave: !!c.whatsapp.apikey,
+                         extras: (c.whatsapp.extras || []).map(e => ({ fone: e.fone, temChave: !!e.apikey })) },
              resumo: c.resumo, historico: c.historico.slice(0, 15) };
   }
 };

@@ -1,111 +1,161 @@
 # Escritório de Agentes
 
 Um escritório isométrico no navegador, estilo Habbo, para acompanhar e operar
-os seus agentes de IA. Cada agente é um boneco com mesa e computador próprios;
-clicar no computador dele abre o **sistema daquele agente** ali dentro, com
-botões para ligar, desligar, ver o log e conversar com ele pelo Claude Code.
+os seus agentes de IA, ou os do seu cliente. Cada agente é um boneco com mesa
+e computador próprios; clicar no computador dele abre o **sistema daquele
+agente** ali dentro, com botões para ligar, desligar, ver o log, conversar com
+ele pelo Claude Code, ver o que ele aprendeu, aprovar o que ele propõe e
+testá-lo.
 
 - Diretoria, sala de serviço com 18 estações, lounge, sala de reunião e recepção.
-- Os bonecos trabalham na própria mesa, descansam no lounge no horário que você
-  definir e se juntam na sala de reunião quando há reunião.
-- O escritório sobe os sistemas locais, vigia quem caiu e religa sozinho.
-- Nenhuma dependência: só Node.js.
+- **Contratar é construir:** todo agente novo nasce com pasta própria, sistema
+  próprio e a skill que conduz a construção, um passo por vez.
+- Os agentes **lembram** (memória por agente), **deixam recados** uns para os
+  outros e **propõem** mudanças que só entram com a sua aprovação.
+- O escritório sobe os sistemas locais, vigia quem caiu, religa sozinho e
+  avisa no celular.
+- Dois perfis: o **cliente** opera, o **administrador** constrói.
+- Nenhuma dependência: só Node.js e o Claude Code da máquina.
 
 ## Começar
 
-Precisa do [Node.js](https://nodejs.org) 18 ou mais novo.
+Precisa do [Node.js](https://nodejs.org) 18 ou mais novo e do
+[Claude Code](https://claude.com/claude-code) instalado e logado
+(`claude auth login`).
 
 ```bash
-git clone <url-deste-repositório> escritorio-de-agentes
+git clone https://github.com/nufwsbr-png/Escritorio-de-agentes escritorio-de-agentes
 cd escritorio-de-agentes
 npm start
 ```
 
-Abra **http://localhost:4321**. Vem um agente de exemplo (pasta
-`exemplo-agente`): clique no computador dele e em **Ligar** para ver o fluxo
-completo.
+Abra **http://localhost:4321**. Todo escritório novo vem com **um** agente, o
+de exemplo (pasta `exemplo-agente`). Clique no computador dele e em **Ligar**
+para ver o fluxo completo: o painel embutido, o chat de teste, a memória.
 
 No Windows:
 - **`INICIAR ESCRITORIO.cmd`** sobe o escritório e o religa se ele cair.
-- **`CRIAR ATALHO.ps1`** cria um atalho na área de trabalho. Para rodar: botão
-  direito no arquivo e depois **Executar com o PowerShell**. O atalho liga o
-  escritório, se estiver desligado, e abre o navegador.
+- **`CRIAR ATALHO.ps1`** cria um atalho na área de trabalho (botão direito,
+  **Executar com o PowerShell**). O atalho liga o escritório e abre o navegador.
 
-## Colocar os seus agentes
+## A tranca: cliente e administrador
 
-Na aba **Contratar**, clique em **+ Cadastrar agente** e escolha:
+Antes de entregar o escritório a um cliente, clique em **🔐 Admin** e defina a
+senha. Sem senha, tudo fica aberto (é o escritório na sua própria máquina).
+Com senha:
 
-| Sistema do agente | O que preencher |
-| --- | --- |
-| **Roda nesta máquina** | pasta do projeto, comando (`npm`, `node`, `python`…), argumentos (`run dev`) e uma porta livre |
-| **Site / URL** | o endereço. Se o site recusar abrir em iframe, marque "usar o espelho" |
-| **Nenhum** | só o boneco, sem sistema |
+| Quem | Pode |
+|---|---|
+| **Cliente** (sem senha) | ligar, desligar, ler o log, conversar em **Investigar**, rodar a reunião, ler memória e recados, preencher a **Ficha do negócio**, mudar situação e horário dos bonecos |
+| **Administrador** | tudo isso e mais: contratar, cadastrar sistema, demitir, **Resolver**, **Construir**, editar memória, aprovar propostas, rodar o testador, mudar avisos |
 
-O escritório sobe o sistema local com a variável `PORT` igual à porta
-informada. Se o seu projeto escolhe a porta de outro jeito, passe nos
-argumentos (ex.: `run dev -- --port 4402`).
+A verificação é no servidor, rota a rota. A senha fica em `data/admin.json`
+como hash e a sessão dura 7 dias.
 
-Tudo fica em `data/sistemas.json`, que também pode ser editado à mão. Os campos
-estão explicados no topo de `data/sistemas.exemplo.json`.
+## Contratar um agente
 
-Por segurança, o escritório escuta só em `127.0.0.1`, executa só o que está no
-registro e recusa comando com `& | ; < > $` e crase. Ele também ignora pedido
-vindo de outro site aberto no navegador.
+Na aba **Contratar**, **＋ contratar agente**. A primeira pergunta é o tipo:
 
-## Conversar com um agente
+| Tipo | Jornada | Cérebro |
+|---|---|---|
+| **Atendimento no WhatsApp** | skill `criar-agente`, 23 passos (sandbox, memória, prompt, constituição, agenda, planilha, áudio, WhatsApp, painel, templates, testador, tranca) | **OpenRouter**, chave no `.env` do agente |
+| **Outro setor** (Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados, QA ou um nome seu) | skill `criar-agente-setor`, 14 passos (trabalho, conexões, cérebro, constituição, ferramenta, memória, rotina, painel, portão, testador, tranca, entrega) | **Claude Code da máquina**, sem chave de modelo |
 
-No monitor, **💬 Conversar** abre uma sessão do [Claude Code](https://claude.com/claude-code)
-dentro da pasta do sistema:
+Depois: nome do agente, negócio e porta. O escritório cria a pasta em
+`agentes/<nome>/` com a estrutura padrão:
 
-- **Investigar** só lê e explica.
-- **Resolver** pode editar o projeto.
+```
+agente.json              nome, setor, negócio, porta, trilha
+CLAUDE.md                o contrato com o escritório (leia primeiro)
+server.js                o sistema próprio: /saude, /painel, /log e o chat de teste em /
+prompt-agente.md         a identidade — o DONO escreve; o construtor nunca preenche sozinho
+skills/constituicao.md   a base de conhecimento — é FERRAMENTA, nunca entra no prompt
+tools/                   o código das ações (código para o garantido, IA para o interpretado)
+.env                     as conexões de trabalho (token do CRM, Google, planilha…) — nunca no chat
+memoria.md               o que ele aprende operando
+progresso-do-agente.md   onde a jornada parou
+.claude/skills/<skill>/  a skill que conduz a construção
+```
 
-Precisa do Claude Code instalado e logado nesta máquina.
+O sistema é registrado em `data/sistemas.json`, o boneco entra pela recepção
+**em treinamento** (o balão mostra "passo N de M", lido do progresso) e o
+monitor abre em **Conversar › Construir**: a skill lê o progresso e conduz um
+passo por vez, com teste no fim de cada um. Quando o progresso registra o
+portão aprovado, o boneco vira funcionário; quando registra `## CONCLUÍDO`, a
+construção acabou.
 
-## Reunião dos agentes
+Um robô que você já construiu fora daqui entra por **＋ cadastrar sistema**:
+pasta, comando e porta, ou um endereço publicado. O escritório só o liga,
+vigia e embute.
 
-Na sala de reunião, **▶ Reunir agora** junta os agentes que têm sistema local.
-Cada um lê o próprio projeto e diz três coisas:
+## O monitor de cada agente
 
-1. um número real;
-2. uma melhoria;
-3. o que precisa de outro agente.
+| Botão | O que faz |
+|---|---|
+| **▶ Ligar / ■ Desligar** | sobe e derruba o sistema (processo solto: reiniciar o escritório não derruba ninguém) |
+| **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a skill. A sessão sobrevive a reinício |
+| **📋 Ficha** | a constituição seção por seção, para o dono do negócio preencher sem abrir arquivo |
+| **🧠 Memória** | `memoria.md`: o que ele aprendeu. Entra em toda conversa, reunião e teste; o administrador pode corrigir |
+| **✉️ Recados** | o que outros agentes e o dono deixaram para ele. Quem deixa recado anda até a mesa do outro |
+| **📝 Propostas** | mudanças que ele sugeriu no prompt ou na constituição. Nada entra sem **aprovar** |
+| **🧪 Testar** | o testador: clientes ou tarefas difíceis simulados, duas réguas (constituição e fato), relatório e comparação com a rodada anterior |
+| **📜 Log** | as últimas linhas do log |
 
-No fim, um briefing junta tudo.
+## Como os agentes falam com o escritório
 
-Cada fala é uma chamada ao Claude e consome a cota do seu plano. Por isso o
-horário automático vem **desligado**. Para ligar, e para dar uma meta à
-reunião, use `data/config.json` (veja abaixo).
+Ao responder (conversa, reunião, testador), um agente pode terminar com blocos
+que o escritório retira do texto e trata:
 
-## Configuração
+- `<memoria>…</memoria>` vai para `memoria.md` com a data.
+- `<mensagem para="id">…</mensagem>` é entregue no próximo prompt do destinatário.
+- `<proposta arquivo="prompt-agente.md" secao="Nunca faça isso" titulo="…">…</proposta>`
+  fica pendente até o dono aprovar. É a regra da skill: o construtor nunca
+  escreve o prompt do dono.
 
-Copie `data/config.exemplo.json` para `data/config.json` e ajuste:
-
-- `nome`, `subtitulo`: o topo da tela e o letreiro das paredes.
-- `dono`: o seu nome no boneco da Diretoria.
-- `empresa`: uma frase sobre o negócio, que vira contexto na reunião.
-- `porta`: a porta do escritório (padrão 4321).
-- `reuniao.automatica`, `dias`, `hora`: a reunião em horário fixo.
-- `reuniao.meta`: `descricao`, `alvo`, `feito`, `unidade` e `ate` aparecem no
-  placar e orientam a conversa.
-
-Para mudar as cores, edite as variáveis no topo de `css/style.css`.
-
-## Avisos no celular
-
-**🔔 Avisos** manda notificação pelo app gratuito [ntfy](https://ntfy.sh) ou
-pelo WhatsApp via CallMeBot. O escritório avisa quando:
-
-- um sistema caiu e não voltou;
-- a reunião terminou;
-- uma ação da agenda rodou.
-
-Seus sistemas também podem pedir um aviso:
+Os sistemas também podem pedir um aviso no celular:
 
 ```http
 POST http://localhost:4321/api/avisar
 { "titulo": "Meu agente", "texto": "3 pedidos esperando", "prioridade": "normal" }
 ```
+
+## Reunião dos agentes
+
+Na sala de reunião, **▶ Reunir agora** junta os agentes que têm sistema local.
+Cada um lê o próprio projeto e diz um número real, uma melhoria e o que
+precisa de outro agente (deixando o recado). A reunião **lê as últimas atas e
+cobra o que cada um prometeu**. No fim, um briefing junta tudo.
+
+Cada fala é uma chamada ao Claude e consome a cota do seu plano. Por isso o
+horário automático vem **desligado**; `data/config.json` liga e dá uma meta.
+
+## Como cada agente é testado
+
+1. **Durante a construção:** cada passo da skill termina com um teste concreto;
+   o portão no fim da fase do sandbox impede de avançar sem provar.
+2. **Antes de entrar em serviço:** o botão **🧪 Testar** solta clientes (30) ou
+   tarefas (10) difíceis simulados, julgados por duas réguas: o que ele afirma
+   bate com a constituição, e o que ele diz ter feito existe de verdade. Sai um
+   relatório; o agente propõe correções; você aprova uma a uma; nova rodada
+   com casos diferentes tem que ter menos falhas graves.
+3. **Em serviço:** o escritório lê a rota de saúde, religa quem caiu, avisa no
+   celular, e a reunião cobra o número prometido.
+
+## Configuração
+
+Copie `data/config.exemplo.json` para `data/config.json` e ajuste:
+
+- `nome`, `subtitulo`, `dono`, `empresa`, `porta`.
+- `marca.logo` (arquivo em `data/marca/`) e `marca.cores` (variáveis do tema):
+  marca branca para cada cliente sem tocar no código.
+- `reuniao.automatica`, `dias`, `hora`, `foco`, `meta`.
+
+## Avisos no celular
+
+**🔔 Avisos** manda notificação pelo app gratuito [ntfy](https://ntfy.sh) ou
+pelo WhatsApp via CallMeBot, para **mais de um destino**: o celular do cliente
+e o seu. Avisa quando um sistema caiu e não voltou, quando a reunião terminou
+e quando uma ação da agenda rodou.
 
 ## Agenda
 
@@ -114,21 +164,28 @@ no comentário da seção AGENDA em `server.js`.
 
 ## O que fica fora do git
 
-Configuração, equipe, avisos (com a chave do CallMeBot), atas e estado ficam em
-`data/` e são ignorados pelo git. Só os dois arquivos `*.exemplo.json` são
-versionados.
+Tudo que é seu ou do cliente: `data/` (configuração, equipe, avisos, senha,
+sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
+(as pastas dos agentes contratados, com `.env` e tudo). Só os dois
+`*.exemplo.json` são versionados.
 
 ## Estrutura
 
 ```
-server.js          servidor: arquivos da tela, API, sobe/vigia sistemas, espelho
-reuniao.js         reunião dos agentes (Claude Code em cada pasta)
-avisos.js          ntfy e CallMeBot
-index.html         a tela
-js/                motor isométrico, salas, móveis, bonecos, painéis
-css/style.css      tema
-exemplo-agente/    o menor sistema que o escritório sabe operar
+server.js          servidor: tela, API, sobe/vigia sistemas, espelho, tranca
+admin.js           senha e sessão do administrador
+agentes.js         contratar é construir: pasta padrão, setores, progresso, ficha
+memoria.js         memória por agente, recados e propostas
+testador.js        o exame do agente, com duas réguas
+reuniao.js         reunião dos agentes, com memória das atas
+avisos.js          ntfy e CallMeBot, vários destinos
+index.html, css/   a tela e o tema
+js/                motor isométrico, salas, móveis, bonecos, painéis, admin, contratação, extras
+modelos/agente/    o que toda pasta de agente nova recebe
+modelos/skills/    criar-agente (atendimento) e criar-agente-setor (outros setores)
+exemplo-agente/    o único agente que vem no escritório, na estrutura padrão
 data/              seus dados (fora do git, menos os exemplos)
+agentes/           os agentes contratados (fora do git)
 ```
 
 ## Licença

@@ -1,8 +1,20 @@
 node_modules/
 
-# o que é seu: configuração, equipe, avisos (chave do CallMeBot), atas e estado
+# o que é seu: configuração, equipe, avisos (chave do CallMeBot), senha de
+# administrador, sessões, conversas, recados, propostas, atas, testes e estado
 data/*.json
 !data/sistemas.exemplo.json
 !data/config.exemplo.json
 data/logs/
 data/reunioes/
+data/testes/
+data/marca/
+
+# os agentes que você contrata nascem aqui, com .env e tudo
+agentes/
+
+# o que o agente de exemplo produz operando
+exemplo-agente/.env
+exemplo-agente/log.txt
+exemplo-agente/registro/
+exemplo-agente/testes/
