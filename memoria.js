@@ -28,8 +28,8 @@ const MODELO_MEMORIA = (nome) => '# Memória do escritório — ' + nome + '\n\n
   '     começo de cada conversa, reunião e teste, e acrescenta no fim o que o agente marcou\n' +
   '     em <memoria>. Curto; nunca chave. -->\n\n## Aprendizados\n\n';
 
-const arqMensagens = () => path.join(dep.ROOT, 'data', 'mensagens.json');
-const arqPropostas = () => path.join(dep.ROOT, 'data', 'propostas.json');
+const arqMensagens = () => path.join(dep.DADOS || path.join(dep.ROOT, 'data'), 'mensagens.json');
+const arqPropostas = () => path.join(dep.DADOS || path.join(dep.ROOT, 'data'), 'propostas.json');
 const lerJson = (a, padrao) => { try { return JSON.parse(fs.readFileSync(a, 'utf8')); } catch (e) { return padrao; } };
 const gravarJson = (a, d) => { try { fs.mkdirSync(path.dirname(a), { recursive: true }); fs.writeFileSync(a, JSON.stringify(d, null, 2) + '\n'); } catch (e) {} };
 const hoje = () => new Date().toLocaleDateString('pt-BR');

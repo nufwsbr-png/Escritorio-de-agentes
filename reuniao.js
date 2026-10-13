@@ -38,7 +38,7 @@ function criarVazio() {
 }
 
 /* ---------------- onde a ata fica ---------------- */
-const pastaAtas = () => path.join(dep.ROOT, 'data', 'reunioes');
+const pastaAtas = () => path.join(dep.DADOS || path.join(dep.ROOT, 'data'), 'reunioes');
 const arquivoDoDia = (dia) => path.join(pastaAtas(), dia + '.json');
 const hojeISO = () => {
   const d = new Date();

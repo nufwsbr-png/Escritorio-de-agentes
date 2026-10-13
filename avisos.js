@@ -127,7 +127,7 @@ function agendarResumo() {
 }
 
 module.exports = {
-  init(dir, f) { ARQ = path.join(dir, 'data', 'avisos.json'); if (f) fonte = Object.assign(fonte, f); ler(); agendarResumo(); return module.exports; },
+  init(dir, f) { ARQ = path.join(dir, 'avisos.json'); if (f) fonte = Object.assign(fonte, f); ler(); agendarResumo(); return module.exports; },
   ler, avisar, montarResumo,
   configurar(corpo) {
     const c = ler();

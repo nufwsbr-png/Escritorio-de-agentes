@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 
-let dep = null;   // { ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config }
+let dep = null;   // { ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config, plataformas }
 
 const TRILHAS = {
   atendimento: { skill: 'criar-agente', passos: 18, molde: 'atendimento' },
@@ -142,9 +142,11 @@ function criarAgente(b) {
     return { ok: false, motivo: 'não consegui criar a pasta: ' + e.message };
   }
 
+  const plataformasPedidas = [...new Set((Array.isArray(b.plataformas) ? b.plataformas : []).map(String).filter(x => /^[a-z0-9][a-z0-9-]*$/.test(x)))];
   const item = {
     nome, tipo: 'local', pasta, comando: 'node', args: ['server.js'], env: { PORT: String(porta), ESCRITORIO_PORTA: String(dep.PORT) }, porta, abre: '/painel',
     setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio,
+    plataformas: plataformasPedidas,
     sobre: setor.emoji + ' ' + setorNome + (negocio ? ' de ' + negocio : '') + '. Em construção: ' + trilha.passos + ' componentes da anatomia do escritório, com a skill ' + trilha.skill + ' de referência. Abra Conversar > Construir para seguir.',
     dicas: ['Em Conversar > Construir, o construtor segue a ANATOMIA, um componente por vez, com teste no fim de cada um',
             setor.trilha === 'atendimento' ? 'O chat de teste fica em / e o painel do dono em /painel' : 'O lançador é rodar.js: node rodar.js amostras/caso-01 roda em ensaio; o painel em /painel aprova, responde e corrige',
@@ -152,7 +154,9 @@ function criarAgente(b) {
   };
   bruto[id] = item;
   dep.gravarRegistro(bruto);
-  return { ok: true, id, sistema: item, pasta, setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha, skill: trilha.skill, passos: trilha.passos } };
+  // as plataformas permitidas entram no .env agora, no bloco gerenciado pelo escritório
+  const sinc = dep.plataformas && plataformasPedidas.length ? dep.plataformas.sincronizarAgente(id) : null;
+  return { ok: true, id, sistema: item, pasta, plataformas: plataformasPedidas, variaveisDePlataforma: sinc && sinc.ok ? sinc.variaveis : [], setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha, skill: trilha.skill, passos: trilha.passos } };
 }
 
 /* ---------------- constituição pela tela (ficha do negócio) ---------------- */

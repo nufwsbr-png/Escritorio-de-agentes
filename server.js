@@ -15,13 +15,17 @@ const fs    = require('fs');
 const path  = require('path');
 const net   = require('net');
 const { spawn } = require('child_process');
+const UTIL  = require('./util');
 
 const ROOT = __dirname;
+/* a pasta de dados (configuração, registro, estado) é data/; ESCRITORIO_DADOS troca
+   por outra, para os testes rodarem sem tocar nos dados reais */
+const DADOS = process.env.ESCRITORIO_DADOS || path.join(DADOS);
 
 /* ---------------- configuração ----------------
    data/config.json é seu e fica fora do git. O que faltar nele vem do
    padrão abaixo; o modelo comentado está em data/config.exemplo.json. */
-const CONFIG_ARQ = path.join(ROOT, 'data', 'config.json');
+const CONFIG_ARQ = path.join(DADOS, 'config.json');
 const CONFIG_PADRAO = {
   nome: 'Escritório de Agentes', subtitulo: 'painel dos seus agentes de IA',
   dono: 'Você', empresa: '', porta: 4321,
@@ -38,20 +42,20 @@ function lerConfig() {
 }
 const PORT = Number(process.env.PORT) || Number(lerConfig().porta) || 4321;
 
-const REGISTRO = path.join(ROOT, 'data', 'sistemas.json');
+const REGISTRO = path.join(DADOS, 'sistemas.json');
 // primeira vez: o registro nasce do exemplo, que já traz o agente de demonstração
 if (!fs.existsSync(REGISTRO)) {
   try { fs.copyFileSync(path.join(ROOT, 'data', 'sistemas.exemplo.json'), REGISTRO); } catch (e) { /* segue vazio */ }
 }
-const EQUIPE     = path.join(ROOT, 'data', 'equipe.json');
-const EQUIPE_BAK = path.join(ROOT, 'data', 'equipe.bak.json');
+const EQUIPE     = path.join(DADOS, 'equipe.json');
+const EQUIPE_BAK = path.join(DADOS, 'equipe.bak.json');
 
 /* ---------------- os módulos do escritório ----------------
    admin    — senha e sessão do administrador (a tranca)
    memoria  — memória por agente, recados entre agentes e propostas
    agentes  — contratar é construir: pasta padrão + skill da trilha
    testador — o exame do agente, com duas réguas                      */
-const ADMIN = require('./admin').init(ROOT);
+const ADMIN = require('./admin').init(ROOT, DADOS);
 const equipeDoDisco = () => {
   try { return (JSON.parse(fs.readFileSync(EQUIPE, 'utf8')).team) || []; }
   catch (e) { return []; }
@@ -60,8 +64,9 @@ const nomeDoAgente = (idSistema) => {
   const a = equipeDoDisco().find(x => x.sistema === idSistema);
   return a ? a.name : null;
 };
-const MEMORIA = require('./memoria').init({ ROOT, lerRegistro, nomeDe: nomeDoAgente });
-const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig });
+const MEMORIA = require('./memoria').init({ ROOT, DADOS, lerRegistro, nomeDe: nomeDoAgente });
+const PLATAFORMAS = require('./plataformas').init({ ROOT, DADOS, lerRegistro, lerRegistroBruto, gravarRegistro });
+const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig, plataformas: PLATAFORMAS });
 
 /* lê o corpo JSON de um POST/PUT, com limite de tamanho */
 const corpoJson = (req, limite = 1e5) => new Promise((resolve, reject) => {
@@ -253,7 +258,7 @@ const vivos = new Map();          // id -> { child, log, desde, erro }
 /* O Next recusa um segundo dev server para a mesma pasta, mesmo em outra
    porta — ele avisa qual já está no ar e sai. Guardamos essa porta para
    reaproveitar o servidor existente em vez de insistir em subir outro. */
-const PORTAS_ARQ = path.join(ROOT, 'data', 'portas.json');
+const PORTAS_ARQ = path.join(DADOS, 'portas.json');
 const reaproveita = new Map();    // id -> porta onde o projeto já responde
 
 /* Sem isso, reiniciar o escritório esquecia em que porta um projeto Next
@@ -272,8 +277,8 @@ function gravarPortas() {
 }
 lerPortas();
 const LOG_MAX = 400;
-const LOGS = path.join(ROOT, 'data', 'logs');
-const VIVOS_ARQ = path.join(ROOT, 'data', 'vivos.json');
+const LOGS = path.join(DADOS, 'logs');
+const VIVOS_ARQ = path.join(DADOS, 'vivos.json');
 
 /* ---------------- quem continua de pé entre reinícios ----------------
    O escritório pode cair ou ser reiniciado; os sistemas não. Este arquivo
@@ -477,6 +482,7 @@ async function estado() {
       // agente construído pelo escritório: setor, trilha e onde a construção está
       setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null,
       construcao: AGENTES.progressoDe(s.pasta, s.trilha),
+      plataformas: Array.isArray(s.plataformas) ? s.plataformas : [],
       propostasPendentes: MEMORIA.propostas(id).filter(p => p.estado === 'pendente').length,
       recadosNovos: MEMORIA.pendentesPara(id, false).length,
       // true = abre direto no quadro; "espelho" = passa pelo proxy local;
@@ -540,7 +546,7 @@ const conversas = new Map();   // id -> { sessionId, historico, rodando, proc, e
 
 /* A sessão sobrevive a reinício: antes o id ficava só nesta memória e
    reiniciar o escritório zerava toda conversa. Agora vai para o disco. */
-const CONVERSAS_ARQ = path.join(ROOT, 'data', 'conversas.json');
+const CONVERSAS_ARQ = path.join(DADOS, 'conversas.json');
 function lerConversas() {
   try {
     const d = JSON.parse(fs.readFileSync(CONVERSAS_ARQ, 'utf8'));
@@ -577,16 +583,16 @@ const LIMITE_CONVERSA = 6 * 60 * 1000;
 const LIMITE_CONSTRUIR = 25 * 60 * 1000;   // um passo da jornada pode instalar e subir servidor
 
 /* o resumo diário do celular: quem caiu e não voltou */
-const AVISOS = require('./avisos').init(ROOT, {
+const AVISOS = require('./avisos').init(DADOS, {
   nome: () => lerConfig().nome,
   resumo: async () => (await estado()).filter(x => x.estado === 'caiu')
     .map(x => (x.nome || x.id) + ' está fora do ar.')
 });
-const REUNIAO = require('./reuniao').init({ ROOT, lerRegistro, CLAUDE_BIN, config: lerConfig,
+const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 REUNIAO.agendar(equipeDoDisco);
-const TESTADOR = require('./testador').init({ ROOT, CLAUDE_BIN, lerRegistro, FERRAMENTAS,
+const TESTADOR = require('./testador').init({ ROOT, DADOS, CLAUDE_BIN, lerRegistro, FERRAMENTAS,
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 
 const PAPEL =
@@ -803,6 +809,33 @@ const servidor = http.createServer(async (req, res) => {
 
   /* ---- contratar é construir ---- */
   if (rota === '/api/setores' && req.method === 'GET') return json(res, 200, { setores: AGENTES.setores() });
+  /* ---- plataformas: o cadastro único; valores só para o administrador ---- */
+  if (rota === '/api/plataformas' && req.method === 'GET') return json(res, 200, { plataformas: PLATAFORMAS.listar(false), tipos: PLATAFORMAS.TIPOS });
+  if (rota === '/api/plataformas' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar(b); return json(res, r.ok ? 200 : 400, r.ok ? { ...r, plataformas: PLATAFORMAS.listar(false) } : r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  if (rota === '/api/plataformas/sincronizar' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return json(res, 200, { ok: true, ...PLATAFORMAS.sincronizarTodos() });
+  }
+  const mplat = rota.match(/^\/api\/plataformas\/([a-z0-9][a-z0-9-]*)$/i);
+  if (mplat) {
+    if (!admin) return soAdmin();
+    const id = mplat[1];
+    if (req.method === 'GET') { const p = PLATAFORMAS.obter(id, true); return p ? json(res, 200, p) : json(res, 404, { ok: false, motivo: 'não encontrada' }); }
+    if (req.method === 'PUT') return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar({ ...b, id }); return json(res, r.ok ? 200 : 400, r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    if (req.method === 'DELETE') { const r = PLATAFORMAS.remover(id); return json(res, r.ok ? 200 : 404, r); }
+  }
+  const map = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/plataformas$/i);
+  if (map && req.method === 'PUT') {
+    if (!admin) return soAdmin();
+    return corpoJson(req, 2e4).then(b => { const r = PLATAFORMAS.definirDoAgente(map[1], b.plataformas); return json(res, r.ok ? 200 : 404, r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+
   if (rota === '/api/contratar' && req.method === 'POST') {
     if (!admin) return soAdmin();
     return corpoJson(req, 2e4).then(b => json(res, 200, AGENTES.criarAgente(b)))
@@ -1007,9 +1040,9 @@ const servidor = http.createServer(async (req, res) => {
   }
   const limpo = path.normalize(rel).replace(/^(\.\.[/\\])+/, '');
   const arquivo = rel.startsWith('/marca/')
-    ? path.join(ROOT, 'data', limpo)
+    ? path.join(DADOS, limpo)
     : path.join(ROOT, limpo);
-  if (!arquivo.startsWith(ROOT)) { res.writeHead(403).end('forbidden'); return; }
+  if (!arquivo.startsWith(ROOT) && !arquivo.startsWith(DADOS)) { res.writeHead(403).end('forbidden'); return; }
 
   fs.readFile(arquivo, (err, buf) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }).end('404'); return; }
@@ -1054,7 +1087,7 @@ process.on('unhandledRejection', e => console.error('  promessa rejeitada:', e &
    na porta é religado. Três tentativas a cada 15 minutos por sistema, para
    um sistema quebrado de verdade não ficar em laço.
    =========================================================== */
-const DESEJADOS = path.join(ROOT, 'data', 'desejados.json');
+const DESEJADOS = path.join(DADOS, 'desejados.json');
 const lerDesejados = () => { try { return new Set(JSON.parse(fs.readFileSync(DESEJADOS, 'utf8'))); } catch (e) { return new Set(); } };
 const gravarDesejados = (d) => { try { fs.writeFileSync(DESEJADOS, JSON.stringify([...d], null, 2) + '\n'); } catch (e) {} };
 function quero(id, sim) { const d = lerDesejados(); if (sim) d.add(id); else d.delete(id); gravarDesejados(d); }
@@ -1106,7 +1139,7 @@ setInterval(vigiar, 60000);
    Se o escritório estiver fora do ar na hora, a ação roda quando ele voltar
    — atrasada, mas roda. O que não acontece é rodar duas vezes.
    =========================================================== */
-const AGENDA = path.join(ROOT, 'data', 'agenda.json');
+const AGENDA = path.join(DADOS, 'agenda.json');
 const lerAgenda = () => { try { return JSON.parse(fs.readFileSync(AGENDA, 'utf8')); } catch (e) { return []; } };
 const gravarAgenda = (a) => { try { fs.writeFileSync(AGENDA, JSON.stringify(a, null, 2) + '\n'); } catch (e) {} };
 const esperar = (ms) => new Promise(r => setTimeout(r, ms));

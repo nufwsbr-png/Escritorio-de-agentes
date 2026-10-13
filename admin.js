@@ -77,7 +77,7 @@ const cookie = (token) => 'esc_admin=' + token + '; Path=/; HttpOnly; SameSite=S
 const cookieVazio = () => 'esc_admin=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0';
 
 module.exports = {
-  init(ROOT) { ARQ = path.join(ROOT, 'data', 'admin.json'); SESSOES = path.join(ROOT, 'data', 'sessoes.json'); return module.exports; },
+  init(ROOT, DADOS) { const d = DADOS || path.join(ROOT, 'data'); ARQ = path.join(d, 'admin.json'); SESSOES = path.join(d, 'sessoes.json'); return module.exports; },
   temSenha, conferir, definirSenha, criarSessao, encerrar, ehAdmin, tokenDe, cookie, cookieVazio,
   estado(req) { return { temSenha: temSenha(), admin: ehAdmin(req) }; }
 };
