@@ -84,3 +84,16 @@ test('aplicar de novo muda só o que veio', () => {
     assert.equal(cfg.empresa, 'Clínica X'); assert.equal(cfg.dono, 'Beto'); assert.equal(cfg.setores.length, 1);
   } finally { c.limpar(); }
 });
+
+test('avisos: ntfy gerado é imprevisível; "só ntfy" deixa o WhatsApp desligado mesmo com número', () => {
+  const c = cenario();
+  try {
+    const r = c.A.aplicar({ empresa: 'Clínica Aurora', avisos: { ntfy: { gerar: true }, whatsapp: { fone: '5541999990000', ativo: false }, resumo: { ativo: false } } });
+    assert.equal(r.ok, true);
+    const av = JSON.parse(fs.readFileSync(path.join(c.DADOS, 'avisos.json'), 'utf8'));
+    assert.match(av.ntfy.topico, /^clinica-aurora-[0-9a-f]{8}$/);
+    assert.equal(av.ntfy.ativo, true);
+    assert.equal(av.whatsapp.ativo, false); assert.equal(av.whatsapp.fone, '5541999990000');
+    assert.equal(av.resumo.ativo, false);
+  } finally { c.limpar(); }
+});

@@ -51,7 +51,16 @@ uma vez no fim de cada bloco; mas **pergunte** uma coisa por mensagem.
 ## Regras que não se quebram
 
 - **Uma pergunta por mensagem.** Diga em que passo está ("3 de 10: as
-  plataformas"), pergunte, espere.
+  plataformas"), pergunte, espere. As conferências (8) podem vir na mesma
+  mensagem da pergunta seguinte; **a senha (5) vem numa mensagem só**, sem
+  nenhuma pergunta junto, para não passar batida.
+- **Confirme o que gravou** antes da próxima pergunta: "gravado: config.json
+  (empresa, dono)". Uma linha.
+- **Nunca edite código do projeto.** Se um script falhar ou o escritório não
+  subir por erro no código (`server.js`, `abertura.js`, qualquer `.js`), pare,
+  mostre a mensagem de erro e diga que o administrador precisa corrigir e
+  atualizar o escritório (`git pull`). A abertura não tem mandato para mexer
+  em fonte; ela só grava em `data/`.
 - **Chave é segredo.** Nenhuma chave de API, token ou chave do CallMeBot entra
   no chat. Para plataformas: crie as entradas com valores vazios e diga onde
   colar (botão 🔌 Plataformas do escritório, como administrador). Para o

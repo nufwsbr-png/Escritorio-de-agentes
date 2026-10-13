@@ -53,10 +53,15 @@ diga que a conversa não guarda segredo.
 
 **Leia antes:** `atual.marca`; liste `data/marca/`.
 
-**Pergunte:** "Agora a marca e a planta, as duas opcionais. Coloque na pasta
-`data/marca/` o logo (png, svg ou jpg) e, se tiver, a planta do escritório ou
-da clínica (imagem ou PDF). Me diga os nomes dos arquivos e, se quiser, a cor
-principal da marca (#RRGGBB). Ou diga 'pular'."
+**Pergunte (uma coisa só):** "Agora a marca e a planta, as duas opcionais.
+Tem a planta do escritório ou da clínica (imagem ou PDF)? Coloque em
+`data/marca/` e me diga o nome do arquivo, ou 'pular'." Se já houver um
+arquivo em `data/marca/`, pergunte se é a planta. Só depois, em outra
+mensagem: "E o logo? Nome do arquivo em `data/marca/`, ou 'pular'. Se quiser,
+a cor principal (#RRGGBB)."
+
+**Se a imagem não for uma planta** (foto, captura de tela, documento), diga
+isso com clareza e pergunte se quer mesmo usar; não finja ler salas.
 
 **Grave:** `{ "marca": { "logo", "planta", "cor" } }` → `node abertura.js aplicar`
 (o script confere que os arquivos existem).
@@ -70,12 +75,14 @@ passe à pergunta 5.
 **Leia antes:** `atual.temSenhaAdmin`. Se já tem senha e a pessoa não pediu
 para trocar, pule.
 
-**Diga (não é pergunta):** "Agora a tranca. O escritório tem dois perfis: o
-cliente opera (liga, desliga, conversa, lê) e o administrador constrói
-(contrata, aprova, edita). Vou gerar uma senha forte de administrador."
-Rode `node abertura.js senha` e mostre: "Senha do administrador: <senha>.
-Guarde agora: ela não aparece de novo. Para trocar, 🔐 Admin na tela."
-Se a pessoa preferir a própria senha, grave com `aplicar` (`senhaAdmin`, 6+).
+**Diga (não é pergunta, e é uma mensagem SÓ, sem a pergunta 6 junto):**
+"Agora a tranca. O escritório tem dois perfis: o cliente opera (liga,
+desliga, conversa, lê) e o administrador constrói (contrata, aprova, edita).
+Vou gerar uma senha forte de administrador." Rode `node abertura.js senha` e
+mostre: "Senha do administrador: <senha>. Guarde agora: ela não aparece de
+novo. Para trocar, 🔐 Admin na tela. Me diga 'guardei' para seguir." Só
+depois do 'guardei' vem a pergunta 6. Se a pessoa preferir a própria senha,
+grave com `aplicar` (`senhaAdmin`, 6+).
 
 ## 6 de 10 — Os avisos
 
@@ -85,11 +92,14 @@ Se a pessoa preferir a própria senha, grave com `aplicar` (`senhaAdmin`, 6+).
 reunião termina ou um agente precisa de você? Pelo app gratuito ntfy (eu
 crio o tópico; você instala o app e assina) ou pelo seu WhatsApp (CallMeBot,
 você cola a chave na tela depois). Qual o número do dono e, se for outro, o
-do administrador?"
+do administrador? Também sai um resumo às 9h todo dia; quer?"
 
-**Grave:** `{ "avisos": { "ntfy": { "topico" }, "whatsapp": { "fone", "extras": [{ "fone" }] } } }`
-→ `node abertura.js aplicar`. Tópico do ntfy: `<empresa-em-slug>-<4 dígitos aleatórios>`.
-A chave do CallMeBot **não** passa por aqui: diga "cole em 🔔 Avisos".
+**Grave:** `{ "avisos": { "ntfy": { "gerar": true }, "whatsapp": { "fone", "ativo": false, "extras": [{ "fone" }] }, "resumo": { "ativo": true } } }`
+→ `node abertura.js aplicar`. `ntfy.gerar` faz o script criar um tópico
+imprevisível (slug da empresa + 8 caracteres aleatórios); diga o tópico no
+fim, para a pessoa assinar no app. `whatsapp.ativo` só `true` se a pessoa
+escolheu WhatsApp; com "só ntfy", grave o número com `ativo: false`. A chave
+do CallMeBot **não** passa por aqui: diga "cole em 🔔 Avisos".
 
 ## 7 de 10 — A reunião
 
@@ -107,9 +117,10 @@ Claude Code; por isso o padrão é desligada.
 ## 8 de 10 — A conta do Claude Code
 
 **Não é pergunta.** Rode `node abertura.js claude`. Se `conectado`: "O Claude
-Code está conectado nesta máquina (<conta>). Tudo que pensa aqui, Conversar,
+Code está conectado nesta máquina. Tudo que pensa aqui, Conversar,
 Construir, reunião, testador e as rodadas dos agentes de tarefa, gasta a cota
-dessa conta." Se não: "Precisa conectar: num terminal, `claude auth login`,
+dessa conta." (Não repita o e-mail da conta no chat: ele aparece em ⚙️
+Ajustes para quem precisar.) Se não: "Precisa conectar: num terminal, `claude auth login`,
 no mesmo usuário do Windows que vai abrir o escritório. Sem isso o escritório
 sobe, mas os agentes não pensam." Siga.
 

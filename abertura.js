@@ -125,8 +125,16 @@ function aplicar(r) {
   gravarJson(arq('config.json'), montarConfig(r)); gravados.push('config.json');
   if (r.avisos && dep.AVISOS) {
     const corpo = {};
-    if (r.avisos.ntfy) corpo.ntfy = { ativo: !!limpa(r.avisos.ntfy.topico, 64), topico: limpa(r.avisos.ntfy.topico, 64) || undefined, extras: Array.isArray(r.avisos.ntfy.extras) ? r.avisos.ntfy.extras : undefined };
-    if (r.avisos.whatsapp) corpo.whatsapp = { ativo: !!limpa(r.avisos.whatsapp.fone, 20), fone: limpa(r.avisos.whatsapp.fone, 20), extras: Array.isArray(r.avisos.whatsapp.extras) ? r.avisos.whatsapp.extras.map(e => ({ fone: limpa(e.fone || e, 20) })) : undefined };
+    if (r.avisos.ntfy) {
+      // gerar: true cria um tópico imprevisível (quem adivinha o tópico lê os avisos no ntfy.sh)
+      const topico = r.avisos.ntfy.gerar ? gerarTopico() : limpa(r.avisos.ntfy.topico, 64);
+      corpo.ntfy = { ativo: r.avisos.ntfy.ativo !== undefined ? !!r.avisos.ntfy.ativo : !!topico, topico: topico || undefined, extras: Array.isArray(r.avisos.ntfy.extras) ? r.avisos.ntfy.extras : undefined };
+    }
+    if (r.avisos.whatsapp) {
+      const fone = limpa(r.avisos.whatsapp.fone, 20);
+      corpo.whatsapp = { ativo: r.avisos.whatsapp.ativo !== undefined ? !!r.avisos.whatsapp.ativo : !!fone, fone, extras: Array.isArray(r.avisos.whatsapp.extras) ? r.avisos.whatsapp.extras.map(e => ({ fone: limpa(e.fone || e, 20) })) : undefined };
+    }
+    if (r.avisos.resumo && typeof r.avisos.resumo === 'object') corpo.resumo = { ativo: r.avisos.resumo.ativo !== undefined ? !!r.avisos.resumo.ativo : undefined, hora: r.avisos.resumo.hora };
     // a chave do CallMeBot é segredo: nunca passa por aqui; cola-se em 🔔 Avisos
     dep.AVISOS.configurar(corpo); gravados.push('avisos.json');
   }
@@ -134,6 +142,13 @@ function aplicar(r) {
   if (r.manterExemplo === false) { exemplo('demitir'); gravados.push('sistemas.json', 'equipe.json'); }
   registrar('abertura aplicada: ' + gravados.join(', ') + (r.empresa ? ' (empresa: ' + limpa(r.empresa, 80) + ')' : ''));
   return { ok: true, gravados, atual: atual() };
+}
+
+/** tópico do ntfy imprevisível: slug da empresa + 8 caracteres aleatórios */
+function gerarTopico() {
+  const cfg = dep.lerConfig() || {};
+  const base = String(cfg.empresa || 'escritorio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'escritorio';
+  return base + '-' + crypto.randomBytes(4).toString('hex');
 }
 
 /* ---------------- senha, Claude, exemplo ---------------- */
