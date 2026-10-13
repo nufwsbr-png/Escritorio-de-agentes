@@ -1,0 +1,15 @@
+{
+  "_leia": "Modelo do que a skill grava com node abertura.js aplicar <arquivo>. Pode mandar só uma parte: o que não vier fica como está. Nenhuma chave aqui: plataformas entram por node plataformas.js criar; a chave do CallMeBot é colada em 🔔 Avisos.",
+  "empresa": "Clínica Exemplo",
+  "oQueFaz": "clínica de estética em Curitiba",
+  "dono": "Ana",
+  "setores": [
+    { "nome": "Recepção", "emoji": "🛎️", "desc": "Agenda, confirma e recebe." },
+    { "nome": "Faturamento", "emoji": "💳", "desc": "Guias, cobranças e conferência." },
+    { "nome": "Marketing", "emoji": "📣", "desc": "Conteúdo e campanhas." }
+  ],
+  "marca": { "logo": "", "planta": "", "cor": "#7c6cff" },
+  "avisos": { "ntfy": { "topico": "clinica-exemplo-4821" }, "whatsapp": { "fone": "5541999990000", "extras": [] } },
+  "reuniao": { "automatica": false, "dias": [1, 5], "hora": 11, "meta": { "descricao": "consultas agendadas no mês", "alvo": 120, "unidade": "consultas", "ate": "" } },
+  "manterExemplo": true
+}

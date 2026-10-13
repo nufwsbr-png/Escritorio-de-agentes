@@ -38,10 +38,42 @@ cd escritorio-de-agentes
 npm start
 ```
 
-Abra **http://localhost:4321**. Todo escritório novo vem com **um** agente, o
-de exemplo (pasta `exemplo-agente`). Clique no computador dele e em **Ligar**
-para ver o painel do dono; nele, rode `amostras/caso-01` em **Ensaio** e veja o
-agente ler um pedido de cliente e planejar o resumo sem tocar em nada.
+Abra **http://localhost:4321**. Sem configuração, a tela avisa que o
+escritório ainda não foi aberto. Para abrir, veja a seção seguinte. Todo
+escritório novo vem com **um** agente, o de exemplo (pasta `exemplo-agente`).
+Clique no computador dele e em **Ligar** para ver o painel do dono; nele,
+rode `amostras/caso-01` em **Ensaio** e veja o agente ler um pedido de cliente
+e planejar o resumo sem tocar em nada.
+
+## Abrir um escritório novo: `/criar-escritorio`
+
+A abertura acontece no Claude Code, não na tela. Abra esta pasta no Claude
+Code e digite:
+
+```
+/criar-escritorio
+```
+
+A skill (versionada em `.claude/skills/criar-escritorio/`, vem com o projeto)
+faz dez perguntas, uma por mensagem, e grava tudo pelos scripts do projeto:
+
+1. O negócio: empresa, o que faz, quem é o dono.
+2. Os setores, sugeridos pelo ramo; viram as opções da aba Contratar.
+3. As plataformas que a empresa usa (CRM, planilha, agenda, pasta, WhatsApp,
+   e-mail). As chaves nunca passam pelo chat: entram pela tela depois.
+4. A marca e a planta: logo, cor e a planta do escritório ou da clínica.
+   **A planta redesenha as salas** do escritório isométrico.
+5. A tranca: a senha do administrador, gerada e mostrada uma vez.
+6. Os avisos: celular do dono e do administrador.
+7. A reunião: automática ou não, dias, hora e a meta que ela cobra.
+8. A conta do Claude Code: conferência de que está conectada.
+9. O primeiro agente: "qual trabalho dói mais hoje?"
+10. O exemplo: manter ou demitir.
+
+No fim ela sobe o escritório com o nome da empresa. Rodar `/criar-escritorio`
+de novo num escritório já aberto mostra o que existe e muda só o que você
+pedir. **⚙️ Ajustes**, no topo da tela, resume a configuração, mostra se a
+conta do Claude Code está conectada e lembra o comando.
 
 No Windows:
 - **`INICIAR ESCRITORIO.cmd`** sobe o escritório e o religa se ele cair.
@@ -121,8 +153,8 @@ chave, valem os padrões: Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados
 e QA. Uma clínica, um escritório de advocacia e uma loja têm setores
 diferentes; troque a lista por cliente.
 
-Depois: nome do agente, negócio, porta e, se quiser, uma pasta fora do
-padrão. O escritório cria a pasta em `agentes/<nome-em-slug>/` ("Tati Teste"
+Depois: nome do agente, negócio, porta, **as plataformas que ele pode usar**
+e, se quiser, uma pasta fora do padrão. O escritório cria a pasta em `agentes/<nome-em-slug>/` ("Tati Teste"
 vira `agentes/tati-teste`) com a anatomia:
 
 ```
@@ -153,6 +185,23 @@ Um robô que você já construiu fora daqui entra por **＋ cadastrar sistema**:
 pasta, comando e porta, ou um endereço publicado. O escritório só o liga,
 vigia e embute.
 
+## Plataformas: um cadastro, permissão por agente
+
+**🔌 Plataformas**, no topo, é o cadastro único dos sistemas do negócio: CRM,
+planilha, agenda, pasta, WhatsApp, e-mail, banco, sistema pelo navegador,
+link. Cada plataforma tem endereço e variáveis de conexão (com valor, só para
+o administrador). Ao contratar, você marca quais plataformas o agente pode
+usar; no monitor, o painel **🔌 Plataformas** muda isso depois.
+
+A garantia é por credencial, não por instrução: o escritório grava no `.env`
+de cada agente um bloco delimitado só com as variáveis das plataformas
+permitidas, mais `PLATAFORMAS_PERMITIDAS`. O resto do `.env` não é tocado.
+Cada variável entra com o nome prefixado (`OPHIR_TOKEN`) e com o nome
+canônico do tipo (`SISTEMA_API_TOKEN`), que é o que as ferramentas das skills
+de referência leem. Trocar uma chave no escritório regrava o bloco de todos
+os agentes que a têm; depois é só religar. Robôs cadastrados à mão nunca têm
+o `.env` tocado.
+
 ## O monitor de cada agente
 
 | Botão | O que faz |
@@ -163,6 +212,7 @@ vigia e embute.
 | **🧠 Memória** | `memoria/escritorio.md`: o que ele anotou nas conversas e reuniões. Entra em toda chamada do escritório; o administrador pode corrigir |
 | **✉️ Recados** | o que outros agentes e o dono deixaram para ele. Quem deixa recado anda até a mesa do outro |
 | **📝 Propostas** | lições e mudanças no prompt ou na constituição que ele sugeriu. Nada entra sem **aprovar** |
+| **🔌 Plataformas** | as plataformas que ele pode usar; marcar e salvar regrava o bloco no `.env` |
 | **🧪 Testar** | o testador: casos difíceis, inclusive com instrução plantada, duas réguas (constituição e fato), relatório com triagem e comparação com a rodada anterior |
 | **📜 Log** | as últimas linhas do log |
 
@@ -218,13 +268,26 @@ uma meta.
 
 ## Configuração
 
-Copie `data/config.exemplo.json` para `data/config.json` e ajuste:
+O jeito normal de criar `data/config.json` é `/criar-escritorio`. Se preferir
+à mão, copie `data/config.exemplo.json` e ajuste:
 
 - `nome`, `subtitulo`, `dono`, `empresa`, `porta`.
-- `marca.logo` (arquivo em `data/marca/`) e `marca.cores` (variáveis do tema):
-  marca branca para cada cliente sem tocar no código.
+- `marca.logo` e `marca.planta` (arquivos em `data/marca/`) e `marca.cores`
+  (variáveis do tema): marca branca para cada cliente sem tocar no código.
 - `setores`: a lista que a aba Contratar oferece para agentes de tarefa.
 - `reuniao.automatica`, `dias`, `hora`, `foco`, `meta`.
+
+## A planta redesenha as salas
+
+Quando a abertura recebe a planta do escritório ou da clínica, a skill lê a
+imagem, propõe a lista de salas (nome, tipo, tamanho, vizinhos), você
+confirma, e `node planta.js gerar` encaixa as salas na grade de 48 por 34,
+com corredor no meio e uma porta por sala, gravando `data/planta.json`. A
+tela desenha a partir desse arquivo: mobília pelo tipo da sala (mesas de
+agente na operação e nas salas, mesa grande na reunião, sofá e jogos no
+descanso, balcão na recepção, mesas do dono na diretoria). De 2 a 12 salas;
+a capacidade de agentes é a soma das mesas. Sem o arquivo, o escritório de
+sempre. `node planta.js remover` volta ao padrão.
 
 ## Avisos no celular
 
@@ -252,17 +315,17 @@ Na máquina do cliente, nesta ordem:
 2. **Clone o escritório.** `git clone` do seu repositório (o endereço acima é
    o original; se você mantém um fork por cliente, use o seu) e `npm start`
    uma vez para conferir que sobe.
-3. **Configuração.** Copie `data/config.exemplo.json` para `data/config.json`
-   e preencha nome do escritório, empresa, dono e porta. Ponha o logo em
-   `data/marca/` e as cores em `marca.cores`. Ajuste `setores` para o ramo
-   do cliente.
-4. **Senha de administrador.** Abra o escritório, clique em **🔐 Admin** e
-   defina a senha. A partir daqui o cliente opera e só você constrói.
-5. **Avisos.** Em **🔔 Avisos**, cadastre o celular do cliente e o seu.
-6. **Atalho e boot.** Rode `CRIAR ATALHO.ps1`. Para subir junto com o Windows,
+3. **Abertura.** Abra a pasta no Claude Code e digite `/criar-escritorio`.
+   As dez perguntas cobrem negócio, setores, plataformas, marca e planta,
+   senha do administrador, avisos, reunião, conta do Claude, primeiro agente
+   e o exemplo. Guarde a senha que ela mostra uma vez.
+4. **Chaves.** Na tela, como administrador: cole as chaves das plataformas em
+   **🔌 Plataformas** e a do CallMeBot em **🔔 Avisos**.
+5. **Atalho e boot.** Rode `CRIAR ATALHO.ps1`. Para subir junto com o Windows,
    crie uma tarefa no Agendador de Tarefas que execute
    `INICIAR ESCRITORIO.cmd` no logon.
-7. **Primeiro agente.** Contrate pela aba Contratar. O exemplo pode ser
+6. **Primeiro agente.** Se não contratou na abertura, contrate pela aba
+   Contratar, marcando as plataformas que ele pode usar. O exemplo pode ser
    demitido depois que o cliente entendeu o fluxo.
 
 ## Custos
@@ -335,23 +398,47 @@ sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
   descrição dela no prompt.
 - **Cliente não consegue contratar:** correto. Contratar é do administrador.
 
+## Testar
+
+```bash
+npm test
+```
+
+Roda, nesta ordem: os testes de unidade (`testes/unidade/`: util,
+plataformas, abertura, planta, tools/base, conferidor), o teste de API
+(`testes/api/`, sobe o escritório numa porta de teste com dados temporários),
+o conferidor de organização (`testes/conferir-organizacao.js`: segredo
+versionado, pasta de agente sem a anatomia, `.gitignore` sem `.env`,
+endereço ou porta fixos fora do lugar, variável de plataforma fora do bloco,
+skill de abertura) e a fumaça da tela (`testes/fumaca.js`: Chrome headless,
+escritório padrão e com a planta da clínica). Nenhum teste toca em `data/` de
+verdade: todos usam `ESCRITORIO_DADOS` apontando para uma pasta temporária.
+
 ## Estrutura
 
 ```
+CLAUDE.md          o que o Claude Code lê ao abrir esta pasta: onde fica cada coisa e as regras
+.claude/skills/criar-escritorio/   a abertura do escritório: as dez perguntas e a planta
 server.js          servidor: tela, API, sobe/vigia sistemas, espelho, tranca
 admin.js           senha e sessão do administrador
 agentes.js         contratar é construir: anatomia, trilhas, setores, progresso, ficha
+plataformas.js     cadastro único das plataformas e o bloco do .env de cada agente (módulo e CLI)
+abertura.js        a abertura por trás da skill: config, avisos, senha, Claude, exemplo (módulo e CLI)
+planta.js          salas da planta encaixadas na grade, validação e capacidade (módulo e CLI)
+util.js            slug, executável do Claude, leitura de .env, CLI
 memoria.js         memória do escritório, lições, recados e propostas
 testador.js        o exame do agente, com duas réguas e instrução plantada
 reuniao.js         reunião dos agentes, com memória das atas
 avisos.js          ntfy e CallMeBot, vários destinos
 index.html, css/   a tela e o tema
-js/                motor isométrico, salas, móveis, bonecos, painéis, admin, contratação, extras
+js/                motor isométrico, salas (da planta ou padrão), móveis, bonecos, painéis, admin, contratação, plataformas, ajustes, extras
+testes/            unidade, API, conferidor de organização e fumaça da tela (npm test)
+docs/superpowers/  design e plano de cada trabalho
 modelos/ANATOMIA.md    os 15 componentes de todo agente
 modelos/agente/        o molde da pasta: comum/, tarefa/ e atendimento/
 modelos/skills/        criar-agente (atendimento) e criar-agente-tarefa (tarefa), as skills de referência
 exemplo-agente/    o único agente que vem no escritório, na anatomia padrão
-data/              seus dados (fora do git, menos os exemplos)
+data/              seus dados: config, registro, plataformas, planta, marca, estado (fora do git, menos os exemplos)
 agentes/           os agentes contratados (fora do git)
 ```
 

@@ -1,0 +1,9 @@
+[
+  { "nome": "Recepção", "tipo": "recepcao", "tamanho": "media", "vizinhos": ["sala-de-espera"] },
+  { "nome": "Sala de espera", "tipo": "descanso", "tamanho": "pequena" },
+  { "nome": "Operação", "tipo": "operacao", "tamanho": "media" },
+  { "nome": "Sala de reunião", "tipo": "reuniao", "tamanho": "pequena" },
+  { "nome": "Sala da Dra. Ana", "tipo": "diretoria", "tamanho": "pequena" },
+  { "nome": "Consultório 1", "tipo": "sala" },
+  { "nome": "Consultório 2", "tipo": "sala" }
+]
