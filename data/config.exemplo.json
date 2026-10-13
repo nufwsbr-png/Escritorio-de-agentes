@@ -13,6 +13,9 @@
     "cores": {}
   },
 
+  "_leiaSetores": "Os setores que a aba Contratar oferece em 'Outro setor'. Variam por cliente: uma clínica, um escritório de advocacia e uma loja têm setores diferentes. Deixe a lista vazia para usar os padrões (Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados, QA). 'Atendimento no WhatsApp' e 'Outro setor' existem sempre. Campos: id (opcional, vira o nome em slug), nome, emoji, desc.",
+  "setores": [],
+
   "reuniao": {
     "_leia": "automatica: false = só quando você clica em Reunir agora. Cada fala é uma chamada ao Claude e consome a cota do seu plano. dias: 0 = domingo ... 6 = sábado. A reunião lê as últimas atas e cobra o que cada agente prometeu.",
     "automatica": false,

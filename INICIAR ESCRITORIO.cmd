@@ -10,12 +10,16 @@ rem  em 3 segundos. Os sistemas dos agentes nao caem junto: eles
 rem  nascem soltos e o escritorio reencontra cada um pelo pid
 rem  guardado em data\vivos.json.
 rem
+rem  A porta vem de data\config.json ("porta"); sem ela, 4321.
 rem  Para parar de verdade: feche esta janela.
 rem ===========================================================
 
+set PORTA=4321
+for /f "usebackq delims=" %%p in (`node -e "try{process.stdout.write(String(Number(require('./data/config.json').porta)||4321))}catch(e){process.stdout.write('4321')}"`) do set PORTA=%%p
+
 echo.
 echo   ESCRITORIO DE AGENTES
-echo   http://localhost:4321
+echo   http://localhost:%PORTA%
 echo.
 
 :loop

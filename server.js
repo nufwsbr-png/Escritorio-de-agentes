@@ -806,7 +806,7 @@ const servidor = http.createServer(async (req, res) => {
   }
 
   /* ---- contratar é construir ---- */
-  if (rota === '/api/setores' && req.method === 'GET') return json(res, 200, { setores: AGENTES.SETORES });
+  if (rota === '/api/setores' && req.method === 'GET') return json(res, 200, { setores: AGENTES.setores() });
   if (rota === '/api/contratar' && req.method === 'POST') {
     if (!admin) return soAdmin();
     return corpoJson(req, 2e4).then(b => json(res, 200, AGENTES.criarAgente(b)))

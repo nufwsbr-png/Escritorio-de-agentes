@@ -1,11 +1,11 @@
 # Escritório de Agentes
 
 Um escritório isométrico no navegador, estilo Habbo, para acompanhar e operar
-os seus agentes de IA, ou os do seu cliente. Cada agente é um boneco com mesa
-e computador próprios; clicar no computador dele abre o **sistema daquele
-agente** ali dentro, com botões para ligar, desligar, ver o log, conversar com
-ele pelo Claude Code, ver o que ele aprendeu, aprovar o que ele propõe e
-testá-lo.
+os agentes de IA de um negócio: os seus ou os do seu cliente. Cada agente é um
+boneco com mesa e computador próprios; clicar no computador dele abre o
+**sistema daquele agente** ali dentro, com botões para ligar, desligar, ver o
+log, conversar com ele pelo Claude Code, ver o que ele aprendeu, aprovar o que
+ele propõe e testá-lo.
 
 - Diretoria, sala de serviço com 18 estações, lounge, sala de reunião e recepção.
 - **Contratar é construir:** todo agente novo nasce com pasta própria, sistema
@@ -15,7 +15,16 @@ testá-lo.
 - O escritório sobe os sistemas locais, vigia quem caiu, religa sozinho e
   avisa no celular.
 - Dois perfis: o **cliente** opera, o **administrador** constrói.
-- Nenhuma dependência: só Node.js e o Claude Code da máquina.
+- O escritório em si não tem dependência: só Node.js e o Claude Code da
+  máquina. O que cada agente precisa está na seção [Contratar um agente](#contratar-um-agente).
+
+Este README tem duas partes. **Usar o escritório** explica o que ele faz.
+**Entregar a um cliente** é o roteiro para instalar, cobrar, atualizar e
+hospedar quando o escritório vai para a máquina de outra pessoa.
+
+---
+
+# Parte 1 — Usar o escritório
 
 ## Começar
 
@@ -38,6 +47,16 @@ No Windows:
 - **`CRIAR ATALHO.ps1`** cria um atalho na área de trabalho (botão direito,
   **Executar com o PowerShell**). O atalho liga o escritório e abre o navegador.
 
+Os dois scripts leem a porta de `data/config.json`; sem o arquivo, usam 4321.
+
+## Segurança
+
+O escritório escuta só em `127.0.0.1`: ninguém de fora da máquina o alcança.
+Ele executa só o que está no registro `data/sistemas.json` e recusa comando
+com `& | ; < > $` e crase. Ignora pedido vindo de outro site aberto no mesmo
+navegador. As conexões e chaves dos agentes ficam no `.env` de cada pasta e
+nunca passam pelo chat nem pelo git.
+
 ## A tranca: cliente e administrador
 
 Antes de entregar o escritório a um cliente, clique em **🔐 Admin** e defina a
@@ -52,17 +71,27 @@ Com senha:
 A verificação é no servidor, rota a rota. A senha fica em `data/admin.json`
 como hash e a sessão dura 7 dias.
 
+Essa tranca é do escritório. Cada agente tem a própria, no último passo da
+skill dele (`PAINEL_SENHA` no `.env`), para o painel dele continuar protegido
+se um dia for publicado fora daqui.
+
 ## Contratar um agente
 
 Na aba **Contratar**, **＋ contratar agente**. A primeira pergunta é o tipo:
 
-| Tipo | Jornada | Cérebro |
-|---|---|---|
-| **Atendimento no WhatsApp** | skill `criar-agente`, 23 passos (sandbox, memória, prompt, constituição, agenda, planilha, áudio, WhatsApp, painel, templates, testador, tranca) | **OpenRouter**, chave no `.env` do agente |
-| **Outro setor** (Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados, QA ou um nome seu) | skill `criar-agente-setor`, 14 passos (trabalho, conexões, cérebro, constituição, ferramenta, memória, rotina, painel, portão, testador, tranca, entrega) | **Claude Code da máquina**, sem chave de modelo |
+| Tipo | Jornada | Cérebro | Contas que o cliente precisa ter |
+|---|---|---|---|
+| **Atendimento no WhatsApp** | skill `criar-agente`, 23 passos (sandbox, memória, prompt, constituição, agenda, planilha, áudio, WhatsApp, painel, templates, testador, tranca) | **OpenRouter**, chave no `.env` do agente | OpenRouter (crédito pré-pago), Supabase (grátis), Google (agenda e planilha), Meta WhatsApp Business ou WAHA |
+| **Outro setor** (lista configurável por cliente, ou um nome seu) | skill `criar-agente-setor`, 14 passos (trabalho, conexões, cérebro, constituição, ferramenta, memória, rotina, painel, portão, testador, tranca, entrega) | **Claude Code da máquina**, sem chave de modelo | só o que o trabalho pedir (CRM, planilha, pasta…) |
 
-Depois: nome do agente, negócio e porta. O escritório cria a pasta em
-`agentes/<nome>/` com a estrutura padrão:
+Os setores da segunda linha vêm de `data/config.json` (`setores`). Sem a
+chave, valem os padrões: Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados
+e QA. Uma clínica, um escritório de advocacia e uma loja têm setores
+diferentes; troque a lista por cliente.
+
+Depois: nome do agente, negócio, porta e, se quiser, uma pasta fora do
+padrão. O escritório cria a pasta em `agentes/<nome-em-slug>/` ("Tati Teste"
+vira `agentes/tati-teste`) com a estrutura padrão:
 
 ```
 agente.json              nome, setor, negócio, porta, trilha
@@ -84,6 +113,10 @@ passo por vez, com teste no fim de cada um. Quando o progresso registra o
 portão aprovado, o boneco vira funcionário; quando registra `## CONCLUÍDO`, a
 construção acabou.
 
+A skill `criar-agente` é a sua, copiada inteira. A `criar-agente-setor` foi
+derivada dela para trabalho interno e ainda está marcada como **proposta**
+dentro do próprio arquivo: revise-a no primeiro agente de setor que construir.
+
 Um robô que você já construiu fora daqui entra por **＋ cadastrar sistema**:
 pasta, comando e porta, ou um endereço publicado. O escritório só o liga,
 vigia e embute.
@@ -100,6 +133,10 @@ vigia e embute.
 | **📝 Propostas** | mudanças que ele sugeriu no prompt ou na constituição. Nada entra sem **aprovar** |
 | **🧪 Testar** | o testador: clientes ou tarefas difíceis simulados, duas réguas (constituição e fato), relatório e comparação com a rodada anterior |
 | **📜 Log** | as últimas linhas do log |
+
+**Resolver** e **Construir** rodam o Claude Code com uma lista fixa de
+ferramentas: editar arquivos, buscar na web e rodar `node`, `npm`, `git`,
+`python`, `curl` e comandos básicos do sistema. Nada além disso.
 
 ## Como os agentes falam com o escritório
 
@@ -126,8 +163,9 @@ Cada um lê o próprio projeto e diz um número real, uma melhoria e o que
 precisa de outro agente (deixando o recado). A reunião **lê as últimas atas e
 cobra o que cada um prometeu**. No fim, um briefing junta tudo.
 
-Cada fala é uma chamada ao Claude e consome a cota do seu plano. Por isso o
-horário automático vem **desligado**; `data/config.json` liga e dá uma meta.
+Cada fala é uma chamada ao Claude e consome a cota do plano logado na máquina.
+Por isso o horário automático vem **desligado**; `data/config.json` liga e dá
+uma meta.
 
 ## Como cada agente é testado
 
@@ -136,8 +174,10 @@ horário automático vem **desligado**; `data/config.json` liga e dá uma meta.
 2. **Antes de entrar em serviço:** o botão **🧪 Testar** solta clientes (30) ou
    tarefas (10) difíceis simulados, julgados por duas réguas: o que ele afirma
    bate com a constituição, e o que ele diz ter feito existe de verdade. Sai um
-   relatório; o agente propõe correções; você aprova uma a uma; nova rodada
-   com casos diferentes tem que ter menos falhas graves.
+   relatório com o resumo de falhas graves e leves. O testador **não conserta
+   nada**: abra **Conversar** e peça o que corrigir; o agente propõe, você
+   aprova uma a uma. Uma nova rodada, com casos diferentes, tem que ter menos
+   falhas graves que a anterior.
 3. **Em serviço:** o escritório lê a rota de saúde, religa quem caiu, avisa no
    celular, e a reunião cobra o número prometido.
 
@@ -148,6 +188,7 @@ Copie `data/config.exemplo.json` para `data/config.json` e ajuste:
 - `nome`, `subtitulo`, `dono`, `empresa`, `porta`.
 - `marca.logo` (arquivo em `data/marca/`) e `marca.cores` (variáveis do tema):
   marca branca para cada cliente sem tocar no código.
+- `setores`: a lista que a aba Contratar oferece em "Outro setor".
 - `reuniao.automatica`, `dias`, `hora`, `foco`, `meta`.
 
 ## Avisos no celular
@@ -162,12 +203,95 @@ e quando uma ação da agenda rodou.
 `data/agenda.json` liga ou desliga um sistema numa data marcada. O exemplo está
 no comentário da seção AGENDA em `server.js`.
 
+---
+
+# Parte 2 — Entregar a um cliente
+
+## Roteiro de instalação
+
+Na máquina do cliente, nesta ordem:
+
+1. **Node.js e Claude Code.** Instale os dois e rode `claude auth login` com a
+   conta decidida na seção [Custos](#custos).
+2. **Clone o escritório.** `git clone` do seu repositório (o endereço acima é
+   o original; se você mantém um fork por cliente, use o seu) e `npm start`
+   uma vez para conferir que sobe.
+3. **Configuração.** Copie `data/config.exemplo.json` para `data/config.json`
+   e preencha nome do escritório, empresa, dono e porta. Ponha o logo em
+   `data/marca/` e as cores em `marca.cores`. Ajuste `setores` para o ramo
+   do cliente.
+4. **Senha de administrador.** Abra o escritório, clique em **🔐 Admin** e
+   defina a senha. A partir daqui o cliente opera e só você constrói.
+5. **Avisos.** Em **🔔 Avisos**, cadastre o celular do cliente e o seu.
+6. **Atalho e boot.** Rode `CRIAR ATALHO.ps1`. Para subir junto com o Windows,
+   crie uma tarefa no Agendador de Tarefas que execute
+   `INICIAR ESCRITORIO.cmd` no logon.
+7. **Primeiro agente.** Contrate pela aba Contratar. O exemplo pode ser
+   demitido depois que o cliente entendeu o fluxo.
+
+## Custos
+
+Tudo que chama o Claude Code gasta a cota da conta logada na máquina do
+cliente: Conversar, Construir, reunião, testador e o chat dos agentes de
+setor. Decida antes de instalar:
+
+- **Conta do cliente:** ele paga o plano, você não divide cota com ninguém.
+  É o padrão recomendado.
+- **Sua conta:** mais simples de instalar, mas todo cliente consome o mesmo
+  plano e a sessão fica logada numa máquina que não é sua.
+
+O atendente de WhatsApp é o único que não usa o Claude Code em serviço: ele
+gasta crédito pré-pago no OpenRouter, na conta do cliente, com a chave no
+`.env` do agente. A conta de Supabase e de Google também são do cliente.
+
+## Atualizar um escritório entregue
+
+`data/` e `agentes/` ficam fora do git. Por isso, na máquina do cliente:
+
+```bash
+git pull
+```
+
+traz a versão nova do escritório sem tocar na configuração, na senha, nas
+conversas, nas atas nem nas pastas dos agentes. Depois do `pull`, feche a
+janela do `INICIAR ESCRITORIO.cmd` e abra de novo. Os sistemas dos agentes
+não caem com isso: são processos soltos.
+
+O que **não** se atualiza sozinho: a pasta de cada agente já contratado.
+Mudanças em `modelos/agente/` valem só para agentes novos. Se quiser levar
+uma melhoria do modelo a um agente existente, use **Conversar › Resolver**
+nele.
+
+## Hospedagem
+
+O escritório e os agentes de setor rodam na máquina do cliente e não precisam
+de endereço público.
+
+O atendente de WhatsApp precisa: a Meta e o WAHA entregam as mensagens por
+webhook. O padrão é rodar na mesma máquina com um túnel (Cloudflare Tunnel
+ou ngrok) apontando para a porta do agente. Railway é a alternativa quando a
+máquina não fica ligada: a skill cobre isso no passo 13, e o `.env` vai como
+variáveis do serviço, nunca pelo git.
+
 ## O que fica fora do git
 
 Tudo que é seu ou do cliente: `data/` (configuração, equipe, avisos, senha,
 sessões, conversas, recados, propostas, atas, testes, marca) e `agentes/`
 (as pastas dos agentes contratados, com `.env` e tudo). Só os dois
-`*.exemplo.json` são versionados.
+`*.exemplo.json` são versionados. No `exemplo-agente/`, ficam de fora o
+`.env`, o log e o que ele produz operando.
+
+## Problemas comuns
+
+- **"claude não encontrado" ou resposta vazia em Conversar:** o Claude Code
+  não está instalado ou não está logado nessa conta de usuário do Windows.
+  Rode `claude auth login` no mesmo usuário que abre o escritório.
+- **Porta ocupada ao subir:** outro programa usa a porta do escritório ou de
+  um agente. Troque em `data/config.json` (escritório) ou no registro do
+  agente e religue.
+- **Agente aparece desligado logo depois de Ligar:** abra **📜 Log**. Em geral
+  é dependência faltando na pasta do agente ou `.env` vazio.
+- **Cliente não consegue contratar:** correto. Contratar é do administrador.
 
 ## Estrutura
 

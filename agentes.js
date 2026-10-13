@@ -17,25 +17,41 @@ const path = require('path');
 
 let dep = null;   // { ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config }
 
-const SETORES = [
-  { id: 'atendimento', nome: 'Atendimento no WhatsApp', emoji: '🎧', trilha: 'atendimento', skill: 'criar-agente', passos: 23,
-    desc: 'Atende clientes no WhatsApp: responde, agenda, registra e passa para gente quando precisa. Cérebro pelo OpenRouter, com chave própria.' },
-  { id: 'sdr',        nome: 'Prospecção & SDR',          emoji: '🎯', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Encontra clientes em potencial, qualifica e prepara a primeira abordagem.' },
-  { id: 'conteudo',   nome: 'Conteúdo & Redes Sociais',  emoji: '📱', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Planeja o calendário, escreve legendas e acompanha o que funcionou.' },
-  { id: 'copy',       nome: 'Copywriter',                emoji: '✍️', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Escreve anúncios, páginas e e-mails e testa variações.' },
-  { id: 'financeiro', nome: 'Financeiro',                emoji: '🧾', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Acompanha entradas, saídas e o caixa, e avisa quando algo foge do previsto.' },
-  { id: 'dados',      nome: 'Dados & Relatórios',        emoji: '🧮', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Junta os números dos outros sistemas num painel e explica o que mudou.' },
-  { id: 'qa',         nome: 'QA de Sistemas',            emoji: '🧪', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Roda build, typecheck e teste antes de qualquer deploy dos outros agentes.' },
-  { id: 'outro',      nome: 'Outro setor',               emoji: '🏢', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
-    desc: 'Um trabalho interno que não está na lista: você dá o nome do setor.' }
+/* Os dois setores fixos: o atendimento (trilha inteira da skill criar-agente)
+   e "outro" (o dono dá o nome). Os do meio variam por cliente: uma clínica,
+   um escritório de advocacia e uma loja têm setores diferentes. Por isso
+   eles podem vir de data/config.json ("setores": [{ id, nome, emoji, desc }]);
+   sem a chave, valem os padrões abaixo. */
+const ATENDIMENTO = { id: 'atendimento', nome: 'Atendimento no WhatsApp', emoji: '🎧', trilha: 'atendimento', skill: 'criar-agente', passos: 23,
+  desc: 'Atende clientes no WhatsApp: responde, agenda, registra e passa para gente quando precisa. Cérebro pelo OpenRouter, com chave própria.' };
+const OUTRO = { id: 'outro', nome: 'Outro setor', emoji: '🏢', trilha: 'setor', skill: 'criar-agente-setor', passos: 14,
+  desc: 'Um trabalho interno que não está na lista: você dá o nome do setor.' };
+const SETORES_PADRAO = [
+  { id: 'sdr',        nome: 'Prospecção & SDR',          emoji: '🎯', desc: 'Encontra clientes em potencial, qualifica e prepara a primeira abordagem.' },
+  { id: 'conteudo',   nome: 'Conteúdo & Redes Sociais',  emoji: '📱', desc: 'Planeja o calendário, escreve legendas e acompanha o que funcionou.' },
+  { id: 'copy',       nome: 'Copywriter',                emoji: '✍️', desc: 'Escreve anúncios, páginas e e-mails e testa variações.' },
+  { id: 'financeiro', nome: 'Financeiro',                emoji: '🧾', desc: 'Acompanha entradas, saídas e o caixa, e avisa quando algo foge do previsto.' },
+  { id: 'dados',      nome: 'Dados & Relatórios',        emoji: '🧮', desc: 'Junta os números dos outros sistemas num painel e explica o que mudou.' },
+  { id: 'qa',         nome: 'QA de Sistemas',            emoji: '🧪', desc: 'Roda build, typecheck e teste antes de qualquer deploy dos outros agentes.' }
 ];
-const setorDe = (id) => SETORES.find(s => s.id === id) || null;
+const slugId = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+
+/** a lista que a tela mostra: atendimento, os setores do cliente (ou os padrões) e "outro" */
+function setores() {
+  const cfg = dep && dep.config ? dep.config() : {};
+  const doCliente = Array.isArray(cfg.setores) && cfg.setores.length ? cfg.setores : SETORES_PADRAO;
+  const meio = [];
+  for (const s of doCliente) {
+    if (!s || !s.nome) continue;
+    const id = slugId(s.id || s.nome);
+    if (!id || id === 'atendimento' || id === 'outro' || id === slugId(ATENDIMENTO.nome) || meio.some(x => x.id === id)) continue;
+    meio.push({ id, nome: String(s.nome).slice(0, 40), emoji: s.emoji || '🏢', desc: String(s.desc || '').slice(0, 200),
+                trilha: 'setor', skill: 'criar-agente-setor', passos: 14 });
+  }
+  return [ATENDIMENTO, ...meio, OUTRO];
+}
+const setorDe = (id) => setores().find(s => s.id === id) || null;
 
 const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'agente';
@@ -173,5 +189,5 @@ function gravarConstituicao(id, dados) {
 
 module.exports = {
   init(d) { dep = d; return module.exports; },
-  SETORES, setorDe, progressoDe, criarAgente, lerConstituicao, gravarConstituicao
+  setores, setorDe, progressoDe, criarAgente, lerConstituicao, gravarConstituicao
 };
