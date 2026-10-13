@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test \"testes/unidade/*.test.js\" \"testes/api/*.test.js\""
+    "test": "node --test \"testes/unidade/*.test.js\" \"testes/api/*.test.js\" && node testes/conferir-organizacao.js"
   },
   "engines": {
     "node": ">=18"
