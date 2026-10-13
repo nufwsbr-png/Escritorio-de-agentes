@@ -1,6 +1,10 @@
-# Plataformas conectadas — design
+# Plataformas, organização, `/criar-escritorio` e planta — design
 
 Data: 13/10/2026. Projeto: Escritório de Agentes. Método: superpowers (brainstorming → design → plano).
+
+Esta sessão define **como o projeto funciona para quem for utilizá-lo**. Ela não
+cria um escritório: a criação acontece depois, em cada instalação, pelo gatilho
+descrito na seção "Abertura".
 
 ## Intenção e porquê
 
@@ -77,13 +81,14 @@ Uma lista de plataformas. Cada uma:
 
 - `id`: slug do nome, único, gerado pelo escritório. Não muda depois de criado.
 - `tipo`: um de `api`, `planilha`, `agenda`, `pasta`, `whatsapp`, `email`,
-  `banco`, `navegador`, `link`. O tipo só serve para o ícone, a sugestão de
-  variáveis ao cadastrar e, no tipo `pasta`, para alimentar `PASTAS_AUTORIZADAS`.
+  `banco`, `navegador`, `link`. O tipo serve para o ícone, a sugestão de
+  variáveis ao cadastrar, os nomes canônicos e, no tipo `pasta`, para
+  alimentar `PASTAS_AUTORIZADAS`.
 - `url`: o endereço humano (o que o dono abre no navegador). Opcional.
 - `variaveis`: os pares que entram no `.env` dos agentes permitidos. Nomes em
-  MAIÚSCULAS, prefixados pelo id em slug maiúsculo (`OPHIR_`); o escritório
-  sugere o prefixo e recusa nome fora do padrão `[A-Z][A-Z0-9_]*`. Valores
-  podem ficar vazios enquanto o dono não os tem.
+  MAIÚSCULAS, prefixados pelo id em maiúsculas com `-` trocado por `_`
+  (`OPHIR_`); o escritório sugere o prefixo e recusa nome fora do padrão
+  `[A-Z][A-Z0-9_]*`. Valores podem ficar vazios enquanto o dono não os tem.
 - O arquivo entra no `.gitignore` já existente (`data/*.json`).
 
 Sugestão de variáveis por tipo, ao cadastrar (o administrador edita):
@@ -109,9 +114,7 @@ As skills de referência e os moldes prescrevem nomes fixos (`SISTEMA_API_URL`,
 `GOOGLE_SHEETS_ID`, `WHATSAPP_API_URL`, `EMAIL_USUARIO`, `BANCO_URL`...). Para
 uma ferramenta construída pelo catálogo achar a plataforma, o bloco grava cada
 variável **duas vezes**: com o nome prefixado (`OPHIR_TOKEN`) e com o nome
-canônico do tipo (`SISTEMA_API_TOKEN`). A tabela de sugestões acima é, ao
-mesmo tempo, a tabela de nomes canônicos: a parte depois de `<ID>_` vira o
-nome canônico com o prefixo do tipo:
+canônico do tipo (`SISTEMA_API_TOKEN`):
 
 | tipo | canônicos |
 |---|---|
@@ -139,12 +142,13 @@ canônicos coincidem com os nomes que o código dele já lê.
 
 Cada agente contratado ganha, em `data/sistemas.json`, o campo
 `plataformas: ["ophir", "drive-clientes"]` (lista de ids). Sem o campo, ou
-lista vazia, o agente não tem plataforma nenhuma. O escritório só sincroniza o `.env` de
-sistemas **que ele mesmo criou** (têm `trilha` no registro e a `pasta` existe);
-o exemplo-agente conta. Robôs cadastrados à mão (sem `trilha`) podem ter o
-campo `plataformas` para a tela mostrar, mas o escritório nunca escreve no
-`.env` deles: é projeto de terceiro, com formato próprio. Se a pasta existe e
-o `.env` não, o escritório cria o arquivo só com o bloco.
+lista vazia, o agente não tem plataforma nenhuma. O escritório só sincroniza
+o `.env` de sistemas **que ele mesmo criou** (têm `trilha` no registro e a
+`pasta` existe); o exemplo-agente conta. Robôs cadastrados à mão (sem
+`trilha`) podem ter o campo `plataformas` para a tela mostrar, mas o
+escritório nunca escreve no `.env` deles: é projeto de terceiro, com formato
+próprio. Se a pasta existe e o `.env` não, o escritório cria o arquivo só com
+o bloco.
 
 ### 3. A entrega ao agente: o bloco gerenciado do `.env`
 
@@ -157,8 +161,11 @@ reescreve no `.env` do agente um bloco delimitado:
 # Ophir (CRM jurídico) — https://app.ophir.com.br
 OPHIR_URL="https://api.ophir.com.br"
 OPHIR_TOKEN="..."
+SISTEMA_API_URL="https://api.ophir.com.br"
+SISTEMA_API_TOKEN="..."
 # Drive de clientes — pasta
 DRIVE_CLIENTES_PASTA="C:\Users\...\OneDrive\Clientes"
+PASTA_ENTRADA="C:\Users\...\OneDrive\Clientes"
 PASTAS_AUTORIZADAS="C:\Users\...\OneDrive\Clientes"
 PLATAFORMAS_PERMITIDAS="ophir;drive-clientes"
 # <<< plataformas do escritório <<<
@@ -222,7 +229,7 @@ PLATAFORMAS_PERMITIDAS="ophir;drive-clientes"
 | `POST /api/plataformas` | admin | cria; devolve a lista |
 | `PUT /api/plataformas/:id` | admin | edita; sincroniza os agentes que a têm |
 | `DELETE /api/plataformas/:id` | admin | remove; tira dos agentes e sincroniza |
-| `POST /api/plataformas/sincronizar` | admin | regrava o bloco em todos os agentes com pasta |
+| `POST /api/plataformas/sincronizar` | admin | regrava o bloco em todos os agentes do escritório |
 | `PUT /api/agentes/:id/plataformas` | admin | `{ plataformas: [ids] }`; grava no registro e sincroniza |
 | `POST /api/contratar` | admin | passa a aceitar `plataformas: [ids]` |
 
@@ -232,17 +239,17 @@ servidor registra só nomes.
 ### 7. Módulo novo: `plataformas.js`
 
 Com a mesma forma dos outros módulos (`init(dep)`, funções puras sobre
-arquivo): `listar(comValores)`, `obter(id)`, `salvar(dados)`, `remover(id)`,
+arquivo) e também linha de comando, para a skill de abertura usar:
+`listar(comValores)`, `obter(id)`, `salvar(dados)`, `remover(id)`,
 `blocoEnvPara(ids)`, `sincronizarAgente(idSistema)`, `sincronizarTodos()`,
-`usadaPor(idPlataforma)`. O `agentes.js` chama `blocoEnvPara` ao criar a
+`usadaPor(idPlataforma)`. O `agentes.js` chama a sincronização ao criar a
 pasta; o `server.js` só roteia.
 
 ## Decisões do construtor (minhas, não dele; corrija se quiser)
 
 - O bloco gerenciado fica no **começo** do `.env`, logo após o cabeçalho de
   comentários do molde, porque `carregarEnv` só define variável que ainda não
-  existe no processo: o que vem primeiro vence. Assim a plataforma do
-  escritório prevalece sobre um valor digitado à mão mais abaixo.
+  existe no processo: o que vem primeiro vence.
 - Valores de variáveis são gravados **entre aspas duplas**, com `"` interno
   escapado como `\"`; o `carregarEnv` do molde já tira as aspas externas.
   Caminhos do Windows com `\` entram como estão.
@@ -259,78 +266,96 @@ pasta; o `server.js` só roteia.
   entrar e que não se edita à mão. O `.env.exemplo` do exemplo-agente mostra o
   bloco vazio.
 
-## Abertura do escritório (assistente) e Ajustes
+## Abertura do escritório: `/criar-escritorio` no Claude Code
 
 Pedido do dono (13/10/2026): "quando acessar esse projeto aqui, para criar o
-escritório sejam feitas perguntas". Decisões dele: o assistente aparece quando
-não existe `data/config.json` **e** também por um botão "Refazer abertura";
-o tom serve tanto para ele quanto para o cliente; a pergunta da marca inclui a
-**planta** do escritório ou da clínica; os **Ajustes** mostram o status da
-conta do Claude Code.
+escritório sejam feitas perguntas"; e, corrigindo a versão anterior deste
+design: "Essa sessão é apenas para ajustar como o projeto deve funcionar para
+quem for utilizar. Não para criação desse escritório em si. (...) O gatilho
+para a criação do escritório deve ser abrir a pasta desse projeto aqui no
+claude e digitar /criar escritorio, daí começa a criação."
 
-### O assistente
+### O gatilho
 
-Abre na tela, por cima do escritório, quando `GET /config.js` informa que a
-configuração não existe. Uma pergunta por passo, com "pular" onde é opcional,
-e um resumo no fim. Ao concluir, um único `POST /api/abertura` grava tudo:
+Uma skill do projeto, versionada em `.claude/skills/criar-escritorio/`, que
+qualquer pessoa que abra esta pasta no Claude Code invoca com
+`/criar-escritorio` (o Claude Code não aceita espaço no nome; a skill também
+dispara se a pessoa escrever "quero criar o escritório" ou "criar escritorio").
+Ela conduz as perguntas abaixo **no chat**, uma por mensagem, no tom que
+serve tanto para o administrador quanto para o cliente, e grava os arquivos
+chamando scripts do projeto (nunca escrevendo JSON à mão). Pode ser rodada de
+novo em um escritório já configurado: ela lê os valores atuais, mostra e
+pergunta o que muda. É o "Refazer abertura".
 
-| # | Pergunta | Grava em |
-|---|---|---|
-| 1 | O negócio: nome da empresa, o que faz em uma frase, nome do dono | `config.json` (`empresa`, `dono`, `nome` = "Escritório da <empresa>", `subtitulo` = a frase) |
-| 2 | Os setores: lista sugerida pelo ramo, marcar e completar | `config.json` (`setores`) |
-| 3 | As plataformas: nome, tipo e endereço de cada sistema que a empresa usa (chaves depois) | `plataformas.json` |
-| 4 | A marca e a planta: logo e cor principal; a planta do escritório ou da clínica (imagem ou PDF), tudo opcional | `data/marca/logo.*`, `data/marca/planta.*`, `config.json` (`marca`) |
-| 5 | A tranca: a senha do administrador (quem constrói); o cliente opera sem senha | `admin.json` (hash) |
-| 6 | Os avisos: celular do dono e do administrador, ntfy ou CallMeBot, com teste | `avisos.json` |
-| 7 | A reunião: automática ou não, dias e hora; a meta (o que medir, alvo, unidade, até quando) | `config.json` (`reuniao`) |
-| 8 | A conta do Claude Code: conferência, não pergunta; mostra instalado/conectado e o aviso de custo | nada |
-| 9 | O primeiro agente: "qual trabalho dói mais hoje?"; vira um pedido de contratação pré-preenchido (setor e plataformas), opcional | abre Contratar com os campos preenchidos |
-| 10 | O exemplo: manter o agente de exemplo ou demitir já | `sistemas.json` / `equipe.json` |
+Não há assistente na tela do navegador. Sem `data/config.json`, a tela mostra
+um aviso: "Este escritório ainda não foi aberto. Abra esta pasta no Claude
+Code e digite /criar-escritorio."
 
-- Sem perguntar: porta (só se a 4321 estiver ocupada, com sugestão), fuso,
-  cores detalhadas, textos de subtítulo.
-- A planta é guardada em `data/marca/` e mostrada nos Ajustes. **Decisão do
-  dono (13/10/2026): "Quando ser mandado a planta, deve acontecer isso e ser
-  feito redesenhada as salas do escritório isométrico."** Isso é um projeto
-  irmão, com design próprio (`2026-10-13-planta-salas-design.md`), porque
-  mexe no motor de desenho (`js/world.js`, `js/furniture.js`, `js/path.js`).
-  Neste plano, a abertura e os Ajustes recebem e guardam a planta e deixam o
-  gancho: quando o projeto irmão existir, enviar a planta dispara o redesenho.
-- "Refazer abertura" (nos Ajustes, só administrador) abre o mesmo assistente
-  com os valores atuais preenchidos; concluir regrava os arquivos. Não apaga
-  agentes nem plataformas: a lista de plataformas vem preenchida para editar.
-- O `CLAUDE.md` da raiz traz a mesma lista de perguntas para uma sessão do
-  Claude Code que receba "criar o escritório do cliente X": perguntar na
-  mesma ordem e gravar nos mesmos arquivos.
+### As perguntas, na ordem
+
+| # | Pergunta | Grava em | Como |
+|---|---|---|---|
+| 1 | O negócio: nome da empresa, o que faz em uma frase, nome do dono | `config.json` (`empresa`, `dono`, `nome` = "Escritório da <empresa>", `subtitulo`) | `node abertura.js aplicar` |
+| 2 | Os setores: a skill sugere uma lista pelo ramo; a pessoa marca e completa | `config.json` (`setores`) | idem |
+| 3 | As plataformas: nome, tipo e endereço de cada sistema que a empresa usa. **Chaves nunca no chat**: a skill cria as entradas com valores vazios e diz onde colar (botão 🔌 Plataformas, como administrador) | `plataformas.json` | `node plataformas.js criar` |
+| 4 | A marca e a planta: logo e cor principal; a planta do escritório ou da clínica. A pessoa coloca os arquivos em `data/marca/`; a skill confere que chegaram. **Se veio planta, a skill redesenha as salas (seção abaixo)** | `data/marca/`, `config.json` (`marca`), `data/planta.json` | `node planta.js` |
+| 5 | A tranca: a skill **gera** uma senha forte de administrador, grava o hash e mostra a senha UMA vez, pedindo para guardar; explica que o cliente opera sem senha e só o administrador constrói | `admin.json` | `node abertura.js senha` |
+| 6 | Os avisos: celular do dono e do administrador. Tópico do ntfy é público e entra no chat; a chave do CallMeBot é segredo e é colada em 🔔 Avisos | `avisos.json` | `node abertura.js aplicar` |
+| 7 | A reunião: automática ou não, dias e hora; a meta (o que medir, alvo, unidade, até quando) | `config.json` (`reuniao`) | idem |
+| 8 | A conta do Claude Code: conferência, não pergunta; a skill roda `claude auth status`, diz se está conectado e de quem é a conta, com o aviso de custo | nada | `node abertura.js claude` |
+| 9 | O primeiro agente: "qual trabalho dói mais hoje?"; a skill contrata pela API do escritório com setor e plataformas já escolhidos, se o escritório estiver no ar; senão deixa anotado | `sistemas.json`, pasta do agente | `POST /api/contratar` |
+| 10 | O exemplo: manter o agente de exemplo ou demitir já | `sistemas.json`, `equipe.json` | `node abertura.js exemplo` |
+
+No fim a skill sobe o escritório (`npm start` solto), abre `http://localhost:<porta>`
+e resume o que gravou, só com nomes de variáveis e arquivos.
+
+### A planta redesenha as salas (passo 4)
+
+Decisão do dono: "Quando ser mandado a planta, deve acontecer isso e ser
+feito redesenhada as salas do escritório isométrico." Como:
+
+1. **Interpretar (IA):** a skill, que roda no Claude Code e enxerga imagens e
+   PDFs, lê a planta e propõe no chat uma lista de salas: nome, tipo, tamanho
+   relativo (pequena, média, grande) e vizinhos. Tipos: `diretoria`,
+   `operacao` (mesas para agentes), `reuniao`, `recepcao`, `descanso`,
+   `sala` (sala genérica pequena: um consultório, uma sala de atendimento,
+   com uma estação). A pessoa confirma ou corrige nomes e tipos.
+2. **Encaixar (código):** `node planta.js gerar salas.json` distribui as
+   salas na grade de 48 por 34 sem sobreposição, com portas e corredor
+   ligando todas, e grava `data/planta.json`. Limites: de 2 a 12 salas; se
+   não couber, o script diz quais juntar ou reduzir. A capacidade de agentes
+   é a soma das estações (uma por `sala`; seis, doze ou dezoito por `operacao`
+   pequena, média ou grande; duas na `diretoria`); a skill avisa a capacidade.
+3. **Desenhar (código):** o motor da tela lê `data/planta.json` quando ele
+   existe e desenha salas, portas, corredor e móveis pelo tipo da sala; sem o
+   arquivo, desenha o escritório padrão de hoje. As mesas dos agentes são
+   geradas pelas estações; o caminho dos bonecos usa a grade gerada.
+4. **Conferir (gente):** a skill abre o escritório e pede "olhe e me diga se
+   bate"; corrigir é editar a lista e gerar de novo.
+
+É uma interpretação, não uma cópia: uma clínica com doze consultórios vira um
+escritório com doze salas pequenas com os nomes certos.
 
 ### Os Ajustes
 
 Botão **⚙️ Ajustes** no topo, ao lado de Avisos. Modal com: resumo da
-configuração atual (empresa, dono, setores, porta); **status da conta do
-Claude Code** (instalado, conectado, método; botão "conectar" que chama o
-login já existente); miniatura do logo e da planta; atalhos para Plataformas,
-Avisos e Admin; botão **Refazer abertura**. Cliente sem senha vê o resumo e o
-status; só o administrador refaz a abertura.
+configuração (empresa, dono, setores, porta, salas da planta); **status da
+conta do Claude Code** (instalado, conectado, método; botão "conectar" que
+reaproveita o login existente); miniatura do logo e da planta; atalhos para
+Plataformas, Avisos e Admin; e a instrução "Para refazer a abertura, abra
+esta pasta no Claude Code e digite /criar-escritorio". Cliente sem senha vê
+tudo isso menos os atalhos de administrador.
 
-### API
+### Scripts do projeto que a skill usa (todos com `--ajuda`)
 
-| Rota | Quem | O que |
-|---|---|---|
-| `GET /config.js` | todos | passa a incluir `abertura: true` quando não há `config.json` |
-| `GET /api/abertura` | admin, ou todos quando não há config | os valores atuais para preencher o assistente (sem segredos) |
-| `POST /api/abertura` | admin, ou todos quando não há config (é a primeira vez) | grava config, setores, plataformas (sem valores), marca (arquivos em base64, até 5 MB cada), senha do admin, avisos, reunião, decisão sobre o exemplo |
-| `GET /api/claude` | todos | já existe; os Ajustes usam |
-
-## Critérios de aceitação da abertura
-
-9. Com `data/` sem `config.json`, abrir o escritório mostra o assistente; concluir
-   com empresa, dois setores, uma plataforma, uma senha e sem logo grava os
-   quatro arquivos e o escritório aparece com o nome "Escritório da <empresa>".
-10. Com config existente, o assistente não aparece; **⚙️ Ajustes › Refazer
-    abertura** abre o assistente preenchido e exige administrador.
-11. Os Ajustes mostram o status do Claude Code igual ao de `/api/claude`.
-12. Enviar uma planta em PDF nos Ajustes: o arquivo fica em `data/marca/` e a
-    miniatura ou o link aparece.
+- `node abertura.js atual` → JSON com os valores atuais, sem segredos.
+- `node abertura.js aplicar <respostas.json>` → grava config, setores,
+  avisos (sem chave), reunião; devolve o que gravou.
+- `node abertura.js senha` → gera, grava o hash em `admin.json`, imprime uma vez.
+- `node abertura.js claude` → status do Claude Code.
+- `node abertura.js exemplo manter|demitir`.
+- `node plataformas.js criar <lista.json>` / `listar`.
+- `node planta.js gerar <salas.json>` / `validar` / `capacidade` / `remover`.
 
 ## Trabalho irmão, no mesmo plano: organização do escritório
 
@@ -340,43 +365,44 @@ no seu devido lugar". A avaliação (13/10/2026) achou o projeto organizado e
 quatro lacunas pequenas. Entram neste plano, sem reestruturar pastas:
 
 1. **`CLAUDE.md` na raiz do escritório:** o mapa "onde fica cada coisa" (código,
-   tela, moldes, `data/` configuração e estado, `agentes/`, `docs/`) e as regras
-   para qualquer sessão do Claude Code nesta pasta: segredo só em `.env` de
-   agente ou `data/`; endereço e chave de plataforma só pelo cadastro de
-   plataformas; dado novo do escritório em `data/`; molde novo em
-   `modelos/agente/`; regra nova de agente passa pela ANATOMIA e pelo molde;
-   nenhuma escrita em `agentes/` fora das rotas do servidor; o que mudar no
-   molde se reflete em `exemplo-agente/`.
+   tela, moldes, `data/` configuração e estado, `agentes/`, `docs/`, `testes/`,
+   `.claude/skills/`) e as regras para qualquer sessão do Claude Code nesta
+   pasta: segredo só em `.env` de agente ou `data/`; endereço e chave de
+   plataforma só pelo cadastro de plataformas; dado novo do escritório em
+   `data/`; molde novo em `modelos/agente/`, refletido em `exemplo-agente/`;
+   regra nova de agente passa pela ANATOMIA e pelo molde; nenhuma escrita em
+   `agentes/` fora das rotas do servidor; para abrir um escritório,
+   `/criar-escritorio`, e para mudar o que ele pergunta, editar a skill.
 2. **`testes/fumaca.js`** (o teste headless da tela, hoje fora do repositório) e
-   **`testes/conferir-organizacao.js`**: falha se houver segredo versionado
-   (padrões de chave em arquivos rastreados pelo git), `.env` de agente fora do
-   `.gitignore`, pasta de agente sem os arquivos da anatomia, endereço `http`
-   ou porta fixa fora dos lugares permitidos (`data/`, `.env`, os moldes de
-   `env`, `avisos.js` para ntfy e CallMeBot, o OpenRouter no molde do
-   atendente), ou variável com prefixo de plataforma cadastrada fora do bloco
-   gerenciado de um `.env`. `npm test` roda os dois; o de fumaça sobe o
-   escritório numa porta de teste e derruba no fim.
-3. **`util.js`** com `slug` e `acharClaude` (hoje repetidos em três lugares cada),
-   usado por `server.js`, `agentes.js` e `testador.js`. A cópia do navegador em
-   `js/contratar.js` fica (é outro ambiente).
+   **`testes/conferir-organizacao.js`**: falha se houver segredo versionado,
+   `.env` de agente fora do `.gitignore`, pasta de agente sem os arquivos da
+   anatomia, endereço `http` ou porta fixa fora dos lugares permitidos, ou
+   variável com prefixo de plataforma cadastrada fora do bloco gerenciado.
+   `npm test` roda unidade, conferidor e fumaça; o de fumaça sobe o escritório
+   numa porta de teste com dados temporários e derruba no fim.
+3. **`util.js`** com `slug`, `acharClaude`, `lerEnvArquivo` e `rodarCli` (hoje
+   repetidos). A cópia do navegador em `js/contratar.js` fica (é outro
+   ambiente).
 4. **Não fazer agora:** separar `data/` em configuração e estado; dividir
    `server.js` e `js/app.js`; mover os scripts do Windows. Avaliados e deixados
-   como estão de propósito.
+   como estão de propósito. A única mudança estrutural é `ESCRITORIO_DADOS`
+   (variável de ambiente que troca a pasta `data/`), para os testes não
+   tocarem nos dados reais.
 
 ## O que fica para o construtor
 
 - Ícones por tipo e textos da tela.
 - O formulário de variáveis (adicionar linha, remover linha).
 - Como mostrar "quem usa" na lista.
-- A forma exata das checagens do `conferir-organizacao.js` (a lista do que
-  ele confere está na seção "Trabalho irmão").
+- O algoritmo exato de encaixe das salas na grade, respeitando os limites
+  acima.
+- A forma exata das checagens do `conferir-organizacao.js`.
 
 ## Critérios de aceitação
 
-0. `npm test` existe, roda o conferidor e o teste de fumaça, e passa no
+0. `npm test` existe, roda unidade, conferidor e fumaça, e passa no
    repositório como está depois deste plano; o conferidor falha de propósito
    quando se planta um `.env` com chave num agente de teste.
-
 1. Cadastrar uma plataforma tipo `pasta` e outra tipo `api` pela tela, como
    administrador. Sem senha de administrador, a lista aparece sem valores.
 2. Contratar um agente marcando só a plataforma `pasta`: o `.env` dele tem o
@@ -392,3 +418,18 @@ quatro lacunas pequenas. Entram neste plano, sem reestruturar pastas:
 7. `GET /api/plataformas` sem sessão de administrador não contém nenhum valor.
 8. O teste de fumaça da tela abre o modal de plataformas e o passo 2 do
    contratar com as caixas, sem erro de JavaScript.
+9. Em uma cópia limpa do projeto, `claude` na pasta e `/criar-escritorio`
+   conduz as dez perguntas uma por vez; ao fim existem `config.json`,
+   `plataformas.json` (valores vazios), `avisos.json`, `admin.json`, e o
+   escritório sobe com o nome "Escritório da <empresa>". Nenhuma chave passou
+   pelo chat; a senha do administrador apareceu uma vez.
+10. Rodar `/criar-escritorio` de novo mostra os valores atuais e só muda o
+    que a pessoa pedir.
+11. Sem `config.json`, a tela mostra o aviso com o comando; com config, não.
+12. Os Ajustes mostram o status do Claude Code igual ao de `/api/claude`, o
+    logo e a planta.
+13. Com uma planta de 7 salas (fixture em `testes/fixtures/salas-clinica.json`),
+    `node planta.js gerar` produz um `planta.json` válido (sem sobreposição,
+    todas as salas alcançáveis pelo corredor), a tela desenha as 7 salas sem
+    erro de JavaScript, os agentes recebem mesas e um boneco anda até a sala
+    de reunião. Sem `planta.json`, a tela é a de hoje.
