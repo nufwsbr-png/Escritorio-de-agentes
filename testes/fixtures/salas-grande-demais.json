@@ -1,0 +1,8 @@
+[
+  { "nome": "Operação A", "tipo": "operacao", "tamanho": "grande" },
+  { "nome": "Operação B", "tipo": "operacao", "tamanho": "grande" },
+  { "nome": "Operação C", "tipo": "operacao", "tamanho": "grande" },
+  { "nome": "Descanso", "tipo": "descanso", "tamanho": "grande" },
+  { "nome": "Reunião", "tipo": "reuniao", "tamanho": "grande" },
+  { "nome": "Diretoria", "tipo": "diretoria", "tamanho": "grande" }
+]
