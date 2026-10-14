@@ -40,7 +40,14 @@ const tail = (n) => { try { return fs.readFileSync(LOG, 'utf8').split(/\r?\n/).f
 
 const CRM = require('./crm');
 const D = require('./dados').abrir({ onde: (() => { try { return JSON.parse(fs.readFileSync(path.join(PASTA, 'config.json'), 'utf8')).fichas.onde; } catch (e) { return 'local'; } })(), pasta: PASTA, env: process.env });
-CRM.init({ PASTA, D, env: process.env, log, avisar: process.env.CRM_SEM_AVISOS ? null : undefined });
+CRM.init({ PASTA, D, env: process.env, log, avisar: process.env.CRM_SEM_AVISOS ? null : undefined,
+  /* quando uma PESSOA põe a ficha com um agente (move para a etapa dele, ou passa para ele), o escritório fica sabendo e dispara a esteira */
+  aoMudar: (acao, f, autor, detalhe) => {
+    if (!['mover', 'atribuir', 'criada'].includes(acao) || !f.responsavel || f.responsavel.tipo !== 'agente' || autor.tipo === 'escritorio') return;
+    const cfg = CRM.config(); const et = cfg ? cfg.etapas.find(e => e.id === f.etapa) : null;
+    CRM.pedirAoEscritorio('/api/crm/evento', { tipo: 'com-agente', acao, ficha: { id: f.id, chave: f.chave, nome: (f.campos || {}).nome || f.chave }, etapa: f.etapa, etapaNome: et ? et.nome : f.etapa, agente: f.responsavel.id, por: autor.nome || autor.id }, 8000)
+      .then(r => { if (r.status !== 200) log('evento para o escritório não entregue (' + (r.erro || r.status) + ')'); });
+  } });
 const cfg0 = CRM.config();
 
 /* ---------------- http ---------------- */
@@ -77,9 +84,13 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === '/api/config') return json(res, 200, { ok: true, entidade: cfg.entidade, etapas: cfg.etapas, perdido: cfg.perdido, autonomia: cfg.autonomia, sensiveis: cfg.sensiveis, campos: CRM.CAMPOS_BASE, chefe: cfg.chefe, onde: D.onde, acesso: cfg.acesso, integracoes: cfg.integracoes });
     if (rota === '/api/fichas' && req.method === 'GET') return json(res, 200, { ok: true, fichas: await CRM.listarFichas(eu, { etapa: url.searchParams.get('etapa'), minhas: url.searchParams.get('minhas') === '1', paradoDias: url.searchParams.get('parado'), q: url.searchParams.get('q'), status: url.searchParams.get('status'), todas: url.searchParams.get('todas') === '1' }) });
     if (rota === '/api/fichas' && req.method === 'POST') { const b = await corpo(req); const r = await CRM.criarFicha(eu, b); log((eu.nome || eu.id) + ' criar ficha: ' + (r.ok ? (r.existente ? 'já existia' : r.proposta ? 'proposta' : 'ok') : r.motivo)); return json(res, r.ok ? 200 : 400, r); }
-    let m = /^\/api\/fichas\/([a-z0-9_.@+-]+)$/i.exec(rota);
+    let m = /^\/api\/fichas\/([^/]+)$/i.exec(rota);
     if (m && req.method === 'GET') { const f = await CRM.obterFicha(eu, m[1]); return f ? json(res, 200, { ok: true, ficha: f }) : json(res, 404, { ok: false, motivo: 'ficha não encontrada' }); }
-    m = /^\/api\/fichas\/([a-z0-9_.@+-]+)\/(mover|anotar|campo|mensagem|atribuir|perder|arquivar|reativar)$/i.exec(rota);
+    m = /^\/api\/fichas\/([^/]+)\/agente$/i.exec(rota);
+    if (m && req.method === 'POST') { const b = await corpo(req, 4e5); const r = await CRM.estadoDoAgente(eu, m[1], b.estado); return json(res, r.ok ? 200 : 400, r); }
+    if (rota === '/api/acoes/ferramentas' && req.method === 'POST') { const b = await corpo(req, 1e4); return json(res, 200, await CRM.ferramentasDoAgente(String(b.agente || ''))); }
+    if (rota === '/api/acoes' && req.method === 'POST') { const b = await corpo(req, 2e4); const r = await CRM.acaoDireta(eu, b); log((eu.nome || eu.id) + ' ação direta ' + b.agente + '/' + b.ferramenta + ': ' + (r.ok ? 'ok' : r.motivo)); return json(res, r.ok ? 200 : 400, r); }
+    m = /^\/api\/fichas\/([^/]+)\/(mover|anotar|campo|mensagem|atribuir|perder|arquivar|reativar)$/i.exec(rota);
     if (m && req.method === 'POST') { const b = await corpo(req); const r = await CRM.mudarFicha(eu, m[1], m[2], b); log((eu.nome || eu.id) + ' ' + m[2] + ' ' + m[1] + ': ' + (r.ok ? (r.proposta ? 'proposta' : r.ensaio ? 'ensaio' : 'ok') : r.motivo)); return json(res, r.ok ? 200 : (r.comPessoa ? 409 : 400), r); }
     if (rota === '/api/propostas' && req.method === 'GET') return json(res, 200, { ok: true, propostas: await CRM.propostas(url.searchParams.get('estado') === 'todas' ? '' : (url.searchParams.get('estado') || 'pendente')) });
     m = /^\/api\/propostas\/([a-z0-9]+)\/(aprovar|rejeitar)$/i.exec(rota);

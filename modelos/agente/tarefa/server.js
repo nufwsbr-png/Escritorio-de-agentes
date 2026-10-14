@@ -113,6 +113,32 @@ async function agir(b) {
   }
 }
 
+/* ---------------- ação direta: uma ferramenta, sem o modelo ---------------- */
+const { spawn } = require('child_process');
+const fs = require('fs');
+function ferramentas() {
+  let nomes = []; try { nomes = fs.readdirSync(base.arq('tools')).filter(f => f.endsWith('.js') && f !== 'base.js').map(f => f.replace(/\.js$/, '')); } catch (e) {}
+  return nomes.map(n => { let uso = ''; try { const t = base.ler(path.join('tools', n + '.js')); const m = /Uso[^\n]*\n((?:\s+node tools\/[^\n]+\n)+)/.exec(t); uso = m ? m[1].split('\n').map(l => l.trim()).filter(Boolean).slice(0, 8) : []; } catch (e) {} return { nome: n, uso }; });
+}
+function acaoDireta(ferramenta, args, entidade) {
+  return new Promise(resolve => {
+    if (!/^[a-z0-9_-]+$/.test(ferramenta) || ferramenta === 'base' || !fs.existsSync(base.arq('tools', ferramenta + '.js'))) return resolve({ ok: false, motivo: 'ferramenta desconhecida: ' + ferramenta });
+    if (args.some(a => a.length > 4000) || args.length > 12) return resolve({ ok: false, motivo: 'argumentos demais ou longos demais' });
+    const modo = process.env.MODO_REAL === 'sim' ? 'real' : 'proposta';
+    let saida = '', erro = '';
+    const p = spawn(process.execPath, [base.arq('tools', ferramenta + '.js'), ...args], { cwd: base.PASTA, env: { ...process.env, MODO_RODADA: modo, ENTIDADE: entidade || 'acao-direta' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const prazo = setTimeout(() => { try { p.kill(); } catch (e) {} }, 60000);
+    p.stdout.on('data', d => saida += d); p.stderr.on('data', d => erro += d);
+    p.on('error', e => { clearTimeout(prazo); resolve({ ok: false, motivo: e.message }); });
+    p.on('exit', () => {
+      clearTimeout(prazo);
+      let r = null; try { r = JSON.parse(saida.trim().split('\n').pop()); } catch (e) {}
+      base.log('ação direta: ' + ferramenta + ' ' + args.join(' ').slice(0, 120) + ' -> ' + (r ? r.estado + ': ' + String(r.detalhe || '').slice(0, 120) : 'sem resposta'));
+      resolve(r ? { ok: r.estado !== 'erro', modo, resultado: r } : { ok: false, modo, motivo: (erro || saida || 'a ferramenta não respondeu').slice(0, 300) });
+    });
+  });
+}
+
 /* ---------------- servidor ---------------- */
 const html = (res, t, extra = {}) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...extra }); res.end(t); };
 const vaiPara = (res, para, extra = {}) => { res.writeHead(303, { Location: para, ...extra }); res.end(); };
@@ -132,6 +158,18 @@ http.createServer(async (req, res) => {
     const lista = rodar.listar().map(e => ({ id: e.id, status: e.status, rodadas: e.rodadas.length, ultimoModo: e.ultimoModo || null, atualizado: e.atualizado || null,
       pergunta: e.status === 'aguardando pergunta' && e.pergunta ? e.pergunta.texto : undefined, erro: e.status === 'com erro' ? e.erro : undefined }));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: true, entidades: lista, resumo: rodar.resumo().porStatus }));
+  }
+  // ação direta (o CRM pede pelo escritório): roda UMA ferramenta de tools/ na hora, por código, sem o modelo,
+  // nas mesmas cercas (modo real só com MODO_REAL="sim"; senão proposta). Para o mecânico: evento, linha de planilha, mensagem-modelo.
+  if (rota === '/ferramentas' && req.method === 'GET') {
+    if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: true, ferramentas: ferramentas() }));
+  }
+  if (rota === '/acao' && req.method === 'POST') {
+    if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
+    const b = await base.lerCorpo(req);
+    const r = await acaoDireta(String(b.ferramenta || ''), Array.isArray(b.args) ? b.args.map(String) : [], String(b.entidade || ''));
+    res.writeHead(r.ok ? 200 : 400, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify(r));
   }
   if (rota === '/gatilho' && req.method === 'POST') {
     if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }

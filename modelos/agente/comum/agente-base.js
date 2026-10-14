@@ -266,8 +266,26 @@ function paginaLogin(erro) {
 ${erro ? '<span style="color:var(--bad);font-size:12.5px">' + esc(erro) + '</span>' : ''}<input type="password" name="senha" placeholder="senha" autofocus><button>Entrar</button></form></body></html>`;
 }
 
+/* ---------------- o CRM do escritório (plataforma "crm", um token por agente) ----------------
+   Com a plataforma marcada, a ficha de cada entidade mora no CRM: o lançador
+   lê e grava o estado dele lá (ficha.agentes[<id>]) e as ferramentas usam
+   tools/crm.js. Sem a plataforma, nada disto existe e tudo segue como antes. */
+const crmConfigurado = () => !!(process.env.CRM_URL && process.env.CRM_TOKEN && String(process.env.PLATAFORMAS_PERMITIDAS || '').split(';').map(s => s.trim()).includes('crm'));
+function crmPede(metodo, caminho, corpo, modo) {
+  return new Promise(resolve => {
+    if (!crmConfigurado()) return resolve({ status: 0, erro: 'CRM não configurado para este agente' });
+    try {
+      const dados = corpo ? JSON.stringify(corpo) : null;
+      const headers = { Authorization: 'Bearer ' + process.env.CRM_TOKEN, 'Content-Type': 'application/json', 'x-modo': modo || process.env.MODO_RODADA || 'real' };
+      const req = http.request(String(process.env.CRM_URL).replace(/\/+$/, '') + caminho, { method: metodo, headers, timeout: 8000 }, r => { let s = ''; r.on('data', d => s += d); r.on('end', () => { let j = null; try { j = JSON.parse(s); } catch (e) {} resolve({ status: r.statusCode, json: j }); }); });
+      req.on('error', e => resolve({ status: 0, erro: e.message })); req.on('timeout', () => { req.destroy(); resolve({ status: 0, erro: 'sem resposta' }); });
+      if (dados) req.write(dados); req.end();
+    } catch (e) { resolve({ status: 0, erro: e.message }); }
+  });
+}
+
 module.exports = {
-  PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias, acharClaude,
+  PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias, acharClaude, crmConfigurado, crmPede,
   ler, escrever, semComentarios, hoje, log, tail, progresso,
   identidade, licoes, licoesPropostas, skillsAprendidas, expandirVars, mcpDaRodada, proporLicao, decidirLicao,
   validarConstituicao, salvarConstituicao, voltarConstituicao, commitar,

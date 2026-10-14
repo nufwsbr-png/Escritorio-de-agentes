@@ -125,6 +125,16 @@ sessão de onde parou. Pergunta feita três vezes é regra faltando. **Assumir e
 devolver:** o dono entra na entidade (ou na conversa), o agente cala nela e
 continua nas outras; ao devolver, o que o dono fez é decisão final, o agente
 nunca desfaz nem refaz. **Aprovar, rejeitar e corrigir** pelo painel.
+**Com o CRM do escritório** (plataforma `crm`, um token por agente), a ficha
+do cliente é o lugar único da entidade: o agente lê e escreve por
+`tools/crm.js`, o estado dele mora em `ficha.agentes[<id>]` (a pasta
+`memoria/entidades/` vira espelho), e "assumir e devolver" é a pessoa ficar
+responsável pela ficha; com uma pessoa, o agente não escreve nela e a rodada
+espera. O CRM transforma em **proposta** o que a autonomia escolhida não deixa
+o agente fazer sozinho. **Ação direta** (`POST /acao`, com a chave do
+gatilho): o escritório, a pedido do CRM, roda uma ferramenta de `tools/` na
+hora, por código, sem o modelo, nas mesmas cercas; é o caminho rápido do
+mecânico (evento, linha de planilha, mensagem-modelo).
 
 ### 11. Painel do dono, trancado — `server.js`
 Só leitura, mais as poucas ações acima. Telas do agente de tarefa: fila,

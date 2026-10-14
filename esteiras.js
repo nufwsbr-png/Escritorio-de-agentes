@@ -191,6 +191,7 @@ async function entrar(esteiraId, entidade, origem = 'tela') {
   const est = { esteira: def.id, entidade: nome, slug, etapa: 0, status: 'na fila', historico: [], criado: new Date().toISOString() };
   anota(est, 'entrou', { por: origem });
   gravarEstado(est);
+  if (dep.crm && origem !== 'crm') dep.crm.mover(def, est).catch(() => {});
   await tentarDisparar(def, est);
   return { ok: true, estado: est };
 }
@@ -200,6 +201,7 @@ async function avancar(def, est, quem) {
   if (i + 1 >= def.etapas.length) {
     est.status = 'concluída'; anota(est, 'concluída', { por: quem });
     gravarEstado(est);
+    if (dep.crm) dep.crm.concluir(def, est).catch(() => {});
     if (dep.avisar) dep.avisar(def.nome + ': ' + def.entidade.singular + ' concluído(a)', est.entidade + ' passou por todas as etapas.', 'normal').catch(() => {});
     return est;
   }
@@ -210,7 +212,26 @@ async function avancar(def, est, quem) {
       (pasta ? ' (em ' + path.join(pasta, est.entidade, et.id) + ')' : '') + '. Segue para você: "' + prox.nome + '"' + (prox.entrega ? ' — ' + prox.entrega : '') + '.' });
   }
   est.etapa = i + 1; anota(est, 'passou', { de: et.agente, para: prox.agente, por: quem });
+  if (dep.crm) dep.crm.mover(def, est).catch(() => {});
   return tentarDisparar(def, est);
+}
+
+/* o CRM pôs a ficha com um agente (uma pessoa moveu ou passou): a entidade entra ou vai para essa etapa da esteira e o gatilho dispara */
+async function colocar(nome, etapaId, agenteId, por = 'CRM', fichaId = null) {
+  const defs = lerDefs();
+  const s = UTIL.slug(etapaId || '', 30);
+  const def = defs.find(d => d.etapas.some(e => e.id === s || UTIL.slug(e.nome, 30) === s)) || defs.find(d => d.etapas.some(e => e.agente === agenteId));
+  if (!def) return { ok: false, motivo: 'nenhuma esteira tem essa etapa ou esse agente' };
+  let i = def.etapas.findIndex(e => e.id === s || UTIL.slug(e.nome, 30) === s); if (i < 0) i = def.etapas.findIndex(e => e.agente === agenteId);
+  const entidade = String(nome || '').trim().slice(0, 80); if (!entidade) return { ok: false, motivo: 'sem nome da entidade' };
+  let est = estadoDe(def.id, entidade);
+  if (!est) { est = { esteira: def.id, entidade, slug: UTIL.slug(entidade, 40), etapa: i, status: 'na fila', historico: [], criado: new Date().toISOString() }; anota(est, 'entrou', { por }); }
+  if (fichaId) est.fichaId = fichaId;   // a ficha do CRM desta entidade: o escritório move essa, nunca cria outra
+  else if (est.status === 'andando' && est.etapa === i) return { ok: true, estado: est, motivo: 'já está andando nessa etapa' };
+  else { est.etapa = i; est.status = 'na fila'; delete est.motivo; anota(est, 'movida pelo CRM', { por }); }
+  gravarEstado(est);
+  await tentarDisparar(def, est);
+  return { ok: true, estado: est, esteira: def.id, etapa: def.etapas[i].nome };
 }
 
 async function concluirEtapa(def, est, ensaio) {
@@ -304,7 +325,7 @@ function estado() {
 module.exports = {
   init(d) { dep = d || {}; return module.exports; },
   listar, obter, validar, salvar, remover, agentesCandidatos,
-  lerEstados, estadoDe, entrar, aprovar, devolver, tick, iniciar, parar, estado,
+  lerEstados, estadoDe, entrar, aprovar, devolver, tick, iniciar, parar, estado, colocar, agenteInfo,
   textoGatilho, caminhoPasta, entidadesDoAgente, INTERVALO_MS
 };
 

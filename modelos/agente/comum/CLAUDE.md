@@ -38,6 +38,7 @@ precisam existir sempre:
 | `GET /log` | texto com as últimas linhas de `log.txt` | o botão Log do monitor |
 | `GET /entidades` (agente de tarefa) | id, status e rodadas de cada entidade, sem dado de cliente; exige o cabeçalho `x-chave` = `GATILHO_CHAVE` | o escritório, para as esteiras |
 | `POST /gatilho` (agente de tarefa) | acorda uma rodada para `{ entidade }`; mesma chave | o escritório (esteiras) e webhooks |
+| `POST /acao` e `GET /ferramentas` (agente de tarefa) | ação direta: roda UMA ferramenta de `tools/` na hora, por código, sem o modelo, nas mesmas cercas (real só com `MODO_REAL`); mesma chave | o escritório, a pedido do CRM |
 
 Estenda o `server.js`; não o substitua por outro servidor sem manter as três
 rotas e a porta pela variável `PORT`.
@@ -61,6 +62,7 @@ rotas e a porta pela variável `PORT`.
 | `memoria/entidades/` | o lançador | estado de cada entidade, a partir da pós-verificação, nunca só do relato |
 | `memoria/escritorio.md` | o escritório | o que o agente anotou nas conversas e reuniões do escritório |
 | `cercas.json` | o construtor | permissões do Claude Code por rodada. Fica aqui, não em `.claude/settings.json`, para não travar o construtor |
+| `tools/crm.js` | o molde | a ficha do cliente no CRM do escritório (ler, procurar, criar sem duplicar, anotar, campo, mover, tarefa, mensagem). Só com a plataforma `crm` permitida (`CRM_URL`, `CRM_TOKEN`, um token por agente). Com ela, o estado desta entidade mora na ficha (`ficha.agentes[<id>]`) e `memoria/entidades/` vira espelho; se a ficha está com uma pessoa, a rodada espera |
 | `mcp.json` | o escritório | os servidores MCP marcados para este agente em 🔌 Plataformas, com `${VARIÁVEL}` no lugar dos valores. O lançador expande com o `.env` na rodada (proposta e real) e libera só eles. Não edite: marque no escritório |
 | `.claude/skills/<tarefa>/SKILL.md` | a destilação do Ensinar | uma skill por tarefa que o dono **demonstrou** em Conversar › Ensinar: o passo a passo exato, as decisões dele, quando parar e perguntar, como conferir. O lançador lista as skills aprendidas em toda rodada e o agente segue a que se aplica. Nomes de variáveis, nunca valores; clientes anonimizados |
 | `ensino/NN-data/` | o escritório | a transcrição de cada demonstração e o `resumo.md` da destilação. Fora do git: pode ter dado de cliente |

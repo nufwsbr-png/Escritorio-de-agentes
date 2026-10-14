@@ -42,7 +42,8 @@ const cargoDe = (autor) => {
   const u = autor.tipo === 'pessoa' ? usuarios().pessoas.find(p => p.id === autor.id) : usuarios().agentes.find(a => a.id === autor.id);
   return (u && cargos()[u.cargo]) || null;
 };
-const etapaDe = (id) => (config() || { etapas: [] }).etapas.find(e => e.id === id) || null;
+/* pelo id, ou pelo nome (a esteira do escritório manda o nome da etapa dela) */
+const etapaDe = (id) => { const ets = (config() || { etapas: [] }).etapas; const s = slug(id, 30); return ets.find(e => e.id === id) || ets.find(e => e.id === s || slug(e.nome, 30) === s) || null; };
 const nomeDe = (autor) => { if (!autor) return '?'; if (autor.nome) return autor.nome; if (autor.tipo === 'escritorio') return 'escritório'; const u = autor.tipo === 'pessoa' ? usuarios().pessoas.find(p => p.id === autor.id) : usuarios().agentes.find(a => a.id === autor.id); return u ? u.nome : autor.id; };
 
 /* ---------------- quem é: sessões de pessoa, token de agente ---------------- */
@@ -131,6 +132,8 @@ function decidir(cfg, autor, ficha, acao, detalhe = {}) {
 }
 
 /* ---------------- fichas ---------------- */
+/* pelo id ou pela chave (o agente chama pelo telefone, pelo CPF…): nunca cria, só acha */
+async function acharFicha(idOuChave) { if (!idOuChave) return null; let f = await dep.D.obter('fichas', String(idOuChave)); if (f) return f; const cfg = config(); if (!cfg) return null; const ch = chaveNormal(cfg, idOuChave); return (await dep.D.listar('fichas')).find(x => x.chave === ch) || null; }
 async function listarFichas(autor, filtro = {}) {
   const cfg = config();
   let lista = await dep.D.listar('fichas');
@@ -174,7 +177,7 @@ async function criarFicha(autor, { chave, campos = {}, etapa, responsavel } = {}
 }
 async function mudarFicha(autor, id, acao, detalhe = {}) {
   const cfg = config();
-  const f = await dep.D.obter('fichas', id);
+  const f = await acharFicha(id);
   if (!f) return { ok: false, motivo: 'ficha não encontrada' };
   if (f.status === 'arquivada' && acao !== 'atribuir') return { ok: false, motivo: 'ficha arquivada: nada muda nela' };
   const d = decidir(cfg, autor, f, acao, detalhe);
@@ -242,10 +245,10 @@ const propostas = async (estado = 'pendente') => (await dep.D.listar('propostas'
 async function criarTarefa(autor, { fichaId, titulo, para, prazo } = {}, origem) {
   const cfg = config();
   const t = limpa(titulo, 200); if (!t) return { ok: false, motivo: 'diga o título da tarefa' };
-  const f = fichaId ? await dep.D.obter('fichas', fichaId) : null;
+  const f = fichaId ? await acharFicha(fichaId) : null;
   if (fichaId && !f) return { ok: false, motivo: 'ficha não encontrada' };
   if (!origem) { const d = decidir(cfg, autor, f, 'tarefa'); if (!d.ok) return d; if (d.ensaio) return { ok: true, ensaio: true, motivo: 'em ensaio: criaria a tarefa ' + t }; if (!d.direto) return await propor(autor, f || { id: null }, 'tarefa', { fichaId, titulo: t, para, prazo }, 'tarefa "' + t + '"' + (para ? ' para ' + nomeDe(para) : ''), d.motivo); }
-  const tarefa = { id: hex(6), fichaId: fichaId || null, titulo: t, para: para && para.tipo && para.id ? { tipo: para.tipo, id: para.id } : (f && f.responsavel) || { tipo: 'pessoa', id: cfg.chefe }, prazo: /^\d{4}-\d{2}-\d{2}$/.test(prazo || '') ? prazo : null, feita: null, criadaPor: { tipo: autor.tipo, id: autor.id, nome: nomeDe(autor) }, criadaEm: agora() };
+  const tarefa = { id: hex(6), fichaId: f ? f.id : null, titulo: t, para: para && para.tipo && para.id ? { tipo: para.tipo, id: para.id } : (f && f.responsavel) || { tipo: 'pessoa', id: cfg.chefe }, prazo: /^\d{4}-\d{2}-\d{2}$/.test(prazo || '') ? prazo : null, feita: null, criadaPor: { tipo: autor.tipo, id: autor.id, nome: nomeDe(autor) }, criadaEm: agora() };
   await dep.D.gravar('tarefas', tarefa);
   if (f) await anota(f.id, autor, 'tarefa', (origem ? origem + ': ' : '') + 'tarefa "' + t + '" para ' + nomeDe(tarefa.para) + (tarefa.prazo ? ' até ' + tarefa.prazo : ''));
   return { ok: true, tarefa };
@@ -319,6 +322,51 @@ async function equipe() {
   };
 }
 
+/* ---------------- o estado do agente na ficha (decisão A: a verdade mora aqui; o agente guarda um espelho) ----------------
+   Só o próprio agente grava o seu; não é escrita "na ficha" (não passa pela regra do responsável), é o registro das rodadas dele. */
+async function estadoDoAgente(autor, fichaId, estado) {
+  if (autor.tipo !== 'agente') return { ok: false, motivo: 'só o agente grava o próprio estado' };
+  const f = await acharFicha(fichaId);
+  if (!f) return { ok: false, motivo: 'ficha não encontrada' };
+  const e = estado && typeof estado === 'object' ? estado : {};
+  const anterior = (f.agentes || {})[autor.id] || {};
+  f.agentes = f.agentes || {};
+  f.agentes[autor.id] = { ...e, atualizado: e.atualizado || agora(), gravadoEm: agora() };
+  await dep.D.gravar('fichas', f);
+  if (e.status && e.status !== anterior.status && /^(pronta|com erro|aguardando pergunta|aguardando aprovação)$/.test(e.status))
+    await anota(f.id, autor, 'rodada', 'rodada do agente: ' + e.status + (e.status === 'aguardando pergunta' && e.pergunta ? ' — ' + String(e.pergunta.texto || '').slice(0, 300) : e.status === 'com erro' && e.erro ? ' — ' + String(e.erro).slice(0, 200) : ''));
+  return { ok: true };
+}
+
+/* ---------------- ação direta: o CRM pede, o escritório repassa, o sistema do agente roda a ferramenta na hora ---------------- */
+function pedirAoEscritorio(rota, corpo, prazo = 70000) {
+  const env = dep.env || process.env;
+  const porta = Number(env.ESCRITORIO_PORTA) || 4321;
+  return new Promise(resolve => {
+    try {
+      const dados = JSON.stringify({ ...corpo, segredo: env.CRM_SEGREDO_EVENTO || '' });
+      const req = http.request('http://127.0.0.1:' + porta + rota, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(dados) }, timeout: prazo }, r => { let s = ''; r.on('data', d => s += d); r.on('end', () => { let j = null; try { j = JSON.parse(s); } catch (e) {} resolve({ status: r.statusCode, json: j }); }); });
+      req.on('error', e => resolve({ status: 0, erro: e.message })); req.on('timeout', () => { req.destroy(); resolve({ status: 0, erro: 'sem resposta do escritório' }); });
+      req.end(dados);
+    } catch (e) { resolve({ status: 0, erro: e.message }); }
+  });
+}
+async function ferramentasDoAgente(agente) {
+  const r = await pedirAoEscritorio('/api/crm/ferramentas', { agente }, 8000);
+  return r.status === 200 && r.json ? r.json : { ok: false, motivo: r.erro || (r.json && r.json.motivo) || ('escritório respondeu ' + r.status) };
+}
+async function acaoDireta(autor, { agente, ferramenta, args, fichaId } = {}) {
+  const c = cargoDe(autor);
+  if (!c || !(c.editar) || !(autor.tipo === 'pessoa' || autor.tipo === 'escritorio')) return { ok: false, motivo: 'só uma pessoa com cargo de editar pede ação direta' };
+  if (!usuarios().agentes.some(a => a.id === agente)) return { ok: false, motivo: 'esse agente não é funcionário do CRM' };
+  const f = fichaId ? await acharFicha(fichaId) : null;
+  if (fichaId && !f) return { ok: false, motivo: 'ficha não encontrada' };
+  const r = await pedirAoEscritorio('/api/crm/acao', { agente, ferramenta: String(ferramenta || ''), args: Array.isArray(args) ? args.map(String) : [], entidade: f ? f.chave : '' });
+  const res = r.json || { ok: false, motivo: r.erro || ('escritório respondeu ' + r.status) };
+  if (f) await anota(f.id, autor, 'ação direta', 'pediu a ' + nomeDe({ tipo: 'agente', id: agente }) + ': ' + ferramenta + ' ' + (args || []).join(' ').slice(0, 200) + ' → ' + (res.ok ? (res.resultado ? res.resultado.estado + ': ' + String(res.resultado.detalhe || '').slice(0, 300) : 'feito') + (res.modo === 'proposta' ? ' (em modo proposta: o agente ainda não tem MODO_REAL)' : '') : 'não deu: ' + String(res.motivo || '').slice(0, 300)));
+  return res;
+}
+
 /* ---------------- avisos: pelo escritório (ntfy, CallMeBot, Cuki BOT) ---------------- */
 function avisarEscritorio(titulo, texto, prioridade = 'normal') {
   const porta = Number((dep.env || process.env).ESCRITORIO_PORTA) || 4321;
@@ -346,5 +394,6 @@ module.exports = {
   config, usuarios, gravarUsuarios, cargos, cargoDe, etapaDe, nomeDe, chaveNormal, mascarar, lerCsv,
   entrar, sair, quem, cookie, cookieVazio, trocarSenha, primeiraSenha,
   listarFichas, obterFicha, criarFicha, mudarFicha, decidir, propostas, decidirProposta,
-  criarTarefa, concluirTarefa, tarefas, importar, painel, equipe, estadoDoEscritorio, avisarEscritorio, avisosDiarios, CAMPOS_BASE, hex, hash
+  criarTarefa, concluirTarefa, tarefas, importar, painel, equipe, estadoDoEscritorio, avisarEscritorio, avisosDiarios, CAMPOS_BASE, hex, hash,
+  estadoDoAgente, acaoDireta, ferramentasDoAgente, pedirAoEscritorio
 };

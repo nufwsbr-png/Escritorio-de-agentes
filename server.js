@@ -594,8 +594,42 @@ const AVISOS = require('./avisos').init(DADOS, {
 });
 ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLATAFORMAS, lerConfig, lerRegistroBruto, gravarRegistro, desligar });
 // esteiras: o escritório passa o bastão entre agentes (vigia /entidades, chama /gatilho, deixa recado, avisa)
+/* a ponte com o CRM (crm/, criado por /criar-crm): quando a esteira passa o bastão, o escritório move a ficha; o CRM, por sua
+   vez, avisa o escritório quando uma pessoa põe a ficha com um agente (POST /api/crm/evento) e pede ações diretas (POST /api/crm/acao).
+   data/crm.json guarda a porta, o token do escritório e o segredo dos eventos; nada disso sai daqui. */
+const lerCrmJson = () => { try { return JSON.parse(fs.readFileSync(path.join(DADOS, 'crm.json'), 'utf8')); } catch (e) { return null; } };
+function pedirAoCrm(metodo, rota, corpo, prazo = 8000) {
+  const c = lerCrmJson();
+  return new Promise(resolve => {
+    if (!c) return resolve({ status: 0, erro: 'sem CRM' });
+    try {
+      const dados = corpo ? JSON.stringify(corpo) : null;
+      const req = http.request(c.url + rota, { method: metodo, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + c.token }, timeout: prazo }, r => { let s = ''; r.on('data', d => s += d); r.on('end', () => { let j = null; try { j = JSON.parse(s); } catch (e) {} resolve({ status: r.statusCode, json: j }); }); });
+      req.on('error', e => resolve({ status: 0, erro: e.message })); req.on('timeout', () => { req.destroy(); resolve({ status: 0, erro: 'CRM sem resposta' }); });
+      if (dados) req.write(dados); req.end();
+    } catch (e) { resolve({ status: 0, erro: e.message }); }
+  });
+}
+const PONTE_CRM = {
+  async fichaDe(est) {
+    if (est.fichaId) return est.fichaId;
+    const f = await pedirAoCrm('POST', '/api/fichas', { chave: est.entidade, campos: { nome: est.entidade, origem: 'esteira' } });   // a chave existente é devolvida, nada duplica
+    return f.status === 200 && f.json && f.json.ficha ? f.json.ficha.id : null;
+  },
+  async mover(def, est) {
+    if (!lerCrmJson()) return; const id = await this.fichaDe(est); if (!id) return;
+    const et = def.etapas[est.etapa];
+    const r = await pedirAoCrm('POST', '/api/fichas/' + id + '/mover', { etapa: et.id });
+    if (r.status !== 200) await pedirAoCrm('POST', '/api/fichas/' + id + '/anotar', { texto: 'esteira "' + def.nome + '": ' + est.entidade + ' está na etapa "' + et.nome + '" (' + (et.agente) + ')' });
+  },
+  async concluir(def, est) {
+    if (!lerCrmJson()) return; const id = await this.fichaDe(est); if (!id) return;
+    const r = await pedirAoCrm('POST', '/api/fichas/' + id + '/mover', { etapa: 'Concluído' });
+    if (r.status !== 200) await pedirAoCrm('POST', '/api/fichas/' + id + '/anotar', { texto: 'esteira "' + def.nome + '": ' + est.entidade + ' passou por todas as etapas' });
+  }
+};
 const ESTEIRAS = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLATAFORMAS, mensagens: MEMORIA, ligar: (id) => ligar(id),
-  avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}) });
+  avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}), crm: PONTE_CRM });
 if (!process.env.ESCRITORIO_SEM_VIGILIA) ESTEIRAS.iniciar();
 // Cuki BOT, a IA analista: mede por código (agentes, plataformas, fluxo, base, aptidão para o CRM) e explica pelo modelo, sem ferramentas.
 // Parte 2: o WhatsApp dele pelo WAHA — avisa e conversa com os números autorizados (canal `cuki` dos avisos; busca e briefing no relógio dele)
@@ -924,6 +958,30 @@ const servidor = http.createServer(async (req, res) => {
     if (!c) return json(res, 200, { existe: false });
     const item = (await estado()).find(x => x.id === 'crm');
     return json(res, 200, { existe: true, url: 'http://localhost:' + c.porta, porta: c.porta, estado: item ? item.estado : 'não registrado', criadoEm: c.criadoEm });
+  }
+  /* ---- o que o CRM pede ao escritório, com o segredo dos eventos (data/crm.json): evento (ficha posta com um agente) e ação direta ---- */
+  if ((rota === '/api/crm/evento' || rota === '/api/crm/acao' || rota === '/api/crm/ferramentas') && req.method === 'POST') {
+    return corpoJson(req, 5e4).then(async b => {
+      const c = lerCrmJson();
+      if (!c || !c.segredoEvento || b.segredo !== c.segredoEvento) return json(res, 401, { ok: false, motivo: 'segredo do CRM não confere' });
+      if (rota === '/api/crm/evento') {
+        if (b.tipo !== 'com-agente') return json(res, 200, { ok: true, ignorado: b.tipo });
+        const r = await ESTEIRAS.colocar(b.ficha && b.ficha.nome, b.etapa, b.agente, 'CRM (' + (b.por || 'pessoa') + ')', b.ficha && b.ficha.id);
+        return json(res, 200, r);
+      }
+      const a = ESTEIRAS.agenteInfo(String(b.agente || ''));
+      if (!a || !a.chave) return json(res, 400, { ok: false, motivo: 'agente desconhecido ou sem chave do gatilho' });
+      const prazo = rota === '/api/crm/acao' ? 70000 : 5000;
+      const r = await new Promise(resolve => {
+        try {
+          const dados = rota === '/api/crm/acao' ? JSON.stringify({ ferramenta: b.ferramenta, args: b.args, entidade: b.entidade }) : null;
+          const rq = http.request(a.url + (rota === '/api/crm/acao' ? '/acao' : '/ferramentas'), { method: dados ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', 'x-chave': a.chave }, timeout: prazo }, rr => { let s = ''; rr.on('data', d => s += d); rr.on('end', () => { let j = null; try { j = JSON.parse(s); } catch (e) {} resolve(j || { ok: false, motivo: a.nome + ' respondeu ' + rr.statusCode }); }); });
+          rq.on('error', () => resolve({ ok: false, motivo: a.nome + ' fora do ar' })); rq.on('timeout', () => { rq.destroy(); resolve({ ok: false, motivo: a.nome + ' não respondeu a tempo' }); });
+          if (dados) rq.write(dados); rq.end();
+        } catch (e) { resolve({ ok: false, motivo: e.message }); }
+      });
+      return json(res, 200, r);
+    }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
   }
   /* ---- Cuki BOT no WhatsApp (WAHA): tudo de administrador; a chave do WAHA nunca volta para a tela ---- */
   if (rota.startsWith('/api/cuki/') && rota !== '/api/cuki/laudo') {

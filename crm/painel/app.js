@@ -137,6 +137,7 @@
         </div>
         ${P.editar ? '<div class="mactions"><input id="f-nota" placeholder="anotar na ficha" style="flex:1"><button class="btn" id="f-anotar">Anotar</button></div>' : ''}
         ${P.editar ? '<div class="mactions"><input id="f-tarefa" placeholder="nova tarefa" style="flex:1"><input id="f-prazo" type="date" style="width:150px"><button class="btn" id="f-tarefa-ok">Tarefa</button></div>' : ''}
+        ${P.editar && EQUIPE.agentes.length ? '<div class="mactions" title="ação direta: o agente roda a ferramenta na hora, por código, sem o modelo"><select id="ad-agente">' + EQUIPE.agentes.map(a => '<option value="' + esc(a.id) + '">' + esc(a.nome) + '</option>').join('') + '</select><select id="ad-ferr"><option value="">ferramenta…</option></select><input id="ad-args" placeholder="argumentos" style="flex:1"><button class="btn" id="ad-ok">Pedir agora</button></div><p class="hint" id="ad-uso"></p>' : ''}
         ${f.tarefas.length ? '<div class="lista" style="margin-top:10px">' + f.tarefas.map(t => '<div class="item" style="padding:6px 10px">' + (t.feita ? '✅ ' : '⬜ ') + esc(t.titulo) + ' <span class="hint">para ' + esc(nomeResp(t.para)) + (t.prazo ? ' até ' + esc(t.prazo) : '') + '</span>' + (!t.feita && (t.para.id === EU.id || P.aprovar) ? ' <button class="btn small" data-feita="' + esc(t.id) + '">feita</button>' : '') + '</div>').join('') + '</div>' : ''}
       </div><div>
         ${f.propostas.filter(p => p.estado === 'pendente').map(p => `<div class="item proposta"><b>${esc(p.autor.nome)}</b> quer <b>${esc(p.texto)}</b><div class="hint">${esc(p.motivo)} · ${quando(p.criadaEm)}</div>${P.aprovar ? `<div class="acoes"><button class="btn primary small" data-ap="${esc(p.id)}">Aprovar</button><button class="btn small" data-rj="${esc(p.id)}">Rejeitar</button></div>` : ''}</div>`).join('')}
@@ -153,6 +154,12 @@
     on('#f-reativar', () => acao('reativar', {}));
     on('#f-arquivar', () => acao('arquivar', {}));
     on('#f-anotar', () => acao('anotar', { texto: $('#f-nota').value }));
+    const adAg = $('#ad-agente');
+    if (adAg) {
+      const carregar = async () => { const r = await api('/api/acoes/ferramentas', 'POST', { agente: adAg.value }); const sel = $('#ad-ferr'); sel.innerHTML = '<option value="">ferramenta…</option>' + (r.ok ? r.ferramentas.filter(x => x.nome !== 'crm').map(x => '<option value="' + esc(x.nome) + '">' + esc(x.nome) + '</option>').join('') : ''); $('#ad-uso').textContent = r.ok ? '' : (r.motivo || 'o escritório não respondeu'); sel.onchange = () => { const f = (r.ferramentas || []).find(x => x.nome === sel.value); $('#ad-uso').textContent = f && f.uso ? f.uso.join(' · ') : ''; }; };
+      adAg.onchange = carregar; carregar();
+      $('#ad-ok').onclick = async () => { const args = ($('#ad-args').value.match(/"[^"]*"|S+/g) || []).map(s => s.replace(/^"|"$/g, '')); $('#f-msg').textContent = 'pedindo ao agente…'; const r = await api('/api/acoes', 'POST', { agente: adAg.value, ferramenta: $('#ad-ferr').value, args, fichaId: f.id }); $('#f-msg').textContent = r.ok ? 'Feito' + (r.resultado ? ': ' + r.resultado.detalhe : '') + (r.modo === 'proposta' ? ' (em modo proposta: o agente ainda não tem o real ligado)' : '') : 'Não deu: ' + (r.motivo || ''); setTimeout(() => ficha(f.id), 1200); };
+    }
     on('#f-tarefa-ok', async () => { const r = await api('/api/tarefas', 'POST', { fichaId: f.id, titulo: $('#f-tarefa').value, prazo: $('#f-prazo').value }); $('#f-msg').textContent = r.ok ? 'Tarefa criada.' : r.motivo; if (r.ok) setTimeout(() => ficha(f.id), 300); });
     for (const b of document.querySelectorAll('[data-feita]')) b.onclick = async () => { await api('/api/tarefas/' + b.dataset.feita + '/feita', 'POST', {}); ficha(f.id); contadores(); };
     for (const b of document.querySelectorAll('[data-ap]')) b.onclick = async () => { const r = await api('/api/propostas/' + b.dataset.ap + '/aprovar', 'POST', {}); if (!r.ok) alerta(r.motivo); else { ficha(f.id); quadro($('#main')); contadores(); } };

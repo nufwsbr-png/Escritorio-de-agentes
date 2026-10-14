@@ -21,6 +21,10 @@ Toda ferramenta usa `base.js` e obedece a cinco regras:
 4. **Devolve resultado claro** (`base.resultado('feito' | 'recusado' | 'erro', detalhe)`).
 5. **Registra uma linha no log** (`base.registrar`).
 
+`crm.js` fala com o CRM do escritório (a ficha do cliente): só com a
+plataforma `crm` permitida; o CRM pode transformar o pedido em proposta para
+uma pessoa decidir, e recusa quando a ficha está com uma pessoa.
+
 `arquivos.js` é a primeira ferramenta, pronta: listar, ler, mover e escrever
 dentro das pastas autorizadas. Copie o padrão dela para as próximas. O
 catálogo de módulos (WhatsApp, navegador, sistema com API, documentos,

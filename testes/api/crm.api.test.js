@@ -13,7 +13,7 @@ const { spawn, spawnSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
 const PORT = 4593, PORT_ESC = 4594;
 const URL = 'http://127.0.0.1:' + PORT;
-let DADOS, CRM, proc, esc, avisos = [];
+let DADOS, CRM, proc, esc, avisos = [], eventos = [], acoes = [];
 async function subir() {
   DADOS = fs.mkdtempSync(path.join(os.tmpdir(), 'crm-dados-')); CRM = fs.mkdtempSync(path.join(os.tmpdir(), 'crm-pasta-'));
   fs.mkdirSync(path.join(CRM, 'painel')); for (const f of ['index.html', 'app.js', 'style.css']) fs.copyFileSync(path.join(ROOT, 'crm', 'painel', f), path.join(CRM, 'painel', f));
@@ -26,7 +26,7 @@ async function subir() {
   const r = spawnSync(process.execPath, ['crm/criar.js', 'aplicar', resp], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, ESCRITORIO_DADOS: DADOS, CRM_PASTA: CRM } });
   const j = JSON.parse(r.stdout.trim().split('\n').pop()); if (!j.ok) throw new Error('criar falhou: ' + r.stdout + r.stderr);
   // o escritório falso: só anota os avisos
-  esc = http.createServer((req, res) => { let s = ''; req.on('data', d => s += d); req.on('end', () => { if (req.url === '/api/avisar') avisos.push(JSON.parse(s)); if (req.url === '/api/sistemas') return res.end(JSON.stringify([{ id: 'leo', nome: 'Léo', estado: 'no ar', setor: 'Prospecção', construcao: { emTreinamento: false } }])); res.end('{"ok":true}'); }); });
+  esc = http.createServer((req, res) => { let s = ''; req.on('data', d => s += d); req.on('end', () => { if (req.url === '/api/avisar') avisos.push(JSON.parse(s)); if (req.url === '/api/crm/evento') { eventos.push(JSON.parse(s)); return res.end('{"ok":true}'); } if (req.url === '/api/crm/ferramentas') return res.end(JSON.stringify({ ok: true, ferramentas: [{ nome: 'agenda', uso: ['node tools/agenda.js criar <quando>'] }] })); if (req.url === '/api/crm/acao') { acoes.push(JSON.parse(s)); return res.end(JSON.stringify({ ok: true, modo: 'real', resultado: { estado: 'feito', detalhe: 'evento criado' } })); } if (req.url === '/api/sistemas') return res.end(JSON.stringify([{ id: 'leo', nome: 'Léo', estado: 'no ar', setor: 'Prospecção', construcao: { emTreinamento: false } }])); res.end('{"ok":true}'); }); });
   await new Promise(r => esc.listen(PORT_ESC, '127.0.0.1', r));
   proc = spawn(process.execPath, ['server.js'], { cwd: path.join(ROOT, 'crm'), env: { ...process.env, CRM_PASTA: CRM, PORT: String(PORT), ESCRITORIO_PORTA: String(PORT_ESC) }, stdio: ['ignore', 'pipe', 'pipe'] });
   let saida = ''; proc.stdout.on('data', d => saida += d); proc.stderr.on('data', d => saida += d);
@@ -53,7 +53,7 @@ test('CRM de ponta a ponta: login, ficha única pela chave, agente com token e a
   assert.equal((await api('/api/senha', 'POST', { atual: p1.senha, nova: 'nova-senha-7' }, chefe)).json.ok, true);
   const eu = (await api('/api/eu', 'GET', null, chefe)).json.eu; assert.equal(eu.cargo, 'chefe'); assert.equal(eu.permissoes.aprovar, true);
   // o token do Léo, lido do .env dele (gravado pela plataforma crm)
-  const envLeo = fs.readFileSync(path.join(DADOS, 'ag-leo', '.env'), 'utf8'); const token = /CRM_TOKEN="([0-9a-f]{48})"/.exec(envLeo)[1];
+  const envLeo = fs.readFileSync(path.join(DADOS, 'ag-leo', '.env'), 'utf8'); const token = new RegExp('CRM_TOKEN=' + '"([0-9a-f]{48})"').exec(envLeo)[1];   // string partida: o conferidor não confunde com chave de verdade
   const leo = { token }; const leoProp = { token, modo: 'proposta' }; const leoEnsaio = { token, modo: 'ensaio' };
   assert.equal((await api('/api/eu', 'GET', null, leo)).json.eu.tipo, 'agente');
   assert.equal((await api('/api/eu', 'GET', null, { token: 'a'.repeat(48) })).status, 401, 'token inválido');
@@ -65,6 +65,8 @@ test('CRM de ponta a ponta: login, ficha única pela chave, agente com token e a
   assert.equal((await api('/api/fichas', 'POST', { chave: '65999990002', campos: { nome: 'Teste' } }, leoEnsaio)).json.ensaio, true, 'em ensaio nada grava');
   // anotar direto; campo sensível vira proposta; mover para etapa com aprovação vira proposta; mensagem vira proposta
   assert.equal((await api('/api/fichas/' + id + '/anotar', 'POST', { texto: 'ligou, quer avaliação' }, leo)).json.feito, 'anotar: ligou, quer avaliação');
+  assert.equal((await api('/api/fichas/(65) 99999-0001/anotar', 'POST', { texto: 'pela chave' }, leo)).json.ok, true, 'anotar pela chave (o telefone), não só pelo id');
+  assert.equal((await api('/api/fichas/65999990001/agente', 'POST', { estado: { status: 'nova' } }, leo)).json.ok, true, 'estado pela chave');
   const cpf = await api('/api/fichas/' + id + '/campo', 'POST', { campo: 'cpf', valor: '12345678901' }, leo); assert.equal(cpf.json.proposta, true); assert.match(cpf.json.motivo, /sensível/);
   const mv = await api('/api/fichas/' + id + '/mover', 'POST', { etapa: 'em-tratamento' }, leo); assert.equal(mv.json.proposta, true); assert.match(mv.json.motivo, /pede uma pessoa/);
   const mv2 = await api('/api/fichas/' + id + '/mover', 'POST', { etapa: 'avaliacao' }, leo); assert.equal(mv2.json.feito, 'mover de "Novo contato" para "Avaliação"'); assert.deepEqual(mv2.json.ficha.responsavel, { tipo: 'pessoa', id: 'ana' }, 'a etapa tem responsável pessoa: a ficha passa para ela');
@@ -107,5 +109,18 @@ test('CRM de ponta a ponta: login, ficha única pela chave, agente com token e a
   // a tela e o log existem; o log não tem senha nem token
   assert.match(await (await fetch(URL + '/')).text(), /Entrar no CRM/);
   const log = await (await fetch(URL + '/log')).text(); assert.ok(!log.includes(p1.senha) && !log.includes(token) && !log.includes('nova-senha-7'));
+  // 4c: o agente grava o próprio estado na ficha (e a rodada 'pronta' entra no histórico); a chefe pondo a ficha com o Léo avisa o escritório; ação direta
+  const ag = await api('/api/fichas/' + id + '/agente', 'POST', { estado: { id: '65999990001', status: 'pronta', rodadas: [{ modo: 'real' }], atualizado: new Date().toISOString() } }, leo);
+  assert.equal(ag.json.ok, true); assert.equal((await api('/api/fichas/' + id + '/agente', 'POST', { estado: {} }, chefe)).status, 400, 'só o agente grava o próprio estado');
+  const fAg = (await api('/api/fichas/' + id, 'GET', null, chefe)).json.ficha; assert.equal(fAg.agentes.leo.status, 'pronta'); assert.ok(fAg.historico.some(h => /rodada do agente: pronta/.test(h.texto)));
+  const fLeo2 = (await api('/api/fichas/' + id, 'GET', null, leo)).json.ficha; assert.deepEqual(Object.keys(fLeo2.agentes), ['leo'], 'o agente vê só o próprio estado');
+  eventos.length = 0; await api('/api/fichas/' + id + '/atribuir', 'POST', { responsavel: { tipo: 'pessoa', id: 'ana' } }, chefe);
+  assert.equal((await api('/api/fichas/' + id + '/mover', 'POST', { etapa: 'novo-contato' }, chefe)).json.ok, true); await espera(300);
+  assert.equal(eventos.length, 1, 'mover para a etapa do agente avisa o escritório'); assert.equal(eventos[0].tipo, 'com-agente'); assert.equal(eventos[0].agente, 'leo'); assert.equal(eventos[0].segredo, new RegExp('CRM_SEGREDO_EVENTO=' + '"([0-9a-f]+)"').exec(fs.readFileSync(path.join(CRM, '.env'), 'utf8'))[1]); assert.equal(eventos[0].ficha.id, id);
+  const fer = await api('/api/acoes/ferramentas', 'POST', { agente: 'leo' }, chefe); assert.equal(fer.json.ferramentas[0].nome, 'agenda');
+  const acao = await api('/api/acoes', 'POST', { agente: 'leo', ferramenta: 'agenda', args: ['criar', 'amanhã'], fichaId: id }, chefe);
+  assert.equal(acao.json.ok, true, JSON.stringify(acao.json)); assert.equal(acoes[0].entidade, '65999990001'); assert.equal(acoes[0].ferramenta, 'agenda');
+  assert.ok((await api('/api/fichas/' + id, 'GET', null, chefe)).json.ficha.historico.some(h => /ação direta|pediu a Léo: agenda criar amanhã → feito: evento criado/.test(h.texto)));
+  assert.equal((await api('/api/acoes', 'POST', { agente: 'leo', ferramenta: 'agenda', args: [] }, leo)).status, 400, 'agente não pede ação direta');
   assert.equal((await api('/api/sair', 'POST', {}, chefe)).json.ok, true); assert.equal((await api('/api/eu', 'GET', null, chefe)).status, 401);
 });

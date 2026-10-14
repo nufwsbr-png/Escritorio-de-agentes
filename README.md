@@ -303,7 +303,17 @@ rejeita), tarefas, equipe, painel e importação de planilha. Uma ficha, um
 responsável por vez: quando uma pessoa está com a ficha, o agente não escreve
 nela; ao devolver, o que a pessoa fez é decisão final. Fichas ficam em
 arquivos locais ou no Supabase (cadastrado em 🔌 Plataformas), à escolha na
-criação; a senha do chefe aparece uma vez na primeira abertura da tela. Design:
+criação; a senha do chefe aparece uma vez na primeira abertura da tela.
+
+No agente, a plataforma `crm` traz a ferramenta `tools/crm.js` (ler, procurar,
+criar sem duplicar, anotar, campo, mover, tarefa, mensagem) e muda onde a
+entidade mora: o estado dele passa a ficar na ficha (`ficha.agentes[<id>]`),
+com `memoria/entidades/` como espelho; antes de cada rodada ele puxa a ficha e,
+se ela está com uma pessoa, espera. A esteira move a ficha quando passa o
+bastão, e uma pessoa movendo a ficha para a etapa de um agente dispara a
+esteira. Para atendimento em massa existe a **ação direta**: a chefe pede na
+ficha, o escritório repassa e o sistema do agente roda a ferramenta na hora
+(`POST /acao`), por código e nas mesmas cercas, sem rodada do modelo. Design:
 `docs/superpowers/specs/2026-10-14-crm-design.md`.
 
 ## O monitor de cada agente
