@@ -335,8 +335,8 @@ class Actor {
 
     if (opts.names) {
       stack -= AVATAR.nameTag(ctx, p.x, stack, this.a.name,
-                              this.a.boss ? '#c4b8ff' : col,
-                              this.a.boss ? 'DONO' : null) + 4;
+                              this.a.cuki ? '#6ee7b7' : this.a.boss ? '#c4b8ff' : col,
+                              this.a.cuki ? 'ANALISTA' : this.a.boss ? 'DONO' : null) + 4;
     }
     if (opts.status && (!this.moving || this.visita)) {
       const ic = this.visita ? '✉️'
@@ -798,6 +798,7 @@ function confirmar(titulo, texto, rotuloOk = 'Confirmar') {
 function openAgent(id) {
   const a = ROSTER.get(id);
   if (!a) return;
+  if (a.cuki) { CUKI.abrir(); return; }   // o boneco do Cuki BOT abre o laudo
   const ac = actors.get(id);
 
   mbody.innerHTML = `
@@ -1560,6 +1561,7 @@ $('#btn-report').addEventListener('click', openReport);
 $('#btn-avisos').addEventListener('click', () => AVISOS_UI.abrir());
 $('#btn-plataformas').addEventListener('click', () => PLATAFORMAS_UI.abrir());
 $('#btn-esteiras').addEventListener('click', () => PLATAFORMAS_UI.carregar().then(() => ESTEIRAS.abrir()));
+$('#btn-cuki').addEventListener('click', () => CUKI.abrir());
 $('#btn-ajustes').addEventListener('click', () => AJUSTES.abrir());
 $('#btn-quadro').addEventListener('click', openQuadro);
 $('#btn-voice').addEventListener('click', toggleVoice);

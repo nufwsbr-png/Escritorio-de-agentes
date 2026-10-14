@@ -252,6 +252,20 @@ pelo botão ＋, pela API ou sozinha quando aparece uma pasta nova na pasta
 compartilhada. Crie esteiras com `/criar-esteira` no Claude Code (cinco
 perguntas simples, com proposta pronta) ou pelo formulário do administrador.
 
+## Cuki BOT: a IA analista
+
+**🩺 Cuki BOT**, no topo, e o boneco na recepção. Ele confere a saúde do
+escritório e diz se está apto para o CRM, num laudo com semáforo por área:
+agentes (portão passado, no ar, última rodada, pergunta parada, lições
+acumuladas), plataformas (variáveis preenchidas, pasta existe, endereço
+responde), fluxo (entidades reais nos últimos 30 dias, esteiras paradas),
+base (Claude conectado, senha, avisos, abertura) e aptidão para o CRM. Mede
+por código e explica pelo modelo: o Claude Code recebe só as medidas, sem
+nenhum valor de variável, roda **sem ferramentas** e escreve a leitura e as
+propostas para o CRM. Laudos ficam em `data/cuki/laudos/`. Rodar a análise é
+do administrador; ler o laudo, qualquer um. Vermelho em qualquer área trava o
+Criar CRM.
+
 ## O monitor de cada agente
 
 | Botão | O que faz |

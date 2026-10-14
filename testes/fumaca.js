@@ -100,6 +100,10 @@ async function cenarioPadrao(b) {
   ok(await b.ev('document.querySelectorAll("#modal-body .pl-item").length') === 2, 'modal Plataformas lista 2');
   ok(!(await b.ev('document.getElementById("modal-body").innerHTML.includes("segredo-99")')), 'modal Plataformas não vaza valor');
   await b.ev('document.getElementById("modal-x").click()');
+  await b.ev('document.getElementById("btn-cuki").click()'); await espera(1200);
+  ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Cuki BOT'), 'Cuki BOT abre');
+  ok(await b.ev('document.getElementById("modal-body").textContent.includes("Nenhum laudo")'), 'Cuki BOT sem laudo explica o que fazer');
+  await b.ev('document.getElementById("modal-x").click()');
   await b.ev('document.getElementById("btn-esteiras").click()'); await espera(1200);
   ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Esteiras'), 'Esteiras abre');
   ok(await b.ev('document.getElementById("modal-body").textContent.includes("Nenhuma esteira")'), 'Esteiras sem definição explica o que fazer');
@@ -139,7 +143,9 @@ async function cenarioPlanta(b) {
   ok(await b.ev('Object.keys(WORLD.ROOMS).length') === 8, 'WORLD tem 7 salas + corredor');
   ok(await b.ev('document.querySelectorAll("#rooms-list .roomcard").length') === 8, 'painel Salas mostra 7 salas + corredor');
   ok(await b.ev('FURN.workSlots.filter(s => !s.vip).length') === 14, 'mesas de agente: 12 da operação + 2 consultórios');
-  ok(await b.ev('FURN.workSlots.filter(s => s.vip).length') === 2, 'duas mesas da diretoria');
+  ok(await b.ev('FURN.workSlots.filter(s => s.vip && s.id !== "REC-1").length') === 2, 'duas mesas da diretoria');
+  ok(await b.ev('!!FURN.workSlots.find(s => s.id === "REC-1")'), 'balcão da recepção tem o ponto do Cuki BOT');
+  ok(await b.ev('!!ROSTER.get("cuki-bot") && ROSTER.get("cuki-bot").cuki === true'), 'o boneco do Cuki BOT existe');
   ok(await b.ev('FURN.meetSlots.length') >= 6, 'cadeiras na sala de reunião');
   ok(await b.ev('FURN.restSlots.length') >= 3, 'lugares de descanso');
   ok(await b.ev('ROSTER.all().filter(a => !a.boss).every(a => a.slotId)'), 'todo agente tem mesa');

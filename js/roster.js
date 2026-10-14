@@ -23,6 +23,20 @@ const ROSTER = (() => {
         glasses: null, beard: null, tattoo: false, cap: false,
         uniforme: false
       }
+    },
+    /* Cuki BOT, a IA analista: fica na recepção; clicar abre o laudo (🩺). Não é agente: não tem pasta nem sistema. */
+    {
+      id: 'cuki-bot', name: 'Cuki BOT', role: 'IA analista · Recepção',
+      emoji: '🩺', boss: true, cuki: true, dept: 'recepcao', slotId: 'REC-1',
+      status: 'trabalhando', locked: true,
+      source: 'Escritório', sistema: null,
+      brief: 'Confere a saúde do escritório e a aptidão para o CRM. Mede por código, explica em palavras simples.',
+      look: {
+        skin: '#b8c4d6', hair: '#34d399', style: 'curto',
+        shirt: '#0f766e', pants: '#134e4a', shoes: '#0b1f1c',
+        glasses: '#1f2937', beard: null, tattoo: false, cap: false,
+        uniforme: true
+      }
     }
   ];
 

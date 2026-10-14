@@ -161,7 +161,9 @@ const FURN = (() => {
 
     /* ---------- CORREDOR / RECEPÇÃO ---------- */
     add({ t: 'elevator',  x: 46, y: 19.2, w: 1, d: 2 });
-    add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1);
+    const balcao = add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1);
+    // o Cuki BOT atende no balcão da recepção (ponto fixo, sem cadeira)
+    workSlots.push({ id: 'REC-1', room: 'corredor', label: 'Balcão da recepção', x: 43.9, y: 20.5, facing: 'n', obj: balcao, vip: true });
     add({ t: 'plant', x: 37.2, y: 19, k: 0 }); block(37.2, 19, 1, 1);
     add({ t: 'plant', x: 34.0, y: 19, k: 1 }); block(34.0, 19, 1, 1);
 
@@ -255,7 +257,10 @@ const FURN = (() => {
         add({ t: 'plant', x: r.x2 - 0.5, y: r.y2 - 0.6, k: 0 }); block(r.x2 - 0.5, r.y2 - 0.6, 1, 1);
       } else if (r.tipo === 'recepcao') {
         const rw = Math.min(2.6, largura - 2);
-        add({ t: 'reception', x: cx - rw / 2 + 0.5, y: fundoY < r.y1 ? r.y1 + 0.6 : r.y2 - 1.6, w: rw, d: 1 }); block(cx - rw / 2 + 0.5, fundoY < r.y1 ? r.y1 + 0.6 : r.y2 - 1.6, rw, 1);
+        const by = fundoY < r.y1 ? r.y1 + 0.6 : r.y2 - 1.6;
+        const balcao = add({ t: 'reception', x: cx - rw / 2 + 0.5, y: by, w: rw, d: 1 }); block(cx - rw / 2 + 0.5, by, rw, 1);
+        // o Cuki BOT atende no balcão: do lado de dentro da sala, de frente para a porta
+        workSlots.push({ id: 'REC-1', room: r.id, label: 'Balcão da recepção', x: cx + 0.5, y: fundoY < r.y1 ? by + 1.5 : by - 0.6, facing: fundoY < r.y1 ? 's' : 'n', obj: balcao, vip: true });
         add({ t: 'plant', x: r.x1 + 0.4, y: r.y1 + 0.4, k: 0 }); block(r.x1 + 0.4, r.y1 + 0.4, 1, 1);
         add({ t: 'plant', x: r.x2 - 0.5, y: r.y1 + 0.4, k: 1 }); block(r.x2 - 0.5, r.y1 + 0.4, 1, 1);
         if (altura >= 6 && largura >= 6) {
@@ -267,7 +272,10 @@ const FURN = (() => {
     }
     /* ---------- corredor ---------- */
     add({ t: 'elevator',  x: 46, y: 19.2, w: 1, d: 2 });
-    if (!Object.values(WORLD.ROOMS).some(r => r.tipo === 'recepcao')) { add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1); }
+    if (!Object.values(WORLD.ROOMS).some(r => r.tipo === 'recepcao')) {
+      const balcao = add({ t: 'reception', x: 42.6, y: 19, w: 2.6, d: 1 }); block(42.6, 19, 2.6, 1);
+      workSlots.push({ id: 'REC-1', room: 'corredor', label: 'Balcão da recepção', x: 43.9, y: 20.5, facing: 'n', obj: balcao, vip: true });
+    }
     add({ t: 'rack', x: 8.4,  y: 19, label: 'DADOS',   hue: 190 }); block(8.4, 19, 1.2, 1);
     add({ t: 'rack', x: 10.0, y: 19, label: 'AGENTES', hue: 20  }); block(10.0, 19, 1.2, 1);
     [2.2, 17.4, 27.4, 37.2].forEach((x, i) => { add({ t: 'plant', x, y: 19, k: i % 2 }); block(x, 19, 1, 1); });

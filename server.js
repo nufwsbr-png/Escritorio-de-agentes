@@ -596,6 +596,8 @@ ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas:
 const ESTEIRAS = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLATAFORMAS, mensagens: MEMORIA, ligar: (id) => ligar(id),
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}) });
 if (!process.env.ESCRITORIO_SEM_VIGILIA) ESTEIRAS.iniciar();
+// Cuki BOT, a IA analista: mede por código (agentes, plataformas, fluxo, base, aptidão para o CRM) e explica pelo modelo, sem ferramentas
+const CUKI = require('./cuki').init({ DADOS, lerRegistro, agentes: AGENTES, plataformas: PLATAFORMAS, esteiras: ESTEIRAS, admin: ADMIN, avisos: AVISOS, lerConfig, estadoClaude: () => estadoClaude(), CLAUDE_BIN });
 const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
@@ -886,6 +888,14 @@ const servidor = http.createServer(async (req, res) => {
     if (!admin) return soAdmin();
     return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar(b); return json(res, r.ok ? 200 : 400, r.ok ? { ...r, plataformas: PLATAFORMAS.listar(false) } : r); })
       .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  /* ---- Cuki BOT: o laudo é de quem opera; rodar a análise é do administrador (gasta uma rodada do Claude) ---- */
+  if (rota === '/api/cuki/laudo' && req.method === 'GET') return json(res, 200, CUKI.estado());
+  if (rota === '/api/cuki/analisar' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    if (CUKI.estado().rodando) return json(res, 409, { ok: false, motivo: 'já tem uma análise em andamento' });
+    CUKI.analisar().then(r => { if (!r.ok) console.log('  🩺 Cuki BOT: ' + r.motivo); });   // solto: a tela acompanha por GET /api/cuki/laudo
+    return json(res, 202, { ok: true, rodando: true });
   }
   /* ---- esteiras: definir é do administrador; entrar, aprovar e devolver são de quem opera ---- */
   if (rota === '/api/esteiras' && req.method === 'GET') return json(res, 200, ESTEIRAS.estado());
