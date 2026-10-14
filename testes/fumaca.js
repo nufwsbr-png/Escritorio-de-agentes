@@ -214,6 +214,17 @@ async function cenarioCrm(b, CRM) {
   ok(String(await b.ev('document.querySelector(".item.agente a[href*=agente]")?.href')).includes(':' + PORT + '/#agente=leo'), 'o link para o monitor aponta para o escritório');
   ok(await b.ev('document.body.textContent.includes("Prospecção") && document.body.textContent.includes("0 pacientes com ele")'), 'cargo, setor e as fichas com ele aparecem');
   ok(!(await b.ev('document.body.innerHTML.includes("CRM_TOKEN") || document.body.innerHTML.includes("tokenHash")')), 'a tela não mostra token nenhum');
+  // 4e: a aba Ajustes só para quem gere pessoas; pessoas, cargos, sensíveis e acesso; criar uma pessoa mostra a senha uma vez
+  ok(await b.ev('!document.getElementById("aba-ajustes").classList.contains("hidden")'), 'a chefe vê a aba Ajustes');
+  await b.ev('document.getElementById("aba-ajustes").click()'); await espera(1500);
+  ok(await b.ev('document.querySelectorAll(".item.pessoa").length') === 1, 'Ajustes lista a chefe');
+  ok(await b.ev('document.querySelectorAll(".tabela tr[data-cargo-id]").length') === 2, 'Ajustes lista os 2 cargos (chefe e o do agente)');
+  ok(await b.ev('document.querySelector(".tabela tr[data-cargo-id=agente-prospeccao] [data-perm=verSensiveis]").disabled'), 'o cargo do agente não aceita "ver sensíveis"');
+  ok(String(await b.ev('document.getElementById("aj-sens").value')) === 'cpf' && String(await b.ev('document.getElementById("aj-acesso").value')) === 'aqui', 'sensíveis e acesso vêm da criação');
+  await b.ev('document.getElementById("np-nome").value = "Bia Souza"; document.getElementById("np-ok").click()'); await espera(1200);
+  ok(String(await b.ev('document.getElementById("sc-senha")?.textContent')).includes('Aparece uma vez'), 'criar uma pessoa mostra a senha numa caixa, uma vez');
+  await b.ev('document.getElementById("sc-ok").click()'); await espera(600);
+  ok(await b.ev('document.querySelectorAll(".item.pessoa").length') === 2, 'a Bia entrou na lista');
   if (process.env.FUMACA_FOTO_CRM) { const shot = await b.foto(); fs.writeFileSync(process.env.FUMACA_FOTO_CRM, Buffer.from(shot, 'base64')); }
 }
 

@@ -113,6 +113,49 @@ test('CRM de ponta a ponta: login, ficha única pela chave, agente com token e a
   assert.equal((await fetch(URL + '/escritorio/iso.js')).status, 200); assert.ok((await (await fetch(URL + '/')).text()).includes('escritorio/avatar.js'));
   await espera(200);
   assert.ok(avisos.some(a => /Proposta no CRM/.test(a.titulo) && /Léo quer/.test(a.texto)), 'propostas avisam pelo escritório');
+  // 4e: pessoas e cargos (só quem gere pessoas), ninguém apagado, sensíveis mascarados de verdade, acesso
+  assert.equal((await api('/api/pessoas', 'GET', null, ana)).status, 403, 'a Ana não gere pessoas');
+  assert.equal((await api('/api/pessoas', 'GET', null, leo)).status, 403, 'agente nunca gere pessoas');
+  assert.equal((await api('/api/ajustes', 'GET', null, ana)).status, 403);
+  const lp = (await api('/api/pessoas', 'GET', null, chefe)).json; assert.equal(lp.pessoas.length, 2); assert.ok(lp.pessoas.find(p => p.login === 'ana').senhaInicialPendente === false || lp.pessoas.find(p => p.login === 'ana').senhaInicialPendente === true);
+  assert.equal(lp.cargos['agente-prospeccao'].agente, true); assert.equal(lp.cargos.recepcao.emUso, 1);
+  const cp = await api('/api/pessoas', 'POST', { nome: 'Bia Souza', cargo: 'recepcao' }, chefe); assert.equal(cp.status, 200, JSON.stringify(cp.json)); assert.equal(cp.json.pessoa.login, 'bia-souza'); assert.equal(typeof cp.json.senha, 'string');
+  assert.ok(!fs.readFileSync(path.join(CRM, 'data', 'usuarios.json'), 'utf8').includes(cp.json.senha), 'a senha da Bia não fica em texto puro');
+  assert.equal((await api('/api/pessoas', 'POST', { nome: 'Bia Souza', cargo: 'recepcao' }, chefe)).status, 400, 'login repetido recusa');
+  assert.equal((await api('/api/pessoas', 'POST', { nome: 'X', cargo: 'agente-prospeccao' }, chefe)).status, 400, 'cargo de agente não é de pessoa');
+  const bia = { cookie: (await api('/api/entrar', 'POST', { login: 'bia-souza', senha: cp.json.senha })).cookie }; assert.equal((await api('/api/eu', 'GET', null, bia)).json.eu.trocarSenha, true);
+  // a Ana não altera nem acha pela busca o CPF, que é sensível; a Bia (mesmo cargo) também não
+  const fm = (await api('/api/fichas?q=maria&todas=1', 'GET', null, chefe)).json.fichas[0];
+  assert.equal((await api('/api/fichas/' + fm.id + '/campo', 'POST', { campo: 'cpf', valor: '11122233344' }, ana)).status, 400, 'quem não vê o sensível não o altera');
+  assert.equal((await api('/api/fichas/' + fm.id + '/campo', 'POST', { campo: 'cpf', valor: '11122233344' }, chefe)).json.ok, true);
+  assert.equal((await api('/api/fichas?q=2223334&todas=1', 'GET', null, ana)).json.fichas.length, 0, 'a busca não olha o sensível para quem não o vê');
+  assert.equal((await api('/api/fichas?q=2223334&todas=1', 'GET', null, chefe)).json.fichas.length, 1);
+  const hc = (await api('/api/fichas/' + fm.id, 'GET', null, ana)).json.ficha; assert.ok(!JSON.stringify(hc.historico).includes('11122233344'), 'o histórico não leva o valor sensível'); assert.equal(hc.campos.cpf, '*******3344');
+  // cargo: dar "ver sensíveis" à recepção muda o que a Ana vê; tirar o gerir pessoas do próprio cargo é recusado; cargo em uso não some
+  assert.equal((await api('/api/cargos/recepcao', 'POST', { permissoes: { verSensiveis: true } }, ana)).status, 403);
+  assert.equal((await api('/api/cargos/recepcao', 'POST', { permissoes: { verSensiveis: true } }, chefe)).json.ok, true);
+  assert.equal((await api('/api/fichas/' + fm.id, 'GET', null, ana)).json.ficha.campos.cpf, '11122233344', 'com o cargo mudado, a Ana vê o CPF');
+  assert.equal((await api('/api/cargos/chefe', 'POST', { permissoes: { gerirPessoas: false } }, chefe)).status, 400, 'o chefe não tira de si o gerir pessoas');
+  assert.equal((await api('/api/cargos/agente-prospeccao', 'POST', { permissoes: { verSensiveis: true, gerirPessoas: true } }, chefe)).json.cargo.verSensiveis, false, 'agente nunca vê sensíveis');
+  assert.equal((await api('/api/cargos/recepcao/remover', 'POST', {}, chefe)).status, 400, 'cargo em uso não some');
+  assert.equal((await api('/api/cargos/financeiro', 'POST', { nome: 'Financeiro' }, chefe)).json.ok, true); assert.equal((await api('/api/cargos/financeiro/remover', 'POST', {}, chefe)).json.ok, true);
+  // desativar (nunca apagar): a Bia não entra mais, a sessão dela morre, o registro fica; o chefe não se desativa
+  assert.equal((await api('/api/pessoas/' + cp.json.pessoa.id, 'POST', { ativa: false }, chefe)).json.ok, true);
+  assert.equal((await api('/api/eu', 'GET', null, bia)).status, 401, 'sessão da desativada morre');
+  assert.equal((await api('/api/entrar', 'POST', { login: 'bia-souza', senha: cp.json.senha })).status, 401, 'desativada não entra');
+  assert.equal((await api('/api/pessoas', 'GET', null, chefe)).json.pessoas.length, 3, 'ninguém é apagado');
+  assert.equal((await api('/api/pessoas/dra-carla', 'POST', { ativa: false }, chefe)).status, 400, 'o chefe não se desativa');
+  // senha nova mostrada uma vez; senha inicial da Ana (de criar.js) lida uma vez e apagada do disco
+  const rs = (await api('/api/pessoas/' + cp.json.pessoa.id + '/senha', 'POST', {}, chefe)).json; assert.equal(rs.ok, true); assert.notEqual(rs.senha, cp.json.senha);
+  const si = (await api('/api/pessoas/ana/senha-inicial', 'GET', null, chefe)).json; assert.equal(si.ok, true); assert.equal(si.senha, senhas.find(s => s.login === 'ana').senha);
+  assert.equal((await api('/api/pessoas/ana/senha-inicial', 'GET', null, chefe)).status, 404, 'a senha inicial aparece uma vez');
+  assert.ok(!fs.readFileSync(path.join(CRM, 'data', 'senhas-iniciais.json'), 'utf8').includes(si.senha), 'e some do disco');
+  // ajustes: sensíveis e acesso (a escuta muda no .env, vale ao religar)
+  const aj = (await api('/api/ajustes', 'GET', null, chefe)).json; assert.equal(aj.acesso, 'aqui'); assert.equal(aj.escuta, '127.0.0.1'); assert.deepEqual(aj.sensiveis, ['cpf']);
+  const sa = (await api('/api/ajustes', 'POST', { sensiveis: ['cpf', 'E-mail'], acesso: 'rede' }, chefe)).json; assert.deepEqual(sa.sensiveis, ['cpf', 'e-mail']); assert.equal(sa.reiniciar, true);
+  assert.match(fs.readFileSync(path.join(CRM, '.env'), 'utf8'), /^CRM_ESCUTA="0\.0\.0\.0"$/m); assert.equal(JSON.parse(fs.readFileSync(path.join(CRM, 'config.json'), 'utf8')).acesso, 'rede');
+  assert.equal((await api('/api/ajustes', 'POST', { acesso: 'rede' }, chefe)).json.reiniciar, false, 'sem mudança na escuta, não pede religar');
+  assert.equal((await api('/api/ajustes', 'POST', { acesso: 'lua' }, chefe)).status, 400);
   // a tela e o log existem; o log não tem senha nem token
   assert.match(await (await fetch(URL + '/')).text(), /Entrar no CRM/);
   const log = await (await fetch(URL + '/log')).text(); assert.ok(!log.includes(p1.senha) && !log.includes(token) && !log.includes('nova-senha-7'));

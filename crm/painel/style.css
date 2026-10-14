@@ -84,3 +84,14 @@ textarea{min-height:70px;width:100%}
 .boneco{flex:none;background:radial-gradient(ellipse at 50% 85%,rgba(124,108,255,.25),transparent 65%),var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:3px 6px 0}
 .mini{vertical-align:middle;border-radius:5px;background:var(--bg-2)}
 .ini.grande{width:40px;height:40px;font-size:16px;flex:none}
+/* ajustes: pessoas, cargos */
+.item.pessoa.inativa{opacity:.6}
+.item.pessoa .acoes{align-items:center}
+label.inline{flex-direction:row;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:600}
+.tabela{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.tabela table{border-collapse:collapse;width:100%;font-size:12.5px}
+.tabela th,.tabela td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.tabela th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt-dim)}
+.tabela td:first-child,.tabela th:first-child{text-align:left}
+.tabela tr:last-child td{border-bottom:0}
+code{background:var(--bg-2);padding:1px 5px;border-radius:5px;font-size:12px}

@@ -19,6 +19,10 @@
      GET  /api/tarefas?abertas · POST /api/tarefas · POST /api/tarefas/:id/feita
      POST /api/importar {csv, mapa, etapa}
      GET  /api/painel · GET /api/equipe
+     GET  /api/pessoas · POST /api/pessoas {nome, login, cargo} · POST /api/pessoas/:id {nome, cargo, ativa}
+     POST /api/pessoas/:id/senha (redefine; senha mostrada uma vez) · GET /api/pessoas/:id/senha-inicial (uma vez)
+     POST /api/cargos/:id {nome, permissoes} · POST /api/cargos/:id/remover (só sem uso)
+     GET  /api/ajustes · POST /api/ajustes {sensiveis, acesso}      — tudo isto só para quem tem "gerir pessoas"
 
    Escuta em CRM_ESCUTA (127.0.0.1 = só este computador; 0.0.0.0 = rede ou
    túnel). Nunca abre sem login. Dados: local ou Supabase (dados.js).
@@ -105,6 +109,18 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === '/api/painel') return json(res, 200, { ok: true, ...(await CRM.painel()) });
     if (rota === '/api/equipe') return json(res, 200, { ok: true, ...(await CRM.equipe()) });
     if (rota === '/api/dados/testar') return json(res, 200, await D.testar());
+    // 4e: pessoas, cargos e ajustes (só quem tem "gerir pessoas"; o crm.js confere)
+    if (rota === '/api/pessoas' && req.method === 'GET') { const r = CRM.listarPessoas(eu); return json(res, r.ok ? 200 : 403, r); }
+    if (rota === '/api/pessoas' && req.method === 'POST') { const b = await corpo(req, 1e4); const r = CRM.criarPessoa(eu, b); if (r.ok) log((eu.nome || eu.id) + ' criou a pessoa ' + r.pessoa.login); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
+    const mp = rota.match(/^\/api\/pessoas\/([a-z0-9_-]+)(?:\/(senha|senha-inicial))?$/i);
+    if (mp && req.method === 'POST' && !mp[2]) { const b = await corpo(req, 1e4); const r = CRM.mudarPessoa(eu, mp[1], b); if (r.ok) log((eu.nome || eu.id) + ' mudou a pessoa ' + mp[1] + ': ' + Object.keys(b).join(',')); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
+    if (mp && req.method === 'POST' && mp[2] === 'senha') { const r = CRM.redefinirSenha(eu, mp[1]); if (r.ok) log((eu.nome || eu.id) + ' redefiniu a senha de ' + mp[1]); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
+    if (mp && req.method === 'GET' && mp[2] === 'senha-inicial') { const r = CRM.senhaInicial(eu, mp[1]); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 404), r); }
+    const mc = rota.match(/^\/api\/cargos\/([a-z0-9_-]+)(?:\/(remover))?$/i);
+    if (mc && req.method === 'POST' && !mc[2]) { const b = await corpo(req, 1e4); const r = CRM.salvarCargo(eu, mc[1], b); if (r.ok) log((eu.nome || eu.id) + ' salvou o cargo ' + r.id); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
+    if (mc && req.method === 'POST' && mc[2] === 'remover') { const r = CRM.removerCargo(eu, mc[1]); if (r.ok) log((eu.nome || eu.id) + ' removeu o cargo ' + mc[1]); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
+    if (rota === '/api/ajustes' && req.method === 'GET') { const r = CRM.ajustes(eu); return json(res, r.ok ? 200 : 403, r); }
+    if (rota === '/api/ajustes' && req.method === 'POST') { const b = await corpo(req, 1e4); const r = CRM.salvarAjustes(eu, b); if (r.ok) log((eu.nome || eu.id) + ' salvou ajustes: ' + Object.keys(b).join(',') + (r.reiniciar ? ' (escuta muda ao religar)' : '')); return json(res, r.ok ? 200 : (r.semPermissao ? 403 : 400), r); }
     return json(res, 404, { ok: false, motivo: 'rota desconhecida' });
   } catch (e) {
     log('erro em ' + req.method + ' ' + rota + ': ' + e.message);

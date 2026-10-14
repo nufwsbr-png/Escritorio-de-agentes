@@ -308,7 +308,12 @@ aba **Equipe**, cada agente aparece com o mesmo boneco do escritório, o
 cargo, o estado lido do escritório (no ar, desligado, em treinamento), as
 fichas e propostas que tem e um link que abre o monitor dele
 (`/#agente=<id>`); contratar, treinar e dar plataforma continuam só no
-escritório.
+escritório. Na aba **Ajustes**, só para quem tem "gerir pessoas", o chefe
+cria pessoas (a senha aparece uma vez), troca cargos, desativa em vez de
+apagar, edita as permissões de cada cargo (agente nunca vê sensíveis nem
+gere pessoas), escolhe os campos sensíveis (mascarados, travados e fora da
+busca para quem não pode vê-los) e o acesso (só aqui, rede ou de fora, que
+pede túnel com HTTPS); mudar a escuta vale ao religar o CRM.
 
 No agente, a plataforma `crm` traz a ferramenta `tools/crm.js` (ler, procurar,
 criar sem duplicar, anotar, campo, mover, tarefa, mensagem) e muda onde a

@@ -80,6 +80,123 @@ function trocarSenha(pessoaId, atual, nova) {
 /* a senha do chefe, gerada por criar.js, é mostrada UMA vez e o arquivo some */
 function primeiraSenha() { const a = arqDados('primeira-senha.json'); const d = lerJson(a, null); if (!d) return null; try { fs.unlinkSync(a); } catch (e) {} return d; }
 
+/* ---------------- pessoas e cargos: quem tem "gerir pessoas" (o chefe) cuida disso na tela ----------------
+   Ninguém é apagado: pessoa sai de cena desativada e continua no histórico. Senha inicial é mostrada UMA vez
+   (na resposta da criação ou em senhas-iniciais.json, que some ao ser lida) e nunca fica em texto puro depois.
+   Agente nunca gere pessoas, nunca vê sensíveis: o cargo de agente não aceita essas permissões. */
+const PERMISSOES = ['verTudo', 'editar', 'mover', 'aprovar', 'verSensiveis', 'gerirPessoas'];
+const podeGerir = (autor) => { const c = cargoDe(autor); return !!(autor && autor.tipo === 'pessoa' && c && c.gerirPessoas); };
+const NAO_GERE = { ok: false, semPermissao: true, motivo: 'só quem tem "gerir pessoas" (o chefe) faz isso' };
+const semSenha = (p) => ({ id: p.id, nome: p.nome, login: p.login, cargo: p.cargo, ativa: p.ativa !== false, trocarSenha: !!p.trocarSenha });
+function listarPessoas(autor) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const u = usuarios(); const cg = cargos(); const pend = lerJson(arqDados('senhas-iniciais.json'), []);
+  const uso = {}; for (const p of u.pessoas) uso[p.cargo] = (uso[p.cargo] || 0) + 1; for (const a of u.agentes) uso[a.cargo] = (uso[a.cargo] || 0) + 1;
+  return { ok: true, pessoas: u.pessoas.map(p => ({ ...semSenha(p), cargoNome: (cg[p.cargo] || {}).nome || p.cargo, senhaInicialPendente: pend.some(s => s.login === p.login) })),
+           cargos: Object.fromEntries(Object.entries(cg).map(([id, c]) => [id, { ...c, emUso: uso[id] || 0 }])), permissoes: PERMISSOES, eu: autor.id };
+}
+function criarPessoa(autor, { nome, login, cargo } = {}) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const u = usuarios(); const cg = cargos();
+  nome = limpa(nome, 60); login = slug(login || nome, 30);
+  if (!nome) return { ok: false, motivo: 'diga o nome' };
+  if (!login) return { ok: false, motivo: 'diga um login (letras e números)' };
+  if (u.pessoas.some(p => p.login === login)) return { ok: false, motivo: 'já existe alguém com o login ' + login };
+  if (!cg[cargo]) return { ok: false, motivo: 'cargo desconhecido' };
+  if (cg[cargo].agente) return { ok: false, motivo: 'esse cargo é de agente' };
+  let id = login; while (u.pessoas.some(p => p.id === id)) id += '2';
+  const senha = hex(4), sal = hex(8);
+  const p = { id, nome, login, cargo, sal, senhaHash: hash(senha, sal), ativa: true, trocarSenha: true, criadaEm: agora(), criadaPor: autor.id };
+  u.pessoas.push(p); gravarUsuarios(u);
+  return { ok: true, pessoa: semSenha(p), senha, aviso: 'a senha aparece uma vez: entregue à pessoa; ela troca ao entrar' };
+}
+function mudarPessoa(autor, id, { nome, cargo, ativa } = {}) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const u = usuarios(); const cg = cargos(); const p = u.pessoas.find(x => x.id === id);
+  if (!p) return { ok: false, motivo: 'pessoa não encontrada' };
+  if (nome !== undefined) { const n = limpa(nome, 60); if (!n) return { ok: false, motivo: 'nome vazio' }; p.nome = n; }
+  if (cargo !== undefined) {
+    if (!cg[cargo]) return { ok: false, motivo: 'cargo desconhecido' };
+    if (cg[cargo].agente) return { ok: false, motivo: 'esse cargo é de agente' };
+    if (p.id === autor.id && !cg[cargo].gerirPessoas) return { ok: false, motivo: 'você não pode tirar de si o "gerir pessoas"' };
+    p.cargo = cargo;
+  }
+  if (ativa !== undefined) {
+    if (!ativa && p.id === autor.id) return { ok: false, motivo: 'você não pode desativar a si' };
+    if (!ativa && !u.pessoas.some(x => x.id !== p.id && x.ativa !== false && (cg[x.cargo] || {}).gerirPessoas)) return { ok: false, motivo: 'é a última pessoa que gere pessoas: desativar trancaria o CRM' };
+    p.ativa = !!ativa;
+    if (!p.ativa) { p.desativadaEm = agora(); const s = sessoes(); let mudou = false; for (const [k, v] of Object.entries(s)) if (v.pessoa === p.id) { delete s[k]; mudou = true; } if (mudou) gravarJson(arqDados('sessoes.json'), s); }
+    else delete p.desativadaEm;
+  }
+  gravarUsuarios(u);
+  return { ok: true, pessoa: semSenha(p) };
+}
+/* senha nova, mostrada uma vez; a pessoa troca ao entrar */
+function redefinirSenha(autor, id) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const u = usuarios(); const p = u.pessoas.find(x => x.id === id);
+  if (!p) return { ok: false, motivo: 'pessoa não encontrada' };
+  const senha = hex(4); p.sal = hex(8); p.senhaHash = hash(senha, p.sal); p.trocarSenha = true; gravarUsuarios(u);
+  const s = sessoes(); let mudou = false; for (const [k, v] of Object.entries(s)) if (v.pessoa === p.id) { delete s[k]; mudou = true; } if (mudou) gravarJson(arqDados('sessoes.json'), s);
+  return { ok: true, login: p.login, senha, aviso: 'a senha aparece uma vez' };
+}
+/* a senha inicial que criar.js gerou para quem não é o chefe: lida uma vez e apagada */
+function senhaInicial(autor, id) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const p = usuarios().pessoas.find(x => x.id === id); if (!p) return { ok: false, motivo: 'pessoa não encontrada' };
+  const a = arqDados('senhas-iniciais.json'); const pend = lerJson(a, []); const i = pend.findIndex(s => s.login === p.login);
+  if (i < 0) return { ok: false, motivo: 'não há senha inicial pendente: redefina a senha' };
+  const [s] = pend.splice(i, 1); gravarJson(a, pend);
+  return { ok: true, login: s.login, senha: s.senha, aviso: 'a senha aparece uma vez' };
+}
+function salvarCargo(autor, id, { nome, permissoes } = {}) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const cg = cargos(); id = slug(id, 30); if (!id) return { ok: false, motivo: 'diga o cargo' };
+  const c = cg[id] || { nome: '', verTudo: true, editar: true, mover: true, aprovar: false, verSensiveis: false, gerirPessoas: false };
+  if (nome !== undefined) { const n = limpa(nome, 40); if (!n) return { ok: false, motivo: 'nome vazio' }; c.nome = n; }
+  if (!c.nome) c.nome = id;
+  if (permissoes && typeof permissoes === 'object') for (const k of PERMISSOES) if (permissoes[k] !== undefined) c[k] = !!permissoes[k];
+  if (c.agente) { c.verSensiveis = false; c.gerirPessoas = false; }   // agente nunca vê sensíveis nem gere pessoas
+  const meu = usuarios().pessoas.find(p => p.id === autor.id);
+  if (meu && meu.cargo === id && !c.gerirPessoas) return { ok: false, motivo: 'você não pode tirar do seu cargo o "gerir pessoas"' };
+  cg[id] = c; gravarJson(arqDados('cargos.json'), cg);
+  return { ok: true, id, cargo: c };
+}
+function removerCargo(autor, id) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const cg = cargos(); if (!cg[id]) return { ok: false, motivo: 'cargo desconhecido' };
+  if (id === 'chefe') return { ok: false, motivo: 'o cargo chefe fica' };
+  const u = usuarios(); if (u.pessoas.some(p => p.cargo === id) || u.agentes.some(a => a.cargo === id)) return { ok: false, motivo: 'alguém ainda tem esse cargo: troque antes' };
+  delete cg[id]; gravarJson(arqDados('cargos.json'), cg);
+  return { ok: true };
+}
+/* ajustes do chefe na tela: campos sensíveis e acesso (a escuta do servidor muda no .env; vale ao religar o CRM pelo escritório) */
+function ajustes(autor) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const cfg = config(); const env = dep.env || process.env;
+  return { ok: true, sensiveis: cfg.sensiveis || [], campos: CAMPOS_BASE, acesso: cfg.acesso || 'aqui', escuta: env.CRM_ESCUTA || '127.0.0.1', porta: Number(env.PORT) || cfg.porta, onde: dep.D ? dep.D.onde : 'local',
+           perdido: cfg.perdido !== false, autonomia: cfg.autonomia || 'b' };
+}
+function salvarAjustes(autor, { sensiveis, acesso } = {}) {
+  if (!podeGerir(autor)) return NAO_GERE;
+  const cfg = config(); let reiniciar = false;
+  if (Array.isArray(sensiveis)) cfg.sensiveis = [...new Set(sensiveis.map(s => slug(s, 30)).filter(Boolean))];
+  if (acesso !== undefined) {
+    if (!['aqui', 'rede', 'fora'].includes(acesso)) return { ok: false, motivo: 'acesso: aqui, rede ou fora' };
+    cfg.acesso = acesso;
+    const escuta = acesso === 'aqui' ? '127.0.0.1' : '0.0.0.0';
+    const arq = path.join(dep.PASTA, '.env'); let env = ''; try { env = fs.readFileSync(arq, 'utf8'); } catch (e) {}
+    const atual = (/^CRM_ESCUTA=(.*)$/m.exec(env) || [])[1];
+    if (atual === undefined || atual.replace(/"/g, '').trim() !== escuta) {
+      const linha = 'CRM_ESCUTA="' + escuta + '"';
+      env = /^CRM_ESCUTA=.*$/m.test(env) ? env.replace(/^CRM_ESCUTA=.*$/m, linha) : env + (env && !env.endsWith('\n') ? '\n' : '') + linha + '\n';
+      fs.writeFileSync(arq, env); reiniciar = true;
+    }
+  }
+  cfg.atualizadoEm = agora(); gravarJson(path.join(dep.PASTA, 'config.json'), cfg);
+  return { ok: true, sensiveis: cfg.sensiveis, acesso: cfg.acesso, reiniciar, aviso: reiniciar ? 'a escuta muda quando o CRM for desligado e ligado de novo no escritório' : '' };
+}
+
 /* ---------------- a chave única e os campos ---------------- */
 function chaveNormal(cfg, valor) {
   const t = cfg.entidade.chave;
@@ -112,7 +229,12 @@ const PERM = { mover: 'mover', anotar: 'editar', campo: 'editar', mensagem: 'edi
 function decidir(cfg, autor, ficha, acao, detalhe = {}) {
   const c = cargoDe(autor);
   if (!c) return { ok: false, motivo: 'sem cargo no CRM' };
-  if (autor.tipo === 'pessoa' || autor.tipo === 'escritorio') return c[PERM[acao] || 'editar'] ? { ok: true, direto: true } : { ok: false, motivo: 'o seu cargo (' + c.nome + ') não permite ' + acao };
+  if (autor.tipo === 'pessoa' || autor.tipo === 'escritorio') {
+    if (!c[PERM[acao] || 'editar']) return { ok: false, motivo: 'o seu cargo (' + c.nome + ') não permite ' + acao };
+    // quem não vê um campo sensível não o altera (nem o escritório, que não vê sensíveis)
+    if (acao === 'campo' && (cfg.sensiveis || []).includes(slug(detalhe.campo, 30)) && !c.verSensiveis) return { ok: false, motivo: 'o campo ' + slug(detalhe.campo, 30) + ' é sensível: só quem pode vê-lo altera' };
+    return { ok: true, direto: true };
+  }
   // agente
   if (ficha && ficha.responsavel && ficha.responsavel.tipo === 'pessoa') return { ok: false, motivo: 'com uma pessoa: ' + nomeDe(ficha.responsavel) + ' está com esta ficha; o agente espera devolver', comPessoa: true };
   if (autor.modo === 'ensaio') return { ok: true, ensaio: true };
@@ -141,7 +263,9 @@ async function listarFichas(autor, filtro = {}) {
   if (filtro.etapa) lista = lista.filter(f => f.etapa === filtro.etapa);
   if (filtro.minhas) lista = lista.filter(f => f.responsavel && f.responsavel.tipo === autor.tipo && f.responsavel.id === autor.id);
   if (filtro.paradoDias) lista = lista.filter(f => f.status === 'ativa' && Date.now() - new Date(f.atualizadaEm).getTime() > Number(filtro.paradoDias) * DIA);
-  if (filtro.q) { const q = String(filtro.q).toLowerCase(); lista = lista.filter(f => JSON.stringify(f.campos || {}).toLowerCase().includes(q) || String(f.chave).includes(q)); }
+  // a busca não olha campos sensíveis para quem não os vê (senão dava para adivinhar um CPF por tentativa)
+  const c = cargoDe(autor); const veSens = !!(c && c.verSensiveis) && autor.tipo === 'pessoa';
+  if (filtro.q) { const q = String(filtro.q).toLowerCase(); const vis = f => { const o = { ...(f.campos || {}) }; if (!veSens) for (const s of (cfg.sensiveis || [])) delete o[s]; return o; }; lista = lista.filter(f => JSON.stringify(vis(f)).toLowerCase().includes(q) || String(f.chave).includes(q)); }
   const pend = (await dep.D.listar('propostas')).filter(p => p.estado === 'pendente');
   return lista.map(f => ({ ...fichaPara(cfg, f, autor), propostasPendentes: pend.filter(p => p.fichaId === f.id).length, diasParada: Math.floor((Date.now() - new Date(f.atualizadaEm).getTime()) / DIA) }));
 }
@@ -185,7 +309,7 @@ async function mudarFicha(autor, id, acao, detalhe = {}) {
   const descricoes = {
     mover: () => { const et = etapaDe(detalhe.etapa); if (!et) throw new Error('etapa não existe: ' + detalhe.etapa); return 'mover de "' + (etapaDe(f.etapa) || { nome: f.etapa }).nome + '" para "' + et.nome + '"'; },
     anotar: () => { if (!limpa(detalhe.texto, 1)) throw new Error('anotação vazia'); return 'anotar: ' + limpa(detalhe.texto, 300); },
-    campo: () => { const k = slug(detalhe.campo, 30); if (!k) throw new Error('diga o campo'); return 'alterar ' + k + ' para "' + limpa(detalhe.valor, 120) + '"'; },
+    campo: () => { const k = slug(detalhe.campo, 30); if (!k) throw new Error('diga o campo'); const sens = (cfg.sensiveis || []).includes(k); return 'alterar ' + k + ' para "' + (sens ? mascarar(detalhe.valor) : limpa(detalhe.valor, 120)) + '"'; },   // no histórico e na proposta, valor sensível vai mascarado
     mensagem: () => { if (!limpa(detalhe.texto, 1)) throw new Error('mensagem vazia'); return 'mandar ao cliente: ' + limpa(detalhe.texto, 300); },
     atribuir: () => { const r = detalhe.responsavel; if (!r || !r.tipo || !r.id) throw new Error('diga para quem'); return 'passar para ' + nomeDe(r); },
     perder: () => 'marcar como ' + (cfg.perdido === false ? 'arquivada' : 'perdida') + (detalhe.motivo ? ' (' + limpa(detalhe.motivo, 200) + ')' : ''),
@@ -413,5 +537,6 @@ module.exports = {
   entrar, sair, quem, cookie, cookieVazio, trocarSenha, primeiraSenha,
   listarFichas, obterFicha, criarFicha, mudarFicha, decidir, propostas, decidirProposta,
   criarTarefa, concluirTarefa, tarefas, importar, painel, equipe, estadoDoEscritorio, avisarEscritorio, avisosDiarios, CAMPOS_BASE, hex, hash,
-  estadoDoAgente, acaoDireta, ferramentasDoAgente, pedirAoEscritorio
+  estadoDoAgente, acaoDireta, ferramentasDoAgente, pedirAoEscritorio,
+  listarPessoas, criarPessoa, mudarPessoa, redefinirSenha, senhaInicial, salvarCargo, removerCargo, ajustes, salvarAjustes, PERMISSOES
 };

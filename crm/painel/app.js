@@ -65,6 +65,7 @@
     const eu = await api('/api/eu'); if (!eu.ok) return;
     EU = eu.eu; CFG = await api('/api/config'); EQUIPE = await api('/api/equipe');
     $('#eu-nome').textContent = EU.nome + ' · ' + (EU.cargoNome || EU.cargo);
+    $('#aba-ajustes').classList.toggle('hidden', !(EU.permissoes && EU.permissoes.gerirPessoas));   // só quem gere pessoas (o chefe)
     $('#subtitulo').textContent = CFG.entidade.plural + ' · fichas ' + (CFG.onde === 'supabase' ? 'no Supabase' : 'locais');
     await contadores(); await pintar();
   }
@@ -80,6 +81,7 @@
     if (aba === 'equipe') return equipe(m);
     if (aba === 'painel') return painel(m);
     if (aba === 'importar') return importar(m);
+    if (aba === 'ajustes') return ajustes(m);
   }
 
   /* ---------------- o quadro ---------------- */
@@ -140,7 +142,7 @@
     abrirModal(`<h3>${esc(f.campos.nome || f.chave)} <span class="estado ${f.status === 'ativa' ? 'ok' : 'bad'}">${esc(f.status)}</span></h3>
       <p class="hint">${esc(CFG.entidade.singular)} · etapa <b>${esc(etapaNome(f.etapa))}</b> · com ${ini(f.responsavel)} ${esc(nomeResp(f.responsavel))} · criada ${quando(f.criadaEm)} · mexida ${quando(f.atualizadaEm)}</p>
       <div class="ficha"><div>
-        <div class="campos">${campos.map(c => `<label class="${c === 'observacoes' ? 'largo' : ''}">${esc(c)}${(CFG.sensiveis || []).includes(c) ? ' 🔒' : ''}<input id="fc-${esc(c)}" value="${esc(f.campos[c] || '')}" ${P.editar ? '' : 'disabled'}></label>`).join('')}</div>
+        <div class="campos">${campos.map(c => `<label class="${c === 'observacoes' ? 'largo' : ''}">${esc(c)}${(CFG.sensiveis || []).includes(c) ? ' 🔒' : ''}<input id="fc-${esc(c)}" value="${esc(f.campos[c] || '')}" ${P.editar && !((CFG.sensiveis || []).includes(c) && !P.verSensiveis) ? '' : 'disabled'}></label>`).join('')}</div>
         ${P.editar ? '<div class="mactions"><button class="btn" id="fc-salvar">Salvar campos</button><input id="fc-novo" placeholder="novo campo" style="width:120px"></div>' : ''}
         <div class="mactions" style="flex-wrap:wrap">
           ${P.mover ? '<select id="f-etapa">' + CFG.etapas.map(e => '<option value="' + esc(e.id) + '" ' + (e.id === f.etapa ? 'selected' : '') + '>' + esc(e.nome) + '</option>').join('') + '</select><button class="btn" id="f-mover">Mover</button>' : ''}
@@ -239,6 +241,53 @@
       <div class="num"><b>${p.tarefasAbertas}</b><span>tarefas abertas${p.tarefasVencidas ? ' (' + p.tarefasVencidas + ' vencidas)' : ''}</span></div>
       <div class="num"><b>${p.perdidas}</b><span>perdidos</span></div></div>
       <h4 style="margin:14px 0 6px">Por etapa</h4><div class="grade">${p.porEtapa.map(e => `<div class="num"><b>${e.total}</b><span>${esc(e.nome)}</span></div>`).join('')}</div>`;
+  }
+  /* ---------------- ajustes do chefe: pessoas, cargos, campos sensíveis, acesso ----------------
+     Ninguém é apagado: pessoa é desativada. Senha nova aparece uma vez, numa caixa, para o chefe entregar. */
+  async function ajustes(m) {
+    const [P, A] = await Promise.all([api('/api/pessoas'), api('/api/ajustes')]);
+    if (!P.ok || !A.ok) { m.innerHTML = '<p class="hint">' + esc((P.motivo || A.motivo) || 'não deu') + '</p>'; return; }
+    const cargosPessoa = Object.entries(P.cargos).filter(([, c]) => !c.agente);
+    const NOMES = { verTudo: 'ver tudo', editar: 'editar ficha', mover: 'mover etapa', aprovar: 'aprovar propostas', verSensiveis: 'ver sensíveis', gerirPessoas: 'gerir pessoas' };
+    const opCargos = (sel) => cargosPessoa.map(([id, c]) => '<option value="' + esc(id) + '" ' + (id === sel ? 'selected' : '') + '>' + esc(c.nome) + '</option>').join('');
+    const ESCUTA = { aqui: 'só este computador (127.0.0.1)', rede: 'a rede do escritório (0.0.0.0, com login)', fora: 'de fora também (0.0.0.0 atrás de um túnel com HTTPS)' };
+    m.innerHTML = `<div class="barra"><b>Ajustes</b><span class="hint">só quem gere pessoas vê isto. Etapas, agentes e onde ficam as fichas mudam por <code>/criar-crm</code> no Claude Code.</span></div>
+      <h4 class="secao">Pessoas</h4>
+      <div class="lista">${P.pessoas.map(p => `<div class="item pessoa ${p.ativa ? '' : 'inativa'}" data-id="${esc(p.id)}"><span class="ini">${esc(p.nome.slice(0, 1).toUpperCase())}</span> <b>${esc(p.nome)}</b> <span class="hint">login <code>${esc(p.login)}</code></span>
+          ${p.ativa ? '' : '<span class="estado bad">desativada</span>'}${p.trocarSenha ? '<span class="estado warn" title="ainda não trocou a senha inicial">senha inicial</span>' : ''}
+          <div class="acoes"><label class="inline">cargo <select data-cargo="${esc(p.id)}" ${p.id === P.eu ? 'disabled' : ''}>${opCargos(p.cargo)}</select></label>
+            ${p.senhaInicialPendente ? '<button class="btn small" data-senha-inicial="' + esc(p.id) + '">ver a senha inicial</button>' : ''}
+            <button class="btn small" data-redefinir="${esc(p.id)}">nova senha</button>
+            ${p.id === P.eu ? '<span class="hint">você</span>' : p.ativa ? '<button class="btn small danger" data-desativar="' + esc(p.id) + '">desativar</button>' : '<button class="btn small" data-reativar="' + esc(p.id) + '">reativar</button>'}</div></div>`).join('')}</div>
+      <div class="mactions"><input id="np-nome" placeholder="nome" style="width:160px"><input id="np-login" placeholder="login (opcional)" style="width:140px"><select id="np-cargo">${opCargos('')}</select><button class="btn primary" id="np-ok">＋ pessoa</button><span class="hint">a senha inicial aparece uma vez</span></div>
+      <h4 class="secao">Cargos e permissões</h4>
+      <div class="tabela"><table><thead><tr><th>cargo</th>${Object.values(NOMES).map(n => '<th>' + esc(n) + '</th>').join('')}<th></th></tr></thead><tbody>
+        ${Object.entries(P.cargos).map(([id, c]) => `<tr data-cargo-id="${esc(id)}"><td><b>${esc(c.nome)}</b>${c.agente ? ' <span class="hint">agente</span>' : ''}<div class="hint">${c.emUso} em uso</div></td>
+          ${P.permissoes.map(k => '<td><input type="checkbox" data-perm="' + k + '" ' + (c[k] ? 'checked' : '') + ' ' + (c.agente && (k === 'verSensiveis' || k === 'gerirPessoas') ? 'disabled title="agente nunca"' : '') + '></td>').join('')}
+          <td><button class="btn small" data-salvar-cargo="${esc(id)}">salvar</button>${!c.emUso && id !== 'chefe' ? ' <button class="btn small ghost" data-remover-cargo="' + esc(id) + '">remover</button>' : ''}</td></tr>`).join('')}</tbody></table></div>
+      <div class="mactions"><input id="nc-nome" placeholder="novo cargo (nome)" style="width:200px"><button class="btn" id="nc-ok">＋ cargo</button><span class="hint">nasce com editar e mover; ajuste as caixas e salve</span></div>
+      <h4 class="secao">Campos sensíveis</h4>
+      <p class="hint">Quem não tem "ver sensíveis" vê mascarado (<code>*******8901</code>), não altera e não acha pela busca. Agente nunca vê. Também valem campos que os agentes criaram.</p>
+      <div class="mactions"><input id="aj-sens" value="${esc(A.sensiveis.join(', '))}" placeholder="cpf, email" style="flex:1"><button class="btn" id="aj-sens-ok">Salvar sensíveis</button></div>
+      <h4 class="secao">Acesso</h4>
+      <p class="hint">Agora: <b>${esc(ESCUTA[A.acesso] || A.acesso)}</b> · escutando em <code>${esc(A.escuta)}:${A.porta}</code> · fichas ${A.onde === 'supabase' ? 'no Supabase' : 'locais'}. O CRM nunca abre sem login.</p>
+      <div class="mactions"><select id="aj-acesso">${Object.entries(ESCUTA).map(([k, v]) => '<option value="' + k + '" ' + (k === A.acesso ? 'selected' : '') + '>' + esc(v) + '</option>').join('')}</select><button class="btn" id="aj-acesso-ok">Salvar acesso</button>
+        <span class="hint">mudar a escuta vale depois de desligar e ligar o CRM no escritório; "de fora" pede um túnel com HTTPS e fichas no Supabase</span></div>
+      <p class="hint" id="aj-msg" style="margin-top:10px"></p>`;
+    const msg = (t, erro) => { $('#aj-msg').textContent = t || ''; $('#aj-msg').classList.toggle('erro', !!erro); };
+    const senhaCaixa = (r) => { abrirModal(`<h3>🔑 Senha de <code>${esc(r.login)}</code></h3><p class="aviso" id="sc-senha">Senha: <code>${esc(r.senha)}</code><br>Aparece uma vez. Entregue à pessoa; ela troca ao entrar.</p><div class="mactions"><button class="btn" id="sc-ok">Anotei</button></div>`); $('#sc-ok').onclick = fecharModal; };
+    const depois = async (r) => { if (!r.ok) return msg(r.motivo || 'não deu', true); msg(r.aviso || 'Feito.'); ajustes(m); };
+    $('#np-ok').onclick = async () => { const r = await api('/api/pessoas', 'POST', { nome: $('#np-nome').value, login: $('#np-login').value, cargo: $('#np-cargo').value }); if (!r.ok) return msg(r.motivo, true); senhaCaixa(r); ajustes(m); };
+    for (const s of m.querySelectorAll('[data-cargo]')) s.onchange = async () => depois(await api('/api/pessoas/' + s.dataset.cargo, 'POST', { cargo: s.value }));
+    for (const b of m.querySelectorAll('[data-desativar]')) b.onclick = async () => { if (!confirm('Desativar? A pessoa não entra mais; o histórico fica.')) return; depois(await api('/api/pessoas/' + b.dataset.desativar, 'POST', { ativa: false })); };
+    for (const b of m.querySelectorAll('[data-reativar]')) b.onclick = async () => depois(await api('/api/pessoas/' + b.dataset.reativar, 'POST', { ativa: true }));
+    for (const b of m.querySelectorAll('[data-redefinir]')) b.onclick = async () => { if (!confirm('Gerar uma senha nova? A atual deixa de valer.')) return; const r = await api('/api/pessoas/' + b.dataset.redefinir + '/senha', 'POST', {}); if (!r.ok) return msg(r.motivo, true); senhaCaixa(r); ajustes(m); };
+    for (const b of m.querySelectorAll('[data-senha-inicial]')) b.onclick = async () => { const r = await api('/api/pessoas/' + b.dataset.senhaInicial + '/senha-inicial'); if (!r.ok) return msg(r.motivo, true); senhaCaixa(r); ajustes(m); };
+    for (const b of m.querySelectorAll('[data-salvar-cargo]')) b.onclick = async () => { const tr = b.closest('tr'); const permissoes = {}; for (const c of tr.querySelectorAll('[data-perm]')) permissoes[c.dataset.perm] = c.checked; depois(await api('/api/cargos/' + b.dataset.salvarCargo, 'POST', { permissoes })); };
+    for (const b of m.querySelectorAll('[data-remover-cargo]')) b.onclick = async () => depois(await api('/api/cargos/' + b.dataset.removerCargo + '/remover', 'POST', {}));
+    $('#nc-ok').onclick = async () => { const nome = $('#nc-nome').value.trim(); if (!nome) return; depois(await api('/api/cargos/' + encodeURIComponent(nome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')), 'POST', { nome })); };
+    $('#aj-sens-ok').onclick = async () => { const r = await api('/api/ajustes', 'POST', { sensiveis: $('#aj-sens').value.split(/[,;]/).map(s => s.trim()).filter(Boolean) }); if (r.ok) CFG.sensiveis = r.sensiveis; depois(r); };
+    $('#aj-acesso-ok').onclick = async () => depois(await api('/api/ajustes', 'POST', { acesso: $('#aj-acesso').value }));
   }
   function importar(m) {
     if (!EU.permissoes.editar) { m.innerHTML = '<p class="hint">O seu cargo não importa.</p>'; return; }
