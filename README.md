@@ -287,6 +287,18 @@ nome de cliente final. O Cuki BOT informa; para agir, a pessoa usa a tela.
 Limite de 20 mensagens por número por hora. O **briefing do dia** sai sozinho
 na hora do resumo (🔔 Avisos) e quando alguém escreve "briefing".
 
+## Criar CRM (em construção)
+
+Quando a equipe de agentes já funciona, a skill **`/criar-crm`** cria o CRM do
+escritório: a ficha de cada cliente (ou paciente, processo…), o passo em que
+ela está e quem cuida dela agora; pessoas entram com login e cargo, agentes
+entram como funcionários com token e cargo. Antes de perguntar, ela chama o
+Cuki BOT (`node cuki.js medir`): vermelho trava. As perguntas são simples e
+vêm com proposta pronta; `node crm/criar.js aplicar` grava a configuração,
+registra o sistema `crm` e cria a plataforma `crm` com um token por agente.
+O sistema do CRM em si (`crm/server.js`, a tela, a ferramenta do agente) entra
+nas próximas sub-etapas. Design: `docs/superpowers/specs/2026-10-14-crm-design.md`.
+
 ## O monitor de cada agente
 
 | Botão | O que faz |

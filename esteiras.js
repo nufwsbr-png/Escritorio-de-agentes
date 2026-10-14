@@ -323,9 +323,9 @@ if (require.main === module) {
     _ajuda: 'listar                      as esteiras definidas\nagentes                     os agentes de tarefa que podem entrar numa etapa\ncriar <def.json>            cria ou substitui uma esteira ({ nome, entidade, pasta, vigiarPasta, etapas: [{ nome, agente, entrega, aprovacao, aprovador }] })\nremover <id>\nentrar <esteira> <entidade> põe uma entidade na primeira etapa (o escritório precisa estar no ar para o gatilho)\nestado                      esteiras e entidades, como a tela vê',
     listar: () => ({ ok: true, esteiras: listar() }),
     agentes: () => ({ ok: true, agentes: agentesCandidatos() }),
-    criar: (a) => a[0] ? salvar(ler(a[0])) : { ok: false, motivo: 'passe o arquivo da definição' },
-    remover: (a) => remover(a[0]),
-    entrar: (a) => entrar(a[0], a[1], 'cli'),
+    criar: (arq) => arq ? salvar(ler(arq)) : { ok: false, motivo: 'passe o arquivo da definição' },
+    remover: (id) => remover(id),
+    entrar: (esteira, entidade) => entrar(esteira, entidade, 'cli'),
     estado: () => ({ ok: true, ...estado() })
   }, process.argv.slice(2));
 }

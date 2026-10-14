@@ -57,7 +57,7 @@ function gravarTodas(lista) {
   fs.mkdirSync(path.dirname(ARQ()), { recursive: true });
   fs.writeFileSync(ARQ(), JSON.stringify(lista, null, 2) + '\n');
 }
-const semValores = (p) => ({ ...p, variaveis: Object.keys(p.variaveis || {}), usadaPor: usadaPor(p.id) });
+const semValores = (p) => ({ ...p, variaveis: Object.keys(p.variaveis || {}), porAgente: Object.keys(p.porAgente || {}), usadaPor: usadaPor(p.id) });
 
 /** variáveis sugeridas para um tipo, já com o prefixo do id e valores vazios */
 function variaveisSugeridas(id, tipo) {
@@ -104,6 +104,8 @@ function salvar(dados) {
     notas: String(d.notas || '').trim().slice(0, 500),
     criadaEm: existente ? existente.criadaEm : agora, atualizadaEm: agora
   };
+  // valores por agente (ex.: o token de cada agente no CRM): a tela não mexe neles; quem grava é definirPorAgente
+  if (existente && existente.porAgente) plataforma.porAgente = existente.porAgente;
   if (existente) todas[todas.indexOf(existente)] = plataforma; else todas.push(plataforma);
   gravarTodas(todas);
   const sinc = existente ? sincronizarQuemTem(id) : [];
@@ -149,9 +151,11 @@ const aspas = (v) => '"' + String(v == null ? '' : v) + '"';
  * blocoEnvPara(['drive','ophir'], ['C:\\manual']) → texto do bloco (LF).
  * A primeira plataforma de cada tipo recebe também os nomes canônicos.
  */
-function blocoEnvPara(ids, manuaisPastas = []) {
+function blocoEnvPara(ids, manuaisPastas = [], agenteId = '') {
   const todas = lerTodas();
-  const permitidas = (ids || []).map(id => todas.find(p => p.id === id)).filter(Boolean);
+  // uma plataforma pode ter valores só para um agente (porAgente[id]); eles vencem os valores comuns no .env daquele agente
+  const permitidas = (ids || []).map(id => todas.find(p => p.id === id)).filter(Boolean)
+    .map(p => (agenteId && p.porAgente && p.porAgente[agenteId]) ? { ...p, variaveis: { ...(p.variaveis || {}), ...p.porAgente[agenteId] } } : p);
   const linhas = [INICIO];
   const tiposVistos = new Set();
   const pastas = [];
@@ -289,13 +293,14 @@ function mcpParaChamada(pasta) {
 function sincronizarAgente(idSistema) {
   const s = dep.lerRegistro()[idSistema];
   if (!s) return { ok: false, motivo: 'sistema não encontrado: ' + idSistema };
-  if (!s.trilha) return { ok: false, motivo: 'não é um agente do escritório (sem trilha): o .env dele não é tocado', pulado: true };
+  // agentes (trilha) e o CRM (crm: true) têm .env gerenciado; os outros sistemas não são tocados
+  if (!s.trilha && !s.crm) return { ok: false, motivo: 'não é um agente do escritório (sem trilha): o .env dele não é tocado', pulado: true };
   if (!s.pasta || !fs.existsSync(s.pasta)) return { ok: false, motivo: 'a pasta do agente não existe: ' + (s.pasta || '?'), pulado: true };
   const arq = path.join(s.pasta, '.env');
   let atual = '';
   try { atual = fs.readFileSync(arq, 'utf8'); } catch (e) { atual = ''; }
   let novo, bloco;
-  try { bloco = blocoEnvPara(s.plataformas || [], manuaisDe(atual)); novo = aplicarBloco(atual, bloco); }
+  try { bloco = blocoEnvPara(s.plataformas || [], manuaisDe(atual), idSistema); novo = aplicarBloco(atual, bloco); }
   catch (e) { return { ok: false, motivo: e.message }; }
   if (novo !== atual) fs.writeFileSync(arq, novo);
   const nomes = bloco.split('\n').map(l => /^([A-Z][A-Z0-9_]*)=/.exec(l)).filter(Boolean).map(m => m[1]);
@@ -314,6 +319,30 @@ function sincronizarTodos() {
   }
   return { sincronizados, pulados };
 }
+/** valores de uma plataforma só para um agente (ex.: CRM_TOKEN de cada agente); null apaga; sincroniza o .env dele */
+function definirPorAgente(idPlataforma, agenteId, vars) {
+  const todas = lerTodas();
+  const p = todas.find(x => x.id === idPlataforma);
+  if (!p) return { ok: false, motivo: 'plataforma não encontrada: ' + idPlataforma };
+  const aid = String(agenteId || '').trim();
+  if (!/^[a-z0-9][a-z0-9_-]*$/i.test(aid)) return { ok: false, motivo: 'id de agente inválido' };
+  p.porAgente = p.porAgente || {};
+  if (vars === null) delete p.porAgente[aid];
+  else {
+    const out = {};
+    for (const [k, v] of Object.entries(vars || {})) {
+      if (!NOME_VAR.test(String(k))) return { ok: false, motivo: 'nome de variável inválido: ' + k };
+      if (/[\r\n]/.test(String(v == null ? '' : v))) return { ok: false, motivo: 'valor com quebra de linha: ' + k };
+      out[k] = String(v == null ? '' : v);
+    }
+    p.porAgente[aid] = { ...(p.porAgente[aid] || {}), ...out };
+  }
+  p.atualizadaEm = new Date().toISOString();
+  gravarTodas(todas);
+  const s = dep.lerRegistro()[aid];
+  const sinc = s && Array.isArray(s.plataformas) && s.plataformas.includes(idPlataforma) ? sincronizarAgente(aid) : { ok: false, pulado: true };
+  return { ok: true, sincronizado: !!sinc.ok };
+}
 function definirDoAgente(idSistema, ids) {
   const bruto = dep.lerRegistroBruto();
   if (!bruto[idSistema]) return { ok: false, motivo: 'sistema não encontrado: ' + idSistema };
@@ -331,7 +360,7 @@ module.exports = {
   listar, obter, salvar, remover, criarLista, usadaPor,
   blocoEnvPara, aplicarBloco, separarBloco, manuaisDe,
   mcpConfigPara, gravarMcpDoAgente, mcpParaChamada,
-  sincronizarAgente, sincronizarTodos, definirDoAgente
+  sincronizarAgente, sincronizarTodos, definirDoAgente, definirPorAgente
 };
 
 /* ---------------- linha de comando (a skill /criar-escritorio usa) ---------------- */

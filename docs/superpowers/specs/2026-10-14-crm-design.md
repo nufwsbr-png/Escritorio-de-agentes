@@ -267,3 +267,24 @@ pedir (como `/criar-escritorio`).
    aplicada sem mexer no que já funciona.
 4. **Supabase pelo cadastro de plataformas** (tipo `banco`), nunca pelo
    chat, e tabelas com uma coluna `jsonb`: a mesma forma do local.
+
+## Decididas pelo dono em 14/10/2026 (depois da proposta acima)
+
+1. **Um token por agente.** A plataforma `crm` continua uma só (`CRM_URL`),
+   mas o `CRM_TOKEN` é gravado **por agente** (`porAgente` em
+   `plataformas.js`, novo): cada `.env` recebe o seu, o CRM guarda o hash de
+   cada um e sabe quem é quem pelo token, sem cabeçalho de identidade.
+2. **Atendimento em massa: ação direta, sem rodada do modelo.** Pergunta do
+   dono: "quando falamos em atendimento em massa, qual seria mais rápido?".
+   Resposta do construtor, adotada: a integração continua sendo do agente
+   (um dono por dado), mas o CRM não espera a próxima rodada do Claude. O
+   sistema de cada agente ganha `POST /acao` (com a `GATILHO_CHAVE`): o CRM
+   pede e o agente executa a ferramenta **na hora, por código, sem o
+   modelo**, dentro das mesmas cercas (`tools/base.js`, modo real, escopo,
+   plataforma permitida). Serve para o mecânico: criar evento na agenda,
+   gravar linha na planilha, mandar mensagem-modelo. O que precisa de
+   julgamento (escrever uma resposta, decidir o próximo passo) continua indo
+   pela rodada. Em massa, o custo por ação cai de uma rodada do Claude (30
+   a 60 s, centavos) para segundos e zero modelo. Entra na sub-etapa 4c.
+3. Estado do agente na ficha com espelho local: **ok**.
+4. Supabase pelo cadastro de plataformas, tabelas com `jsonb`: **ok**.

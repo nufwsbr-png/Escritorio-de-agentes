@@ -666,3 +666,33 @@ module.exports = {
   lerConfigCuki, configurar, configPublica, autorizar, desautorizar, canalPronto, mesmoNumero, testarWaha, qr, registrarWebhook,
   enviarTexto, avisarAutorizados, contextoConversa, conversar, briefing, enviarBriefing, receberWhatsapp, tratarMensagem, buscarNovas, iniciar, parar, LIMITE_HORA
 };
+
+/* ---------------- linha de comando ----------------
+   node cuki.js medir   mede o escritório por código e grava um laudo SEM a leitura do Claude (o que a skill /criar-crm usa; vermelho trava)
+   node cuki.js laudo   o último laudo gravado
+   O escritório precisa estar no ar para os agentes responderem /saude. */
+if (require.main === module) {
+  const UTIL = require('./util');
+  const { spawnSync } = require('child_process');
+  const ROOT = __dirname;
+  const DADOS = process.env.ESCRITORIO_DADOS || path.join(ROOT, 'data');
+  const REGISTRO = path.join(DADOS, 'sistemas.json');
+  const lerBruto = () => { try { return JSON.parse(fs.readFileSync(REGISTRO, 'utf8')); } catch (e) { return {}; } };
+  const lerRegistro = () => { const o = {}; for (const [id, s] of Object.entries(lerBruto())) { if (id.startsWith('_')) continue; if (s && s.pasta && !path.isAbsolute(s.pasta)) s.pasta = path.join(ROOT, s.pasta); o[id] = s; } return o; };
+  const gravarRegistro = (b) => fs.writeFileSync(REGISTRO, JSON.stringify(b, null, 2) + '\n');
+  const lerConfig = () => { try { return JSON.parse(fs.readFileSync(path.join(DADOS, 'config.json'), 'utf8')); } catch (e) { return {}; } };
+  const PLAT = require('./plataformas').init({ ROOT, DADOS, lerRegistro, lerRegistroBruto: lerBruto, gravarRegistro });
+  const MEM = require('./memoria').init({ ROOT, DADOS, lerRegistro, nomeDe: (id) => (lerRegistro()[id] || {}).nome || id });
+  const EST = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLAT, mensagens: MEM, avisar: null, ligar: null });
+  const AG = require('./agentes').init({ ROOT, PORT: Number(lerConfig().porta) || 4321, lerRegistro, lerRegistroBruto: lerBruto, gravarRegistro, config: lerConfig, plataformas: PLAT });
+  const ADM = require('./admin').init(ROOT, DADOS);
+  const AV = require('./avisos').init(DADOS, {});
+  const CLAUDE_BIN = UTIL.acharClaude();
+  const estadoClaude = async () => { try { const r = spawnSync(CLAUDE_BIN, ['auth', 'status'], { encoding: 'utf8', timeout: 8000 }); let j = null; try { j = JSON.parse(r.stdout || ''); } catch (e) {} return j ? { instalado: true, conectado: !!j.loggedIn } : { instalado: !r.error, conectado: false }; } catch (e) { return { instalado: false, conectado: false }; } };
+  module.exports.init({ DADOS, PORT: Number(lerConfig().porta) || 4321, lerRegistro, agentes: AG, plataformas: PLAT, esteiras: EST, admin: ADM, avisos: AV, memoria: MEM, lerConfig, estadoClaude, CLAUDE_BIN });
+  UTIL.rodarCli({
+    _ajuda: 'medir   mede o escritório por código e grava o laudo sem a leitura do Claude (semáforo e "o que fazer antes")\nlaudo   o último laudo gravado',
+    medir: async () => { const r = await analisar({ semClaude: true }); return r.ok ? { ok: true, geral: r.laudo.geral, areas: r.laudo.areas, medidas: ultimo().medidas, texto: r.laudo.texto } : r; },
+    laudo: () => { const u = ultimo(); return u ? { ok: true, nome: u.nome, quando: u.quando, geral: u.geral, areas: u.areas, texto: u.texto } : { ok: false, motivo: 'nenhum laudo ainda: rode node cuki.js medir' }; }
+  }, process.argv.slice(2));
+}

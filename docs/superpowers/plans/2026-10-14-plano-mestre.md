@@ -66,6 +66,8 @@ Esteiras, Cuki BOT e CRM (14/10/2026, planejado, a fazer):
   proposta pronta do Cuki BOT**. **Onde ficam as fichas (local ou Supabase)
   é pergunta do Criar CRM.** O **CRM é o único lugar da ficha** do cliente.
 
+CRM, design técnico aprovado (14/10/2026, "aprovado"): **um token por agente**; para atendimento em massa, **ação direta** (o CRM pede e o sistema do agente executa a ferramenta na hora, por código, sem rodada do modelo; o que exige julgamento vai pela rodada); estado do agente na ficha com espelho local; Supabase pelo cadastro de plataformas. Design: `specs/2026-10-14-crm-design.md`.
+
 ## Ordem das etapas
 
 A ordem é esta porque cada etapa é a fundação da seguinte: a esteira define
@@ -118,7 +120,7 @@ Design: `specs/2026-10-14-cuki-bot-design.md`, Parte 2.
 
 ### Etapa 4: Criar CRM (5 a 8 dias, em sub-etapas com ok entre elas)
 
-Design: `specs/2026-10-14-criar-crm-perguntas.md` (perguntas e híbrido) e o design técnico `specs/2026-10-14-crm-design.md` (escrito em 14/10/2026; aguarda aprovação do dono antes da 4a).
+Design: `specs/2026-10-14-criar-crm-perguntas.md` (perguntas e híbrido) e o design técnico `specs/2026-10-14-crm-design.md` (aprovado pelo dono em 14/10/2026).
 
 - [ ] 4a. Skill `/criar-crm`: chama o Cuki BOT (vermelho trava), faz as 6 perguntas essenciais + 5 ajustes com proposta pronta, inclui a pergunta "onde ficam as fichas" (local ou Supabase), grava `crm/config.json` pelos scripts.
 - [ ] 4b. O sistema `crm/`: contrato do escritório (`/saude`, `/painel`, `/log`, porta), camada de dados isolada (arquivos locais ou Supabase conforme a resposta), fichas, etapas (as da esteira), cargos, usuários (pessoas com login; agentes com token), histórico com autor, propostas pendentes, tarefas, importação.

@@ -32,7 +32,7 @@ async function subir() {
   DADOS = fs.mkdtempSync(path.join(os.tmpdir(), 'esc-dados-'));
   fs.writeFileSync(path.join(DADOS, 'sistemas.json'), JSON.stringify({ exemplo: { nome: 'Exemplo', tipo: 'local', pasta: path.join(ROOT, 'exemplo-agente'), comando: 'node', args: ['server.js'], porta: 4489, trilha: 'tarefa' } }));
   waha = await wahaFalso();
-  proc = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), ESCRITORIO_DADOS: DADOS, ESCRITORIO_SEM_VIGILIA: '1', ESCRITORIO_CUKI_SEM_CLAUDE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  proc = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), ESCRITORIO_DADOS: DADOS, ESCRITORIO_SEM_VIGILIA: '1', ESCRITORIO_CUKI_SEM_CLAUDE: '1', ESCRITORIO_CUKI_SEM_RELOGIO: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   for (let i = 0; i < 60; i++) { try { await fetch(URL + '/api/admin'); return; } catch (e) { await new Promise(r => setTimeout(r, 200)); } }
   throw new Error('o escritório não subiu');
 }
