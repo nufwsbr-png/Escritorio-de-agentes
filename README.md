@@ -45,6 +45,62 @@ Clique no computador dele e em **Ligar** para ver o painel do dono; nele,
 rode `amostras/caso-01` em **Ensaio** e veja o agente ler um pedido de cliente
 e planejar o resumo sem tocar em nada.
 
+## Primeiros passos: do clone ao primeiro agente
+
+Baixou o repositório pela primeira vez? É esta a ordem. Cada passo aponta
+para a seção que o explica.
+
+**Antes de tudo**
+
+1. Instale o Node.js 18 ou mais novo e o Claude Code. Rode `claude auth login`
+   com a conta que vai pagar o uso (veja [Custos](#custos)).
+2. Clone e suba uma vez, como na seção [Começar](#começar). Abra
+   http://localhost:4321: a tela avisa que o escritório ainda não foi aberto.
+   É o esperado, ele vem só com o agente de exemplo e sem configuração.
+3. Antes de contratar alguém, ligue o exemplo e rode `amostras/caso-01` em
+   **Ensaio** no painel dele. É o jeito mais rápido de entender o que é uma
+   rodada: o agente lê o pedido, planeja e não toca em nada.
+
+**Criar o escritório**
+
+4. Abra a pasta no Claude Code e digite `/criar-escritorio`. A skill faz dez
+   perguntas, uma por mensagem (negócio, setores, plataformas, marca e
+   planta, senha do administrador, avisos, reunião, conta do Claude, primeiro
+   agente, o que fazer com o exemplo) e grava tudo pelos scripts do projeto.
+   Você não edita arquivo nenhum. Detalhes em
+   [Abrir um escritório novo](#abrir-um-escritório-novo-criar-escritorio).
+5. Guarde a senha do administrador que ela mostra **uma única vez**.
+6. De volta à tela, entre como administrador (🔐 Admin) e cole as chaves em
+   **🔌 Plataformas** e, se quiser avisos no celular, em **🔔 Avisos**. Chave
+   nunca passa pelo chat. Veja [Plataformas](#plataformas-um-cadastro-permissão-por-agente)
+   e [Avisos no celular](#avisos-no-celular).
+
+**Criar os agentes**
+
+7. Na aba **Contratar**, **＋ contratar agente**. Escolha o tipo
+   (atendimento no WhatsApp, agente de tarefa por setor, ou 👀 aprende
+   vendo), dê nome e porta e marque as plataformas que ele pode usar. Veja
+   [Contratar um agente](#contratar-um-agente).
+8. O escritório cria `agentes/<nome>/` com a anatomia inteira e abre o
+   monitor em **Conversar › Construir**. O construtor segue os 15 componentes
+   um por vez, com teste no fim de cada; quando o portão é marcado, o boneco
+   vira funcionário. Veja [A anatomia de um agente](#a-anatomia-de-um-agente).
+9. O caminho mais curto é **aprende vendo**: você faz a tarefa uma vez em
+   **Conversar › 👀 Ensinar**, clica em **✅ Tarefa concluída**, e a
+   demonstração vira a skill do agente.
+
+**Depois que a equipe trabalha**
+
+10. `/criar-esteira` quando o trabalho passa de um agente a outro. Veja
+    [Esteiras](#esteiras-o-trabalho-passando-de-agente-em-agente).
+11. **🩺 Cuki BOT** para o laudo do escritório, e `/criar-crm` quando quiser
+    pessoas e agentes na mesma ficha. O Cuki BOT trava o Criar CRM enquanto o
+    escritório não tem agente trabalhando de verdade. Veja
+    [Cuki BOT](#cuki-bot-a-ia-analista) e [Criar CRM](#criar-crm).
+12. No Windows, rode `CRIAR ATALHO.ps1` e, para subir junto com o sistema,
+    crie uma tarefa no Agendador que execute `INICIAR ESCRITORIO.cmd` no
+    logon. Veja [Roteiro de instalação](#roteiro-de-instalação).
+
 ## Abrir um escritório novo: `/criar-escritorio`
 
 A abertura acontece no Claude Code, não na tela. Abra esta pasta no Claude
