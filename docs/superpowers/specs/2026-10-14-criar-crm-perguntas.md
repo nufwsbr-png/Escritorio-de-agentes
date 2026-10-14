@@ -52,73 +52,102 @@ Com isso, pessoa e agente não se atropelam porque nunca estão com a mesma
 entidade ao mesmo tempo, e tudo que o agente faz continua passando pelas
 mesmas cercas de hoje.
 
-## Pré-conferência (não é pergunta; o criador roda antes de perguntar)
+## Cuki BOT: a IA analista que confere antes de perguntar
 
-Se falhar, o "Criar CRM" para e diz o que falta:
+Decisão do dono (14/10/2026): a conferência não é uma lista de checagens
+escondida no criador; é uma **IA analista** do escritório, chamada
+**Cuki BOT**, que roda para verificar a saúde do fluxo, dos agentes e a
+aptidão para o CRM, e entrega um **laudo** em linguagem simples. Ela pode
+ser chamada a qualquer hora pelo botão 🩺 Cuki BOT (exame periódico do
+escritório) e é chamada obrigatoriamente no começo do Criar CRM.
 
-1. Todo agente que vai entrar no CRM passou o PORTÃO (é funcionário, não
-   treinamento). Agente em construção fica de fora até concluir.
-2. As plataformas que os agentes usam têm as variáveis preenchidas.
-3. O Claude Code está conectado e há senha de administrador.
-4. Há pelo menos uma entidade real já tratada por agente (prova de que o
-   fluxo roda), lida de `memoria/entidades/` dos agentes.
+Regra da anatomia que vale aqui: **código para o garantido, modelo para o
+interpretado.** O Cuki BOT mede por código e explica pelo modelo.
 
-## As perguntas, na ordem
+O que ele mede (código, sem Claude):
 
-Uma por mensagem, como no `/criar-escritorio`. Entre parênteses, o que a
-resposta decide.
+| Área | O que confere | Verde | Amarelo | Vermelho |
+|---|---|---|---|---|
+| Agentes | passou o PORTÃO, está ligado, `/saude` responde, última rodada sem erro, perguntas ao dono pendentes, lições propostas acumuladas | tudo ok | em treinamento ou com pergunta parada há mais de 2 dias | fora do ar, falha de verificação ou erro na última rodada |
+| Plataformas | variáveis preenchidas, pasta existe, API responde a um `GET` simples, MCP conecta | tudo preenchido e respondendo | preenchida mas sem teste possível | vazia ou sem resposta |
+| Fluxo | entidades tratadas nos últimos 30 dias, por agente; proporção aprovado/rejeitado; quanto tempo em proposta | há entidades reais e aprovações | só amostras | nenhuma entidade real |
+| Base | Claude Code conectado, senha de administrador, avisos configurados, escritório aberto (`config.json`) | tudo | falta avisos | sem Claude ou sem senha |
+| Aptidão para o CRM | agentes aptos (verde), entidade de cada um (lida do progresso), plataformas usáveis, sugestão de etapas e cargos | 1+ agente apto e 1+ plataforma | agentes aptos sem plataforma | nenhum agente apto |
 
-1. **O que o CRM gerencia.** "Qual é a coisa central que o CRM acompanha:
-   clientes, leads, pacientes, processos, pedidos? Como você chama uma e
-   várias, e o que identifica cada uma sem confusão: telefone, CPF, número do
-   processo?" (a entidade, o nome dela na tela, a chave de deduplicação)
-2. **O caminho que ela percorre.** "Quais são as etapas, na ordem, do começo
-   ao fim? Ex.: novo contato, qualificado, proposta enviada, fechado, perdido."
-   (o funil; depois, por etapa, quem move)
-3. **Os agentes que entram e o cargo de cada um.** O criador lista os agentes
-   concluídos do escritório com o setor. "Quais entram no CRM? O cargo de
-   cada um fica o setor dele, ou quer renomear? Ex.: Tati, Financeiro →
-   'Faturamento'." (funcionários-agentes e cargos)
-4. **Cargos para pessoas.** "Além dos cargos dos agentes, quais cargos de
-   pessoas existem? Ex.: vendedor, recepção, gerente, financeiro, dono. Quem é
-   o administrador do CRM?" (cargos humanos, administrador)
-5. **O que cada cargo pode fazer.** Para cada cargo, pessoa ou agente: "vê
-   todas as entidades ou só as suas? Edita? Muda de etapa? Exporta? Vê dados
-   sensíveis?" Apagar ninguém apaga: arquiva. (permissões por cargo; a do
-   agente vira a cerca da ferramenta dele)
-6. **Quem é responsável em cada etapa.** "Em cada etapa, quem cuida por
-   padrão: uma pessoa, um agente, ou o agente propõe e a pessoa aprova? E
-   quando uma pessoa assume uma entidade, o agente para nela até ela devolver;
-   está bom assim?" (a divisão de trabalho; é a regra do bastão)
-7. **Por onde entram entidades novas.** "Como chegam: pelo WhatsApp do
-   atendente, formulário do site, planilha, importação de uma base que já
-   existe, cadastro à mão? Tem base para importar? De onde e em que formato?"
-   (fontes de entrada e importação inicial)
-8. **As integrações: espelho ou fonte.** O criador lista as plataformas
-   cadastradas. "Para cada uma que o CRM vai usar: o CRM só lê dela, ou é ele
-   que escreve? Ex.: agenda, o CRM cria o evento e a agenda só reflete; ou a
-   agenda é a fonte e o CRM só mostra." (uma fonte da verdade por dado)
-9. **A ficha.** "Quais campos a ficha precisa ter? Quais são obrigatórios? E
-   quais são sensíveis, que os agentes veem mascarados e que nunca saem em
-   aviso ou resumo?" (campos, obrigatórios, LGPD)
-10. **Tarefas e lembretes.** "O CRM tem tarefas e follow-ups? Quem cria,
-    pessoa, agente, ou agente propõe? Lembrete por onde: pelos avisos que o
-    escritório já tem (ntfy ou WhatsApp)?" (tarefas, prazos, canal de aviso)
-11. **O que precisa de aprovação humana.** "O que um agente faz sozinho e o
-    que espera uma pessoa aprovar: mandar mensagem a cliente, mudar de etapa,
-    registrar valor acima de X?" (aprovações e limites; vira modo proposta
-    por tipo de ação)
-12. **Onde roda e quem acessa.** "Nesta máquina, na mesma rede do escritório,
-    ou hospedado? Pessoas acessam de fora? Login por senha; precisa de
-    horário de acesso?" (hospedagem, acesso, tranca)
-13. **Números e reunião.** "Que números o CRM deve mostrar ao gerente, e quais
-    entram na reunião dos agentes para cobrar a meta que já está configurada?"
-    (painel e integração com a reunião)
-14. **Nome e marca.** "Como o CRM se chama? Reaproveita o logo e a cor do
-    escritório?" (nome, marca)
+O que ele escreve (uma rodada do Claude Code, só leitura, com as medidas
+acima como entrada): o **laudo**, em `data/cuki/<data>.md`, com um semáforo
+por área, "o que fazer antes" em frases curtas e, se verde, as **sugestões**
+que viram o rascunho das respostas do CRM: a entidade, as etapas, os cargos
+dos agentes, as integrações e quem cuida de cada etapa. Nenhum valor de
+variável no laudo, só nomes.
 
-Perguntas 1, 2, 3 e 6 são as que mais mudam o desenho; 9 e 11 são as de
-segurança; o resto pode receber padrão e ser ajustado depois.
+Se alguma área está vermelha, o Criar CRM não começa: mostra o laudo e o que
+fazer. Amarelo começa, com o aviso no laudo. Cuki BOT pode ganhar um boneco
+na recepção do escritório isométrico, para a pessoa saber quem é.
+
+## As perguntas, simples e com resposta pronta para confirmar
+
+Decisão do dono (14/10/2026): as perguntas anteriores estavam difíceis para
+quem não é técnico. Regra nova: **toda pergunta vem com uma proposta do Cuki
+BOT e a pessoa responde "sim", escolhe uma opção ou corrige em uma frase.**
+Nada de pedir que a pessoa invente estrutura. Linguagem do dia a dia, sem
+"entidade", "funil", "permissão", "integração".
+
+Parte 1, o essencial (seis perguntas; sem elas o CRM não existe):
+
+1. **O que a gente acompanha.** "Pelo que vi, seus agentes cuidam de
+   *clientes*. O CRM vai acompanhar clientes, certo? E para não cadastrar a
+   mesma pessoa duas vezes, uso o telefone. Pode ser?" (sim / "é paciente" /
+   "use o CPF")
+2. **O caminho de cada um.** "Um cliente passa por estes passos: *novo →
+   conversando → proposta enviada → fechado*, e pode ser *perdido* em
+   qualquer um. Está certo ou falta algum passo?" (sim / acrescenta ou tira)
+3. **Quem trabalha no CRM.** "Vou colocar estes agentes como funcionários:
+   *Tati (Financeiro)*, *Léo (Prospecção)*. E pessoas de verdade: quem são, e
+   o que cada uma faz? Basta nome e função, ex.: Ana, vendedora." (lista
+   curta; o Cuki BOT transforma função em cargo)
+4. **Quem cuida de cada passo.** "Para cada passo, me diga quem cuida: *novo*
+   → Léo (agente); *conversando* → Ana; *proposta* → Tati prepara e Ana
+   aprova; *fechado* → Ana. Está bom assim?" (sim / troca um nome)
+5. **Quem manda.** "Quem é o chefe do CRM, que vê tudo e aprova o que os
+   agentes propõem?" (um nome)
+6. **O que o agente faz sozinho.** Três opções: "(a) tudo passa por uma
+   pessoa antes; (b) só mensagem para cliente e dinheiro passam por uma
+   pessoa; (c) o agente faz sozinho o que já faz hoje no escritório."
+   Recomendado: (b). (a / b / c)
+
+Parte 2, ajustes (cinco perguntas; todas têm padrão e podem ser respondidas
+"depois"):
+
+7. **Por onde chegam os novos.** "Novos clientes vão entrar pelo WhatsApp do
+   *Léo* e por cadastro à mão. Tem alguma planilha ou lista antiga para eu
+   trazer para dentro?" (não / "sim, esta planilha")
+8. **Agenda e planilha.** "Quando alguém marcar um horário no CRM, eu crio o
+   evento na sua agenda do Google. E a planilha *Controle* continua sendo
+   atualizada pela *Tati*. Pode ser?" (sim / não)
+9. **Dados que só o chefe vê.** "Tem algum dado que o resto da equipe e os
+   agentes não devem ver inteiro, tipo CPF ou valor do contrato?" (não /
+   lista)
+10. **Avisos.** "Quando um agente precisar de alguém ou um cliente ficar
+    parado muitos dias, eu aviso pelo mesmo celular dos avisos do escritório.
+    Pode ser?" (sim / outro número)
+11. **Acesso de fora.** "As pessoas vão usar o CRM só aqui no escritório, ou
+    também de casa e do celular?" (só aqui / de fora também; define
+    hospedagem e tranca)
+
+Fica de fora da abertura, com padrão: campos da ficha (nome, telefone,
+e-mail, origem, observações, mais os que os agentes já usam), tarefas e
+lembretes (ligados, criados por pessoa ou propostos por agente), números do
+painel (os da reunião já configurada), nome e logo (reaproveita a marca do
+escritório). Tudo editável depois em ⚙️ Ajustes do CRM.
+
+Como o Cuki BOT acha as propostas: a entidade e as etapas vêm do progresso e
+da constituição dos agentes ("Entidade: cliente", seções de regras), dos
+nomes das pastas em `saidas/` e das etapas que já aparecem nos estados das
+entidades; os cargos vêm dos setores do escritório; as integrações vêm das
+plataformas marcadas para cada agente; o celular dos avisos vem de
+`avisos.json`. Quando não encontra, propõe o padrão do ramo (clínica,
+advocacia, loja) lido de `config.json` e pergunta.
 
 ## O que seria criado (esboço, para o design)
 
