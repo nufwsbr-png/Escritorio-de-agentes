@@ -552,3 +552,4 @@ button{font-family:inherit;color:inherit}
 .ck-laudo h3,.ck-laudo h4{margin:10px 0 6px;font-size:14px} .ck-laudo h3:first-child{margin-top:0}
 .ck-laudo p{margin:4px 0} .ck-laudo ol,.ck-laudo ul{margin:4px 0 8px 18px} .ck-laudo code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;font-size:12px}
 .ck-tab{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12.5px} .ck-tab th,.ck-tab td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+.ckw-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px} .ckw-item .btn{padding:2px 8px;flex:0}

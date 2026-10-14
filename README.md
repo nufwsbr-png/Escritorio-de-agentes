@@ -266,6 +266,27 @@ propostas para o CRM. Laudos ficam em `data/cuki/laudos/`. Rodar a análise é
 do administrador; ler o laudo, qualquer um. Vermelho em qualquer área trava o
 Criar CRM.
 
+**O Cuki BOT no WhatsApp.** Com um número só dele, pelo
+[WAHA](https://waha.devlike.pro) (servidor gratuito que roda em Docker), o
+Cuki BOT **avisa** os números autorizados de tudo que o escritório avisa
+(sistema caiu, pergunta ao dono, esteira esperando aprovação, resumo do dia)
+e **conversa** com eles: "como estão os agentes?", "tem algo esperando eu
+aprovar?", "briefing". Configura-se em 🩺 Cuki BOT › 📱 WhatsApp (ou em ⚙️
+Ajustes), só pelo administrador: endereço, chave e sessão do WAHA (gravados
+em `data/cuki.json`, fora do git), **Testar** mostra o estado e o QR para
+escanear com o celular do Cuki BOT, e a lista de **números autorizados**
+(nome, número, papel). Só esses números recebem resposta; os outros são
+ignorados e anotados em `data/cuki/recusados.log`, sem o conteúdo. As
+mensagens chegam de dois jeitos: pela **busca** (o escritório pergunta ao WAHA
+a cada poucos segundos; funciona em qualquer rede e é o padrão) e, opcional,
+pelo **webhook** `POST /api/cuki/whatsapp` com um segredo gerado, para
+resposta na hora quando o WAHA alcança o escritório. A resposta é uma rodada
+do Claude Code **sem ferramentas** sobre um contexto montado por código: só
+estados, contagens e nomes de agentes; nenhum `.env`, nenhuma chave, nenhum
+nome de cliente final. O Cuki BOT informa; para agir, a pessoa usa a tela.
+Limite de 20 mensagens por número por hora. O **briefing do dia** sai sozinho
+na hora do resumo (🔔 Avisos) e quando alguém escreve "briefing".
+
 ## O monitor de cada agente
 
 | Botão | O que faz |

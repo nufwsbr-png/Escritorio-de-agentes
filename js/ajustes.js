@@ -27,9 +27,10 @@ const AJUSTES = (() => {
     const corpo = $('#modal-body');
     corpo.innerHTML = '<p class="hint">lendo a configuração…</p>';
     $('#modal').classList.remove('hidden');
-    let a = null, c = null;
+    let a = null, c = null, ck = null;
     try { a = await api('/api/ajustes'); } catch (e) { a = null; }
     try { c = await api('/api/claude'); } catch (e) { c = null; }
+    try { ck = (await api('/api/cuki/laudo')).whatsapp || null; } catch (e) { ck = null; }
     if (!a) { corpo.innerHTML = '<p class="hint">o escritório não respondeu</p>'; return; }
     const admin = ADMIN.ehAdmin();
     const re = a.reuniao || {}, meta = re.meta || {};
@@ -50,6 +51,8 @@ const AJUSTES = (() => {
           <div class="hint">${a.temSenhaAdmin ? 'senha de administrador definida: o cliente opera, o administrador constrói' : 'SEM senha de administrador: tudo aberto. Defina em 🔐 Admin antes de entregar'} · <a href="#" id="aj-admin">abrir 🔐 Admin</a></div></div>
         <div class="aj-bloco"><b>Avisos</b>
           <div class="hint">${a.avisos ? `ntfy ${a.avisos.ntfy.ativo ? 'ligado (' + esc(a.avisos.ntfy.topico) + ')' : 'desligado'} · WhatsApp ${a.avisos.whatsapp.ativo ? 'ligado (' + esc(a.avisos.whatsapp.fone) + (a.avisos.whatsapp.temChave ? '' : ', falta a chave do CallMeBot') + ')' : 'desligado'}` : '—'} · <a href="#" id="aj-avisos">abrir 🔔 Avisos</a></div></div>
+        <div class="aj-bloco"><b>Cuki BOT no WhatsApp</b>
+          <div class="hint">${ck ? (ck.pronto ? 'ligado: ' + ck.autorizados + ' número(s) autorizado(s)' + (ck.busca ? ', busca a cada poucos segundos' : '') + (ck.briefing ? ', briefing diário' : '') : ck.configurado ? 'WAHA cadastrado, mas nenhum número autorizado ainda' : 'desligado: cadastre o WAHA e os números autorizados') : '—'} · <a href="#" id="aj-cuki">configurar 📱</a></div></div>
         <div class="aj-bloco"><b>Reunião</b>
           <div class="hint">${re.automatica ? 'automática, ' + (re.dias || []).map(d => DIAS[d]).join(' e ') + ' às ' + esc(re.hora) + 'h' : 'só quando você clica em Reunir agora'}${meta.descricao ? ' · meta: ' + esc(meta.descricao) + ' ' + esc(meta.feito || 0) + '/' + esc(meta.alvo || 0) + ' ' + esc(meta.unidade || '') : ''}</div></div>
         <div class="aj-bloco"><b>Agentes</b>
@@ -63,6 +66,7 @@ const AJUSTES = (() => {
     $('#aj-plat').onclick = e => { e.preventDefault(); PLATAFORMAS_UI.abrir(); };
     $('#aj-admin').onclick = e => { e.preventDefault(); ADMIN.abrir(); };
     $('#aj-avisos').onclick = e => { e.preventDefault(); AVISOS_UI.abrir(); };
+    $('#aj-cuki').onclick = e => { e.preventDefault(); CUKI.ajustes(); };
     if (!admin) { /* o cliente vê tudo isso; só os botões de escrita exigem a senha, e cada modal já cobra */ }
   }
 

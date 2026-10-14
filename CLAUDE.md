@@ -37,6 +37,7 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 | Abertura do escritório (as dez perguntas) | `abertura.js`, skill `/criar-escritorio` | a skill, pelos scripts |
 | Esteiras: o trabalho passando de agente em agente, aprovação pela tela | `esteiras.js`, `data/esteiras.json`, estado em `data/esteiras/<esteira>/`, skill `/criar-esteira`; no agente, `GET /entidades` e `POST /gatilho` com `GATILHO_CHAVE` | o botão 🧵 Esteiras, `node esteiras.js`, a skill |
 | Cuki BOT, a IA analista: medidas, semáforo, laudo (sem ferramentas, sem segredos) | `cuki.js`, `data/cuki/laudos/`, boneco na recepção | o botão 🩺 Cuki BOT (analisar é do administrador) |
+| Cuki BOT no WhatsApp (WAHA): avisos e conversa com os números autorizados, busca e webhook, briefing diário | `cuki.js` (parte 2), `data/cuki.json` (WAHA, segredo do webhook, autorizados), `data/cuki/conversas.json`, `data/cuki/recusados.log`; canal `cuki` em `avisos.js`; rota `POST /api/cuki/whatsapp` | 🩺 Cuki BOT › 📱 WhatsApp (administrador) |
 | Agente que aprende vendo: modo Ensinar, "Tarefa concluída", skills aprendidas | `ensino.js`; no agente, `ensino/` (fora do git) e `.claude/skills/<tarefa>/SKILL.md` | o servidor (canal de ensino da conversa) e a destilação, na pasta do agente |
 | Planta: salas lidas da planta do cliente | `planta.js`, `data/planta.json` | a skill, `node planta.js gerar` |
 | Memória do escritório, recados e propostas | `memoria.js`, `data/mensagens.json`, `data/propostas.json` | o servidor |

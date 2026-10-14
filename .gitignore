@@ -25,3 +25,6 @@ exemplo-agente/memoria/execucoes.log
 exemplo-agente/memoria/sessoes.json
 exemplo-agente/memoria/aprovacoes.json
 exemplo-agente/testes/
+
+# o Cuki BOT: laudos, conversas do WhatsApp e números recusados
+data/cuki/

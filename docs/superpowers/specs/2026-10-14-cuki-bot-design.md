@@ -66,6 +66,19 @@ Boneco: Cuki BOT ganha um boneco na recepção do isométrico, com a plaquinha
   o segredo são descartadas. Quando o escritório não é alcançável pelo WAHA
   (máquinas diferentes), a tela diz o que fazer.
 
+**Como as mensagens chegam (decisão do construtor na etapa 3, 14/10/2026):**
+o webhook acima continua, mas vira o caminho opcional "resposta na hora". O
+caminho padrão é a **busca**: o escritório pergunta ao WAHA, a cada poucos
+segundos, as últimas mensagens de cada número autorizado
+(`GET /api/{sessao}/chats/{numero}@c.us/messages?limit=5`). Motivo: o WAHA
+quase sempre roda em Docker, e de dentro do Docker ele não alcança um
+escritório que escuta só em `127.0.0.1`; sem a busca, a conversa não
+funcionaria na instalação típica do cliente. Os dois caminhos podem trazer a
+mesma mensagem: o id dela evita resposta dupla. O que chegou antes de o
+escritório subir não é respondido. A rota do webhook é a única que passa pela
+tranca do `Host` do servidor, porque a tranca dela é o segredo (na query, no
+cabeçalho `X-Escritorio-Segredo` ou como HMAC sha512 em `X-Webhook-Hmac`).
+
 **Avisos:** `avisos.js` ganha o canal `cuki` (WAHA `POST /api/sendText`).
 Quando configurado, vira o canal preferido para os números autorizados; ntfy
 e CallMeBot continuam como estão para quem já usa. Tudo que hoje é aviso

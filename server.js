@@ -597,8 +597,12 @@ ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas:
 const ESTEIRAS = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLATAFORMAS, mensagens: MEMORIA, ligar: (id) => ligar(id),
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}) });
 if (!process.env.ESCRITORIO_SEM_VIGILIA) ESTEIRAS.iniciar();
-// Cuki BOT, a IA analista: mede por código (agentes, plataformas, fluxo, base, aptidão para o CRM) e explica pelo modelo, sem ferramentas
-const CUKI = require('./cuki').init({ DADOS, lerRegistro, agentes: AGENTES, plataformas: PLATAFORMAS, esteiras: ESTEIRAS, admin: ADMIN, avisos: AVISOS, lerConfig, estadoClaude: () => estadoClaude(), CLAUDE_BIN });
+// Cuki BOT, a IA analista: mede por código (agentes, plataformas, fluxo, base, aptidão para o CRM) e explica pelo modelo, sem ferramentas.
+// Parte 2: o WhatsApp dele pelo WAHA — avisa e conversa com os números autorizados (canal `cuki` dos avisos; busca e briefing no relógio dele)
+const CUKI = require('./cuki').init({ DADOS, PORT, lerRegistro, agentes: AGENTES, plataformas: PLATAFORMAS, esteiras: ESTEIRAS, admin: ADMIN, avisos: AVISOS, memoria: MEMORIA,
+  estado: () => estado(), reuniao: () => REUNIAO, lerConfig, estadoClaude: () => estadoClaude(), CLAUDE_BIN });
+AVISOS.registrarCanal('cuki', (t, x, p) => CUKI.avisarAutorizados(t, x, p), () => CUKI.canalPronto());
+if (!process.env.ESCRITORIO_CUKI_SEM_RELOGIO) CUKI.iniciar();
 const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
@@ -828,6 +832,22 @@ const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const rota = decodeURIComponent(url.pathname);
 
+  /* O webhook do WAHA (o WhatsApp do Cuki BOT) chega de fora do localhost:
+     outra máquina, ou o Docker. A tranca dele é o segredo gerado, conferido
+     no cuki.js; o Host não vale aqui. A rota responde na hora e trata a
+     mensagem solta. Sem cookie, sem admin: ela só lê e responde pelo WAHA. */
+  if (rota === '/api/cuki/whatsapp' && req.method === 'POST') {
+    let bruto = '';
+    req.on('data', c => { bruto += c; if (bruto.length > 2e5) req.destroy(); });
+    req.on('end', () => {
+      let corpo = {};
+      try { corpo = bruto ? JSON.parse(bruto) : {}; } catch (e) { return json(res, 400, { ok: false, motivo: 'json inválido' }); }
+      const r = CUKI.receberWhatsapp({ corpo, cabecalhos: req.headers, segredo: url.searchParams.get('segredo'), bruto });
+      json(res, r.status, r.resposta);
+    });
+    return;
+  }
+
   /* Só o próprio escritório, aberto nesta máquina, fala com ele.
      O Host barra DNS rebinding (um site cujo domínio aponta para 127.0.0.1);
      o Origin barra outro site aberto no navegador mandando POST para cá, o
@@ -897,6 +917,22 @@ const servidor = http.createServer(async (req, res) => {
     if (CUKI.estado().rodando) return json(res, 409, { ok: false, motivo: 'já tem uma análise em andamento' });
     CUKI.analisar().then(r => { if (!r.ok) console.log('  🩺 Cuki BOT: ' + r.motivo); });   // solto: a tela acompanha por GET /api/cuki/laudo
     return json(res, 202, { ok: true, rodando: true });
+  }
+  /* ---- Cuki BOT no WhatsApp (WAHA): tudo de administrador; a chave do WAHA nunca volta para a tela ---- */
+  if (rota.startsWith('/api/cuki/') && rota !== '/api/cuki/laudo') {
+    if (!admin) return soAdmin();
+    if (rota === '/api/cuki/config' && req.method === 'GET') return json(res, 200, CUKI.configPublica());
+    if (rota === '/api/cuki/config' && req.method === 'PUT') return corpoJson(req, 2e4).then(b => json(res, 200, CUKI.configurar(b))).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    if (rota === '/api/cuki/autorizados' && req.method === 'POST') return corpoJson(req, 1e4).then(b => { const r = CUKI.autorizar(b); json(res, r.ok ? 200 : 400, r); }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    const mDel = /^\/api\/cuki\/autorizados\/([0-9]+)$/.exec(rota);
+    if (mDel && req.method === 'DELETE') { const r = CUKI.desautorizar(mDel[1]); return json(res, r.ok ? 200 : 404, r); }
+    if (rota === '/api/cuki/testar' && req.method === 'POST') return CUKI.testarWaha().then(r => json(res, 200, r));
+    if (rota === '/api/cuki/qr' && req.method === 'GET') return CUKI.qr().then(r => json(res, 200, r));
+    if (rota === '/api/cuki/webhook' && req.method === 'POST') return CUKI.registrarWebhook().then(r => json(res, 200, r));
+    if (rota === '/api/cuki/whatsapp/testar' && req.method === 'POST')
+      return CUKI.avisarAutorizados(lerConfig().nome, 'Teste do Cuki BOT. Se isto chegou, os avisos e a conversa pelo WhatsApp estão funcionando. Responda "oi" para ver o que posso dizer.', 'normal')
+        .then(r => json(res, 200, { ok: r != null && /^ok/.test(r), res: r || 'WhatsApp do Cuki BOT não configurado ou sem número autorizado' }));
+    if (rota === '/api/cuki/briefing' && req.method === 'POST') return CUKI.enviarBriefing().then(r => json(res, r.ok ? 200 : 400, r));
   }
   /* ---- esteiras: definir é do administrador; entrar, aprovar e devolver são de quem opera ---- */
   if (rota === '/api/esteiras' && req.method === 'GET') return json(res, 200, ESTEIRAS.estado());

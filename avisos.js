@@ -97,6 +97,10 @@ async function avisar(titulo, texto, prioridade = 'normal', forcar = false) {
     res.whatsapp = await viaWhatsapp(c.whatsapp.fone, c.whatsapp.apikey);
     for (const e of (c.whatsapp.extras || [])) if (e && e.fone && e.apikey) res['whatsapp:' + e.fone] = await viaWhatsapp(e.fone, e.apikey);
   }
+  // canais que o servidor registra (hoje: `cuki`, o WhatsApp do Cuki BOT pelo WAHA); cada um decide sozinho se está pronto
+  for (const [nome, canal] of Object.entries(canais)) {
+    try { const r = await canal.enviar(titulo, texto, prioridade); if (r != null) res[nome] = r; } catch (e) { res[nome] = String(e && e.message || e); }
+  }
   c.historico.unshift({ quando: new Date().toISOString(), titulo, texto, res });
   c.historico = c.historico.slice(0, 50);
   gravar(c);
@@ -107,6 +111,8 @@ async function avisar(titulo, texto, prioridade = 'normal', forcar = false) {
    Uma vez por dia, na hora marcada. Quem monta as linhas é o servidor
    (hoje: sistemas que caíram e não voltaram). Só manda se houver o que dizer. */
 let fonte = { nome: () => 'Escritório', resumo: async () => [] };
+const canais = {};   // nome -> { enviar(titulo, texto, prioridade) -> string | null, pronto() -> boolean }
+const algumCanalExtra = () => Object.values(canais).some(c => { try { return c.pronto(); } catch (e) { return false; } });
 async function montarResumo() {
   try { return await fonte.resumo(); } catch (e) { return []; }
 }
@@ -115,7 +121,7 @@ let ultimoResumo = null;
 function agendarResumo() {
   setInterval(async () => {
     const c = ler();
-    if (!c.resumo.ativo || (!c.ntfy.ativo && !c.whatsapp.ativo)) return;
+    if (!c.resumo.ativo || (!c.ntfy.ativo && !c.whatsapp.ativo && !algumCanalExtra())) return;
     const d = new Date();
     const dia = d.toDateString();
     if (ultimoResumo === dia) return;
@@ -129,6 +135,9 @@ function agendarResumo() {
 module.exports = {
   init(dir, f) { ARQ = path.join(dir, 'avisos.json'); if (f) fonte = Object.assign(fonte, f); ler(); agendarResumo(); return module.exports; },
   ler, avisar, montarResumo,
+  /* o servidor registra um canal a mais: enviar() devolve o resultado em texto, ou null quando o canal não está configurado */
+  registrarCanal(nome, enviar, pronto) { canais[String(nome)] = { enviar, pronto: pronto || (() => true) }; return module.exports; },
+  canaisProntos() { return Object.entries(canais).filter(([, c]) => { try { return c.pronto(); } catch (e) { return false; } }).map(([n]) => n); },
   configurar(corpo) {
     const c = ler();
     if (corpo.ntfy) {
@@ -164,6 +173,7 @@ module.exports = {
     return { ntfy: c.ntfy,
              whatsapp: { ativo: c.whatsapp.ativo, fone: c.whatsapp.fone, temChave: !!c.whatsapp.apikey,
                          extras: (c.whatsapp.extras || []).map(e => ({ fone: e.fone, temChave: !!e.apikey })) },
+             canais: module.exports.canaisProntos(),
              resumo: c.resumo, historico: c.historico.slice(0, 15) };
   }
 };

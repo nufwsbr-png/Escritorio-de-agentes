@@ -112,6 +112,11 @@ async function cenarioPadrao(b) {
   ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Ajustes'), 'Ajustes abre');
   ok(await b.ev('!!document.querySelector(".aj-status")'), 'Ajustes mostra o status do Claude Code');
   ok(await b.ev('!!document.querySelector(".aj-aviso")'), 'Ajustes avisa que não foi aberto');
+  ok(await b.ev('document.getElementById("modal-body").textContent.includes("Cuki BOT no WhatsApp")'), 'Ajustes mostra o bloco do Cuki BOT no WhatsApp');
+  await b.ev('document.getElementById("aj-cuki").click()'); await espera(1200);
+  ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Cuki BOT no WhatsApp'), 'a configuração do WhatsApp do Cuki BOT abre');
+  ok(await b.ev('!!document.getElementById("ckw-url") && !!document.getElementById("ckw-add") && !!document.getElementById("ckw-webhook")'), 'tem WAHA, autorizados e webhook');
+  ok(await b.ev('document.getElementById("ckw-chave").type === "password" && document.getElementById("ckw-chave").value === ""'), 'a chave do WAHA nunca aparece');
   await b.ev('document.getElementById("modal-x").click()');
   await b.ev('CONTRATAR.abrir()'); await espera(1200);
   ok(await b.ev('!!document.getElementById("ct-vendo")'), 'contratar passo 1 mostra "Agente que aprende vendo"');
