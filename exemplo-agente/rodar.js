@@ -155,6 +155,8 @@ async function rodar(id, opts = {}) {
   const e = estadoDe(id);
   if (e.status === 'com o dono') return { ok: false, motivo: 'a entidade está com o dono; devolva antes' };
   if (e.status === 'em andamento') return { ok: false, motivo: 'já tem uma rodada em andamento' };
+  // refazer: o escritório devolveu a entrega (esteira); a entidade volta a "nova" e a observação vem em opts.extra
+  if (opts.refazer && e.status !== 'nova') { e.status = 'nova'; e.refeita = (e.refeita || 0) + 1; }
   if (rodadasHoje() >= LIMITE_DIA) return { ok: false, motivo: 'limite de ' + LIMITE_DIA + ' rodadas por dia atingido (LIMITE_RODADAS_DIA no .env)' };
   let modo; try { modo = modoPedido(opts); } catch (x) { return { ok: false, motivo: x.message }; }
   const vazias = base.variaveisVazias().filter(v => !/^(PAINEL_SENHA|GATILHO_CHAVE|MODO|MODO_REAL)$/.test(v));

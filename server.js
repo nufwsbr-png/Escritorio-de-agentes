@@ -592,6 +592,10 @@ const AVISOS = require('./avisos').init(DADOS, {
     .map(x => (x.nome || x.id) + ' está fora do ar.')
 });
 ABERTURA = require('./abertura').init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLATAFORMAS, lerConfig, lerRegistroBruto, gravarRegistro, desligar });
+// esteiras: o escritório passa o bastão entre agentes (vigia /entidades, chama /gatilho, deixa recado, avisa)
+const ESTEIRAS = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLATAFORMAS, mensagens: MEMORIA, ligar: (id) => ligar(id),
+  avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}) });
+if (!process.env.ESCRITORIO_SEM_VIGILIA) ESTEIRAS.iniciar();
 const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN, config: lerConfig,
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
@@ -882,6 +886,29 @@ const servidor = http.createServer(async (req, res) => {
     if (!admin) return soAdmin();
     return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar(b); return json(res, r.ok ? 200 : 400, r.ok ? { ...r, plataformas: PLATAFORMAS.listar(false) } : r); })
       .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  /* ---- esteiras: definir é do administrador; entrar, aprovar e devolver são de quem opera ---- */
+  if (rota === '/api/esteiras' && req.method === 'GET') return json(res, 200, ESTEIRAS.estado());
+  if (rota === '/api/esteiras/agentes' && req.method === 'GET') return json(res, 200, { agentes: ESTEIRAS.agentesCandidatos() });
+  if (rota === '/api/esteiras' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return corpoJson(req, 5e4).then(b => { const r = ESTEIRAS.salvar(b); json(res, r.ok ? 200 : 400, r); }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  const mest = rota.match(/^\/api\/esteiras\/([a-z0-9-]+)$/i);
+  if (mest && req.method === 'DELETE') { if (!admin) return soAdmin(); const r = ESTEIRAS.remover(mest[1]); return json(res, r.ok ? 200 : 404, r); }
+  const ment = rota.match(/^\/api\/esteiras\/([a-z0-9-]+)\/entrar$/i);
+  if (ment && req.method === 'POST') {
+    return corpoJson(req, 1e4).then(async b => { const r = await ESTEIRAS.entrar(ment[1], b.entidade, admin ? 'administrador' : 'tela'); json(res, r.ok ? 200 : 400, r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
+  const mapr = rota.match(/^\/api\/esteiras\/([a-z0-9-]+)\/([^/]+)\/(aprovar|devolver)$/i);
+  if (mapr && req.method === 'POST') {
+    const [, eid, ent, acao] = mapr;
+    return corpoJson(req, 1e4).then(async b => {
+      const quem = String(b.quem || (admin ? 'administrador' : 'pessoa')).slice(0, 60);
+      const r = acao === 'aprovar' ? await ESTEIRAS.aprovar(eid, decodeURIComponent(ent), quem) : await ESTEIRAS.devolver(eid, decodeURIComponent(ent), quem, b.observacao);
+      json(res, r.ok ? 200 : 400, r);
+    }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
   }
   if (rota === '/api/plataformas/sincronizar' && req.method === 'POST') {
     if (!admin) return soAdmin();

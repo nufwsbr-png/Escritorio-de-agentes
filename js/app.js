@@ -1559,6 +1559,7 @@ $('#btn-allrest').addEventListener('click', () => { setAll('descanso'); toast('E
 $('#btn-report').addEventListener('click', openReport);
 $('#btn-avisos').addEventListener('click', () => AVISOS_UI.abrir());
 $('#btn-plataformas').addEventListener('click', () => PLATAFORMAS_UI.abrir());
+$('#btn-esteiras').addEventListener('click', () => PLATAFORMAS_UI.carregar().then(() => ESTEIRAS.abrir()));
 $('#btn-ajustes').addEventListener('click', () => AJUSTES.abrir());
 $('#btn-quadro').addEventListener('click', openQuadro);
 $('#btn-voice').addEventListener('click', toggleVoice);

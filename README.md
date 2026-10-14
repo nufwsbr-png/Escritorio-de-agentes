@@ -229,6 +229,29 @@ libera só as ferramentas deles, em proposta e real; em ensaio o agente
 continua só lendo. O Ensinar usa os mesmos servidores, para você demonstrar
 com eles. Nenhum MCP da máquina entra sem estar marcado.
 
+## Esteiras: o trabalho passando de agente em agente
+
+**🧵 Esteiras**, no topo. Uma esteira é uma lista de etapas em ordem, cada
+uma com um agente de tarefa responsável, o que ele entrega e se uma pessoa
+aprova antes de seguir. Exemplo de advocacia: fechamento de pasta (Tati) →
+petição inicial (Léo, a advogada aprova) → protocolo e honorários (Bia). A
+coisa que anda é a **entidade** (um processo, um pedido, um paciente), com
+uma pasta compartilhada que todos os agentes da esteira têm marcada em 🔌
+Plataformas.
+
+Quem passa o bastão é o escritório, nunca o agente: ele lê o estado das
+entidades de cada agente (`GET /entidades`, com a chave do gatilho), e quando
+uma etapa fica pronta chama o `POST /gatilho` do próximo agente com o
+contexto (etapa, entrega esperada, onde ler o anterior, onde gravar) e deixa
+um recado de um para o outro. Recados agora chegam também nas rodadas
+autônomas: o lançador os busca antes de rodar e os apresenta como dado, nunca
+ordem. Etapa com aprovação espera na tela, com botões **Aprovar** e
+**Devolver com observação** (devolver acorda o agente de novo com a
+observação). Pergunta ou erro param só aquela entidade. Uma entidade entra
+pelo botão ＋, pela API ou sozinha quando aparece uma pasta nova na pasta
+compartilhada. Crie esteiras com `/criar-esteira` no Claude Code (cinco
+perguntas simples, com proposta pronta) ou pelo formulário do administrador.
+
 ## O monitor de cada agente
 
 | Botão | O que faz |

@@ -100,6 +100,10 @@ async function cenarioPadrao(b) {
   ok(await b.ev('document.querySelectorAll("#modal-body .pl-item").length') === 2, 'modal Plataformas lista 2');
   ok(!(await b.ev('document.getElementById("modal-body").innerHTML.includes("segredo-99")')), 'modal Plataformas não vaza valor');
   await b.ev('document.getElementById("modal-x").click()');
+  await b.ev('document.getElementById("btn-esteiras").click()'); await espera(1200);
+  ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Esteiras'), 'Esteiras abre');
+  ok(await b.ev('document.getElementById("modal-body").textContent.includes("Nenhuma esteira")'), 'Esteiras sem definição explica o que fazer');
+  await b.ev('document.getElementById("modal-x").click()');
   await b.ev('AJUSTES.abrir()'); await espera(1500);
   ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Ajustes'), 'Ajustes abre');
   ok(await b.ev('!!document.querySelector(".aj-status")'), 'Ajustes mostra o status do Claude Code');

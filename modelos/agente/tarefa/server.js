@@ -138,7 +138,9 @@ http.createServer(async (req, res) => {
     const b = await base.lerCorpo(req);
     const ent = String(b.entidade || '').trim();
     if (!ent) { res.writeHead(400); return res.end('entidade?'); }
-    rodar.rodar(ent, { proposta: process.env.MODO === 'proposta' }).then(r => base.log('gatilho: ' + ent + ' -> ' + (r.status || r.motivo)));
+    // extra: o contexto que o escritório manda (esteira: etapa, entrega, pasta); refazer: a entrega foi devolvida
+    const extra = String(b.extra || '').slice(0, 4000) || undefined;
+    rodar.rodar(ent, { proposta: process.env.MODO === 'proposta', extra, refazer: !!b.refazer }).then(r => base.log('gatilho: ' + ent + ' -> ' + (r.status || r.motivo)));
     res.writeHead(202, { 'Content-Type': 'application/json' }); return res.end('{"ok":true}');
   }
   if (rota === '/entrar') {

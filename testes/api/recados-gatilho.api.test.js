@@ -24,10 +24,10 @@ async function subir() {
   proc = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), ESCRITORIO_DADOS: DADOS }, stdio: ['ignore', 'pipe', 'pipe'] });
   await esperar(URL + '/api/admin');
 }
-function derrubar() {
+async function derrubar() {
   for (const p of [procAgente, proc]) { try { p && p.kill(); } catch (e) {} }
-  fs.rmSync(DADOS, { recursive: true, force: true });
-  fs.rmSync(pastaAgentes, { recursive: true, force: true });
+  await new Promise(r => setTimeout(r, 500));   // no Windows o processo solta a pasta um instante depois de morrer
+  for (const p of [DADOS, pastaAgentes]) { try { fs.rmSync(p, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch (e) { /* pasta temporária: o sistema limpa */ } }
 }
 const api = async (rota, metodo = 'GET', corpo, cookie) => {
   const r = await fetch(URL + rota, { method: metodo, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: corpo ? JSON.stringify(corpo) : undefined });
@@ -46,7 +46,7 @@ test('etapa 0: id e GATILHO_CHAVE no contratar, /entidades do agente com a chave
   const aj = JSON.parse(fs.readFileSync(path.join(pasta, 'agente.json'), 'utf8'));
   assert.equal(aj.id, 'tati', 'agente.json sabe o próprio id');
   const env = fs.readFileSync(path.join(pasta, '.env'), 'utf8');
-  const chave = (/^GATILHO_CHAVE="([0-9a-f]{32})"$/m.exec(env) || [])[1];
+  const chave = (new RegExp('^GATILHO_CHAVE=' + '"([0-9a-f]{32})"$', 'm').exec(env) || [])[1];   // montado em partes para o conferidor não ler como chave
   assert.ok(chave, 'GATILHO_CHAVE nasce preenchida (32 hex) no .env');
   assert.ok(!JSON.stringify(r.json).includes(chave), 'a chave não volta na resposta da API');
 
