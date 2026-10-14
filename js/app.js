@@ -1562,6 +1562,8 @@ $('#btn-avisos').addEventListener('click', () => AVISOS_UI.abrir());
 $('#btn-plataformas').addEventListener('click', () => PLATAFORMAS_UI.abrir());
 $('#btn-esteiras').addEventListener('click', () => PLATAFORMAS_UI.carregar().then(() => ESTEIRAS.abrir()));
 $('#btn-cuki').addEventListener('click', () => CUKI.abrir());
+/* o CRM, quando existe (criado por /criar-crm): abre em outra aba; o botão só aparece com ele registrado */
+fetch('/api/crm').then(r => r.json()).then(c => { if (!c.existe) return; const b = $('#btn-crm'); b.classList.remove('hidden'); b.title = 'CRM em ' + c.url + (c.estado ? ' · ' + c.estado : ''); b.addEventListener('click', () => window.open(c.url, '_blank', 'noopener')); }).catch(() => {});
 $('#btn-ajustes').addEventListener('click', () => AJUSTES.abrir());
 $('#btn-quadro').addEventListener('click', openQuadro);
 $('#btn-voice').addEventListener('click', toggleVoice);

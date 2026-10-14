@@ -287,17 +287,24 @@ nome de cliente final. O Cuki BOT informa; para agir, a pessoa usa a tela.
 Limite de 20 mensagens por número por hora. O **briefing do dia** sai sozinho
 na hora do resumo (🔔 Avisos) e quando alguém escreve "briefing".
 
-## Criar CRM (em construção)
+## Criar CRM
 
 Quando a equipe de agentes já funciona, a skill **`/criar-crm`** cria o CRM do
-escritório: a ficha de cada cliente (ou paciente, processo…), o passo em que
-ela está e quem cuida dela agora; pessoas entram com login e cargo, agentes
-entram como funcionários com token e cargo. Antes de perguntar, ela chama o
-Cuki BOT (`node cuki.js medir`): vermelho trava. As perguntas são simples e
-vêm com proposta pronta; `node crm/criar.js aplicar` grava a configuração,
-registra o sistema `crm` e cria a plataforma `crm` com um token por agente.
-O sistema do CRM em si (`crm/server.js`, a tela, a ferramenta do agente) entra
-nas próximas sub-etapas. Design: `docs/superpowers/specs/2026-10-14-crm-design.md`.
+escritório: a **ficha** de cada cliente (ou paciente, processo…), o passo em
+que ela está e quem cuida dela agora. Pessoas entram com login e cargo;
+agentes entram como funcionários, com token e cargo, pela plataforma `crm`
+(um token por agente). Antes de perguntar, a skill chama o Cuki BOT
+(`node cuki.js medir`): vermelho trava. As perguntas são simples e vêm com
+proposta pronta; `node crm/criar.js aplicar` grava a configuração, registra o
+sistema `crm` e cria pessoas e cargos. O CRM sobe como qualquer sistema
+(`crm/server.js`, botão 🗂️ CRM no topo do escritório) e tem quadro por etapa,
+ficha com histórico de autor, propostas dos agentes (uma pessoa aprova ou
+rejeita), tarefas, equipe, painel e importação de planilha. Uma ficha, um
+responsável por vez: quando uma pessoa está com a ficha, o agente não escreve
+nela; ao devolver, o que a pessoa fez é decisão final. Fichas ficam em
+arquivos locais ou no Supabase (cadastrado em 🔌 Plataformas), à escolha na
+criação; a senha do chefe aparece uma vez na primeira abertura da tela. Design:
+`docs/superpowers/specs/2026-10-14-crm-design.md`.
 
 ## O monitor de cada agente
 

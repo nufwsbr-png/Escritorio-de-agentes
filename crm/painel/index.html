@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRM</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><span id="logo">🗂️</span><b id="titulo">CRM</b><span class="hint" id="subtitulo"></span></div>
+  <nav class="abas" id="abas">
+    <button data-aba="quadro" class="ativa">Quadro</button>
+    <button data-aba="propostas">Propostas <span class="badge" id="n-propostas"></span></button>
+    <button data-aba="tarefas">Tarefas <span class="badge" id="n-tarefas"></span></button>
+    <button data-aba="equipe">Equipe</button>
+    <button data-aba="painel">Painel</button>
+    <button data-aba="importar">Importar</button>
+  </nav>
+  <div class="eu"><span id="eu-nome" class="hint"></span><button class="btn ghost" id="btn-senha" title="Trocar a senha">🔑</button><button class="btn ghost" id="btn-sair">Sair</button></div>
+</header>
+<main id="main"></main>
+
+<div id="login" class="tela-login hidden">
+  <form id="form-login" class="caixa">
+    <h2 id="login-titulo">Entrar no CRM</h2>
+    <p class="hint" id="login-dica">Peça o seu login e a senha ao chefe do CRM.</p>
+    <div id="primeira" class="aviso hidden"></div>
+    <label>Login <input id="lg-login" autocomplete="username" required></label>
+    <label>Senha <input id="lg-senha" type="password" autocomplete="current-password" required></label>
+    <button class="btn primary" type="submit">Entrar</button>
+    <p class="hint erro" id="lg-erro"></p>
+  </form>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-caixa"><button class="modal-x" id="modal-x">✕</button><div id="modal-body"></div></div></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -20,7 +20,7 @@ function cenario() {
     leo: { nome: 'Léo', tipo: 'local', pasta: agB, comando: 'node', args: ['server.js'], porta: 4602, trilha: 'tarefa', setor: 'Prospecção', plataformas: [] },
     zap: { nome: 'Zap', tipo: 'local', pasta: agB, comando: 'node', args: ['server.js'], porta: 4603, trilha: 'atendimento' } }, null, 2));
   fs.writeFileSync(path.join(DADOS, 'config.json'), JSON.stringify({ empresa: 'Clínica Sorriso', subtitulo: 'clínica odontológica', dono: 'Dra. Carla', porta: 4321 }));
-  fs.writeFileSync(path.join(DADOS, 'plataformas.json'), JSON.stringify([{ id: 'supa', nome: 'Supabase da clínica', tipo: 'banco', url: 'https://x.supabase.co', variaveis: { SUPA_URL: 'https://x.supabase.co', SUPA_CHAVE: 'sk-brinquedo-1' }, notas: '', criadaEm: 'x', atualizadaEm: 'x' }]));
+  fs.writeFileSync(path.join(DADOS, 'plataformas.json'), JSON.stringify([{ id: 'supa', nome: 'Supabase da clínica', tipo: 'banco', url: 'https://x.supabase.co', variaveis: { SUPA_URL: 'https://x.supabase.co', SUPA_CHAVE: 'sk-brq-1' }, notas: '', criadaEm: 'x', atualizadaEm: 'x' }]));
   return { DADOS, CRM, limpar: () => { fs.rmSync(DADOS, { recursive: true, force: true }); fs.rmSync(CRM, { recursive: true, force: true }); } };
 }
 const roda = (DADOS, CRM, args) => { const r = spawnSync(process.execPath, ['crm/criar.js', ...args], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, ESCRITORIO_DADOS: DADOS, CRM_PASTA: CRM } }); let j = null; try { j = JSON.parse(r.stdout.trim().split('\n').pop()); } catch (e) {} return { status: r.status, json: j, saida: r.stdout + r.stderr }; };
@@ -95,8 +95,8 @@ test('aplicar recusa o que não dá para gravar: etapa sem nome, agente que não
   const r2 = roda(DADOS, CRM, ['aplicar', arq]);
   assert.equal(r2.json.ok, true, r2.saida); assert.equal(r2.json.gravado.supabase, 'bloco gravado em crm/.env');
   const env = fs.readFileSync(path.join(CRM, '.env'), 'utf8');
-  assert.match(env, /SUPA_URL="https:\/\/x\.supabase\.co"/); assert.match(env, /SUPA_CHAVE="sk-brinquedo-1"/); assert.match(env, /BANCO_CHAVE="sk-brinquedo-1"/, 'o nome canônico também');
-  assert.ok(!fs.readFileSync(path.join(CRM, 'config.json'), 'utf8').includes('sk-brinquedo-1'));
+  assert.match(env, /SUPA_URL="https:\/\/x\.supabase\.co"/); assert.match(env, /SUPA_CHAVE="sk-brq-1"/); assert.match(env, /BANCO_CHAVE="sk-brq-1"/, 'o nome canônico também');
+  assert.ok(!fs.readFileSync(path.join(CRM, 'config.json'), 'utf8').includes('sk-brq-1'));
 });
 
 test('propostas: sem laudo explica; com laudo vermelho trava; com laudo amarelo propõe entidade, etapas da esteira, agentes aptos e porta livre', (t) => {
@@ -120,7 +120,7 @@ test('propostas: sem laudo explica; com laudo vermelho trava; com laudo amarelo 
   assert.deepEqual(p.agentes.map(a => a.id), ['leo']); assert.equal(p.agentes[0].cargo, 'Prospecção'); assert.deepEqual(p.agentesQuase.map(a => a.id), ['tati']);
   assert.deepEqual(p.atendentes.map(a => a.id), ['zap']); assert.equal(p.chefe, 'Dra. Carla'); assert.equal(p.celularDosAvisos, '5565999999999');
   assert.equal(p.integracoes.agenda, 'fonte'); assert.deepEqual(p.bancos.map(b => b.id), ['supa']); assert.equal(p.porta, 4500);
-  assert.ok(!JSON.stringify(p).includes('sk-brinquedo-1') && !JSON.stringify(p).includes('"k"'), 'propostas sem valores');
+  assert.ok(!JSON.stringify(p).includes('sk-brq-1') && !JSON.stringify(p).includes('"k"'), 'propostas sem valores');
 });
 
 test('node cuki.js medir grava um laudo por código (sem o Claude) e node cuki.js laudo o lê', (t) => {

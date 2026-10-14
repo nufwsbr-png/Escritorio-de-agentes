@@ -228,7 +228,7 @@ function aplicar(respostas) {
     PLAT.definirDoAgente(a.id, lista);
     const sal = hex(8);
     const u = usuarios.agentes.find(x => x.id === a.id);
-    const reg = { id: a.id, nome: a.nome, cargo: a.cargo, sal, tokenHash: hash(token, sal), ativo: true };
+    const reg = { id: a.id, nome: a.nome, cargo: 'agente-' + (UTIL.slug(a.cargo, 30) || a.id), sal, tokenHash: hash(token, sal), ativo: true };   // o id do cargo (a chave em cargos.json), não o nome
     if (u) Object.assign(u, reg); else usuarios.agentes.push(reg);
   }
   // 5. pessoas e cargos: o chefe tem tudo; os outros editam e movem; agentes conforme a autonomia

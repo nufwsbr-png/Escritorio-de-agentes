@@ -918,6 +918,13 @@ const servidor = http.createServer(async (req, res) => {
     CUKI.analisar().then(r => { if (!r.ok) console.log('  🩺 Cuki BOT: ' + r.motivo); });   // solto: a tela acompanha por GET /api/cuki/laudo
     return json(res, 202, { ok: true, rodando: true });
   }
+  /* ---- o CRM (crm/, criado por /criar-crm): existe? onde? no ar? (o token do escritório fica em data/crm.json e não sai daqui) ---- */
+  if (rota === '/api/crm' && req.method === 'GET') {
+    let c = null; try { c = JSON.parse(fs.readFileSync(path.join(DADOS, 'crm.json'), 'utf8')); } catch (e) {}
+    if (!c) return json(res, 200, { existe: false });
+    const item = (await estado()).find(x => x.id === 'crm');
+    return json(res, 200, { existe: true, url: 'http://localhost:' + c.porta, porta: c.porta, estado: item ? item.estado : 'não registrado', criadoEm: c.criadoEm });
+  }
   /* ---- Cuki BOT no WhatsApp (WAHA): tudo de administrador; a chave do WAHA nunca volta para a tela ---- */
   if (rota.startsWith('/api/cuki/') && rota !== '/api/cuki/laudo') {
     if (!admin) return soAdmin();

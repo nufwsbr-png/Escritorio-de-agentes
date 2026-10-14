@@ -100,6 +100,7 @@ async function cenarioPadrao(b) {
   ok(await b.ev('document.querySelectorAll("#modal-body .pl-item").length') === 2, 'modal Plataformas lista 2');
   ok(!(await b.ev('document.getElementById("modal-body").innerHTML.includes("segredo-99")')), 'modal Plataformas não vaza valor');
   await b.ev('document.getElementById("modal-x").click()');
+  ok(await b.ev('document.getElementById("btn-crm").classList.contains("hidden")'), 'sem CRM criado, o botão 🗂️ CRM fica escondido');
   await b.ev('document.getElementById("btn-cuki").click()'); await espera(1200);
   ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Cuki BOT'), 'Cuki BOT abre');
   ok(await b.ev('document.getElementById("modal-body").textContent.includes("Nenhum laudo")'), 'Cuki BOT sem laudo explica o que fazer');
