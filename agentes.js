@@ -91,6 +91,9 @@ function criarAgente(b) {
   if (!setorNome) return { ok: false, motivo: 'diga o nome do setor' };
   const negocio = String(b.negocio || dep.config().empresa || dep.config().nome || '').trim().slice(0, 80) || 'o negócio';
   const trilha = TRILHAS[setor.trilha];
+  // como ele aprende: pela anatomia (Construir, componente por componente) ou vendo (a pessoa demonstra em Ensinar e a skill nasce da demonstração)
+  const aprendizado = b.aprendizado === 'vendo' ? 'vendo' : 'anatomia';
+  if (aprendizado === 'vendo' && setor.trilha === 'atendimento') return { ok: false, motivo: 'o atendente não aprende vendo: o cérebro dele é outro. Escolha um setor de tarefa' };
 
   const porta = Number(b.porta);
   if (!Number.isInteger(porta) || porta < 1024 || porta > 65535) return { ok: false, motivo: 'porta inválida (use de 1024 a 65535)' };
@@ -131,7 +134,7 @@ function criarAgente(b) {
 
   try {
     fs.mkdirSync(pasta, { recursive: true });
-    fs.writeFileSync(path.join(pasta, 'agente.json'), JSON.stringify({ nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta,
+    fs.writeFileSync(path.join(pasta, 'agente.json'), JSON.stringify({ nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta, aprendizado,
                                             criadoEm: new Date().toISOString(), tarefa: '' }, null, 2) + '\n');
     copiarMolde(path.join(MODELOS, 'agente', 'comum'), pasta);
     copiarMolde(path.join(MODELOS, 'agente', trilha.molde), pasta);
@@ -145,10 +148,13 @@ function criarAgente(b) {
   const plataformasPedidas = [...new Set((Array.isArray(b.plataformas) ? b.plataformas : []).map(String).filter(x => /^[a-z0-9][a-z0-9-]*$/.test(x)))];
   const item = {
     nome, tipo: 'local', pasta, comando: 'node', args: ['server.js'], env: { PORT: String(porta), ESCRITORIO_PORTA: String(dep.PORT) }, porta, abre: '/painel',
-    setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio,
+    setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, aprendizado,
     plataformas: plataformasPedidas,
-    sobre: setor.emoji + ' ' + setorNome + (negocio ? ' de ' + negocio : '') + '. Em construção: ' + trilha.passos + ' componentes da anatomia do escritório, com a skill ' + trilha.skill + ' de referência. Abra Conversar > Construir para seguir.',
-    dicas: ['Em Conversar > Construir, o construtor segue a ANATOMIA, um componente por vez, com teste no fim de cada um',
+    sobre: setor.emoji + ' ' + setorNome + (negocio ? ' de ' + negocio : '') + (aprendizado === 'vendo'
+      ? '. Aprende vendo: em Conversar > Ensinar você faz a tarefa e, em "Tarefa concluída", ela vira a skill dele. A anatomia (' + trilha.passos + ' componentes) continua valendo.'
+      : '. Em construção: ' + trilha.passos + ' componentes da anatomia do escritório, com a skill ' + trilha.skill + ' de referência. Abra Conversar > Construir para seguir.'),
+    dicas: [aprendizado === 'vendo' ? 'Em Conversar > Ensinar, faça a tarefa como faria no Claude Code; ao clicar "Tarefa concluída", a demonstração vira skill, amostra e propostas'
+                                    : 'Em Conversar > Construir, o construtor segue a ANATOMIA, um componente por vez, com teste no fim de cada um',
             setor.trilha === 'atendimento' ? 'O chat de teste fica em / e o painel do dono em /painel' : 'O lançador é rodar.js: node rodar.js amostras/caso-01 roda em ensaio; o painel em /painel aprova, responde e corrige',
             'As conexões ficam no .env da pasta; cole os valores pelo editor, nunca no chat']
   };
@@ -156,7 +162,7 @@ function criarAgente(b) {
   dep.gravarRegistro(bruto);
   // as plataformas permitidas entram no .env agora, no bloco gerenciado pelo escritório
   const sinc = dep.plataformas && plataformasPedidas.length ? dep.plataformas.sincronizarAgente(id) : null;
-  return { ok: true, id, sistema: item, pasta, plataformas: plataformasPedidas, variaveisDePlataforma: sinc && sinc.ok ? sinc.variaveis : [], setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha, skill: trilha.skill, passos: trilha.passos } };
+  return { ok: true, id, sistema: item, pasta, aprendizado, plataformas: plataformasPedidas, variaveisDePlataforma: sinc && sinc.ok ? sinc.variaveis : [], setor: { id: setor.id, nome: setorNome, emoji: setor.emoji, trilha: setor.trilha, skill: trilha.skill, passos: trilha.passos } };
 }
 
 /* ---------------- constituição pela tela (ficha do negócio) ---------------- */

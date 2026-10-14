@@ -7,17 +7,22 @@
 
    Investigar = só leitura.  Resolver = pode mexer no projeto.
    Construir  = a skill da trilha conduz a construção, um passo por vez.
-   A sessão agora sobrevive a reinício do escritório (fica em disco).
+   Ensinar    = você faz a tarefa aqui (é o Claude Code camuflado, agindo
+                de verdade nas pastas do agente) e, em "Tarefa concluída",
+                a demonstração vira a skill dele. Canal próprio (?canal=ensino).
+   A sessão sobrevive a reinício do escritório (fica em disco).
    =========================================================== */
 const CONVERSA = (() => {
 
   let id = null, modo = 'investigar', timer = null;
+  let ensino = null;   // GET /api/agentes/:id/ensino: skills aprendidas, demonstrações, escopo
 
   const el = {
     painel:   () => document.getElementById('mon-conversa'),
     linhas:   () => document.getElementById('cv-linhas'),
     texto:    () => document.getElementById('cv-texto'),
     enviar:   () => document.getElementById('cv-enviar'),
+    concluir: () => document.getElementById('cv-concluir'),
     atalhos:  () => document.getElementById('cv-atalhos')
   };
 
@@ -39,8 +44,14 @@ const CONVERSA = (() => {
                  'Deixe o painel em /painel mais claro, sem mexer na lógica'],
     construir:  ['Vamos continuar de onde paramos',
                  'Em que passo estamos e o que falta?',
-                 'Pode executar']
+                 'Pode executar'],
+    ensinar:    ['Vou te mostrar uma tarefa. Primeiro liste o que tem na pasta autorizada',
+                 'Faça exatamente assim para os outros arquivos',
+                 'Antes de seguir, me pergunte o que você não sabe']
   };
+
+  const ehEnsino = () => modo === 'ensinar';
+  const canal = () => ehEnsino() ? '?canal=ensino' : '';
 
   let claude = null;   // { instalado, conectado }
 
@@ -49,24 +60,36 @@ const CONVERSA = (() => {
     catch (e) { claude = null; }
   }
 
+  async function carregarEnsino() {
+    if (!id) return;
+    try { ensino = await (await fetch(`/api/agentes/${id}/ensino`)).json(); } catch (e) { ensino = null; }
+  }
+
   function setModo(m) {
     modo = m;
     document.querySelectorAll('.cv-op').forEach(x => x.classList.toggle('on', x.dataset.modo === m));
+    el.concluir().classList.toggle('hidden', !ehEnsino());
+    el.texto().placeholder = ehEnsino() ? 'Diga o que fazer, como faria no Claude Code…' : 'Pergunte algo ao agente…';
     pintarAtalhos();
+    if (ehEnsino()) carregarEnsino().then(atualizar); else atualizar();
   }
 
   /** abre a conversa; `modoInicial` e `primeira` servem ao Construir recém-contratado */
   function abrir(sistemaId, modoInicial, primeira) {
     id = sistemaId;
+    ensino = null;
     el.painel().classList.remove('hidden');
     const s = SISTEMAS.porId(id);
-    // o botão Construir só faz sentido para agente com jornada na pasta
+    // Construir só faz sentido para agente com jornada na pasta; Ensinar, para agente de tarefa (o atendente tem outro cérebro)
     const temJornada = !!(s && s.trilha);
+    const ensina = temJornada && s.trilha !== 'atendimento';
     const bc = document.querySelector('.cv-op[data-modo="construir"]');
     if (bc) bc.classList.toggle('hidden', !temJornada);
-    setModo(modoInicial || (temJornada && s.construcao && !s.construcao.concluido ? 'construir' : 'investigar'));
+    const be = document.querySelector('.cv-op[data-modo="ensinar"]');
+    if (be) be.classList.toggle('hidden', !ensina);
+    const padrao = temJornada && s.construcao && !s.construcao.concluido ? (ensina && s.aprendizado === 'vendo' ? 'ensinar' : 'construir') : 'investigar';
+    setModo(modoInicial && (modoInicial !== 'ensinar' || ensina) ? modoInicial : padrao);
     checarLogin().then(atualizar);
-    atualizar();
     clearInterval(timer);
     timer = setInterval(atualizar, 2500);
     if (primeira) setTimeout(() => enviarTexto(primeira), 400);
@@ -92,9 +115,23 @@ const CONVERSA = (() => {
     // assim, logar noutro terminal destrava aqui sem recarregar a página.
     if (claude && claude.instalado && !claude.conectado) await checarLogin();
     let e;
-    try { e = await (await fetch(`/api/agentes/${id}/chat`)).json(); }
+    try { e = await (await fetch(`/api/agentes/${id}/chat${canal()}`)).json(); }
     catch (err) { return; }
     pintar(e);
+  }
+
+  function introEnsino(e) {
+    const skills = (ensino && ensino.skills) || [];
+    const pastas = (ensino && ensino.pastasAutorizadas) || [];
+    const plats = (ensino && ensino.plataformas) || [];
+    return `<div class="cv-msg sistema"><b>Modo Ensinar: você faz, ele aprende.</b><br><br>
+      Este chat é o Claude Code rodando na pasta do agente. Faça a tarefa aqui, do seu jeito, como faria no terminal:
+      ele age de verdade, só dentro das pastas autorizadas${pastas.length ? ' (' + pastas.map(esc).join('; ') + ')' : ' (nenhuma ainda: ponha o caminho em PASTAS_AUTORIZADAS no .env dele)'}
+      e das plataformas permitidas${plats.length ? ' (' + plats.map(esc).join(', ') + ')' : ' (nenhuma marcada)'}.<br><br>
+      Quando terminar, clique <b>✅ Tarefa concluída</b>: a demonstração vira uma skill em <code>.claude/skills/</code>, a primeira amostra com gabarito
+      e propostas para a constituição. Depois confira com <code>node rodar.js amostras/caso-NN</code> se ele faz igual.
+      ${skills.length ? '<br><br>Skills que ele já aprendeu: ' + skills.map(s => '<b>' + esc(s.nome) + '</b>' + (s.descricao ? ' — ' + esc(s.descricao) : '')).join('; ') + '.' : ''}
+      ${e && e.ensino ? '<br><br>Demonstração em andamento: <code>' + esc(String(e.ensino).replace(/\\\\/g, '/')) + '</code>.' : ''}</div>`;
   }
 
   function pintar(e) {
@@ -102,10 +139,10 @@ const CONVERSA = (() => {
     const nofim = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
 
     let html = e.historico.map(m => {
-      const quem = m.quem === 'voce' ? 'Você' : 'Agente';
-      const tag = m.modo === 'resolver' ? ' · modo resolver' : m.modo === 'construir' ? ' · construindo' : '';
+      const quem = m.quem === 'voce' ? 'Você' : m.modo === 'destilar' ? 'Escritório' : ehEnsino() ? 'Claude Code' : 'Agente';
+      const tag = m.modo === 'resolver' ? ' · modo resolver' : m.modo === 'construir' ? ' · construindo' : m.modo === 'ensinar' ? ' · ensinando' : m.modo === 'destilar' ? ' · destilando a skill' : '';
       const notas = (m.notas || []).length ? `<div class="cv-notas">${m.notas.map(esc).join(' · ')}</div>` : '';
-      return `<div class="cv-msg ${m.quem}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}</div>`;
+      return `<div class="cv-msg ${m.quem}${m.modo === 'destilar' ? ' destilar' : ''}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}</div>`;
     }).join('');
 
     const semLogin = e.precisaLogin || (claude && claude.instalado && !claude.conectado);
@@ -122,7 +159,8 @@ const CONVERSA = (() => {
       html += `<div class="cv-msg sistema">${esc(e.erro)}</div>`;
     }
     if (e.rodando) {
-      html += `<div class="cv-pensando"><i></i>${modo === 'construir' ? 'construindo… um passo pode levar alguns minutos' : 'investigando o projeto…'}</div>`;
+      html += `<div class="cv-pensando"><i></i>${e.destilando ? 'destilando a demonstração em skill, amostra e propostas… pode levar alguns minutos'
+        : modo === 'construir' ? 'construindo… um passo pode levar alguns minutos' : ehEnsino() ? 'fazendo…' : 'investigando o projeto…'}</div>`;
     }
     // atenção: aqui é atribuição, não concatenação — só pode entrar quando
     // não há nada mais importante para dizer, senão apaga o aviso de login
@@ -130,14 +168,19 @@ const CONVERSA = (() => {
       html = modo === 'construir'
         ? `<div class="cv-msg sistema">Modo Construir: a ANATOMIA do escritório conduz, um componente por vez, com a skill da pasta como referência.
            Diga "vamos continuar de onde paramos" — ele lê o progresso e retoma.</div>`
+        : ehEnsino() ? introEnsino(e)
         : `<div class="cv-msg sistema">Pergunte alguma coisa. Ele abre o projeto,
            roda os scripts de diagnóstico e responde com o que achou.</div>`;
+    } else if (ehEnsino() && !e.ensino && !e.rodando && e.historico.length) {
+      // a última demonstração foi destilada: a próxima mensagem abre outra
+      html += `<div class="cv-msg sistema">Demonstração concluída. A próxima mensagem começa uma demonstração nova.${(ensino && ensino.skills || []).length ? ' Skills aprendidas: ' + ensino.skills.map(s => esc(s.nome)).join(', ') + '.' : ''}</div>`;
     }
 
     c.innerHTML = html;
     const travado = e.rodando || semLogin || (claude && !claude.instalado);
     el.enviar().disabled = travado;
-    el.enviar().textContent = e.rodando ? 'pensando…' : semLogin ? 'sem login' : 'Enviar';
+    el.enviar().textContent = e.rodando ? (ehEnsino() ? 'fazendo…' : 'pensando…') : semLogin ? 'sem login' : 'Enviar';
+    el.concluir().disabled = travado || !e.ensino || !e.historico.some(m => m.quem === 'voce' && m.modo === 'ensinar');
     if (nofim) c.scrollTop = c.scrollHeight;
   }
 
@@ -146,11 +189,11 @@ const CONVERSA = (() => {
 
   async function enviarTexto(t) {
     if (!t || !id) return;
-    // resolver e construir alteram o projeto: pedem administrador
+    // resolver, construir e ensinar alteram o projeto: pedem administrador
     if (modo !== 'investigar' && typeof ADMIN !== 'undefined' && !ADMIN.ehAdmin()) { ADMIN.abrir('O modo ' + modo + ' altera o projeto.'); return; }
     el.enviar().disabled = true;
     try {
-      const r = await (await fetch(`/api/agentes/${id}/chat`, {
+      const r = await (await fetch(`/api/agentes/${id}/chat${canal()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texto: t, modo })
@@ -167,6 +210,23 @@ const CONVERSA = (() => {
     enviarTexto(t);
   }
 
+  /** "Tarefa concluída": a demonstração vira a skill do agente */
+  async function concluir() {
+    if (!id || !ehEnsino()) return;
+    if (typeof ADMIN !== 'undefined' && !ADMIN.ehAdmin()) { ADMIN.abrir('Concluir a demonstração grava a skill do agente.'); return; }
+    const nome = window.prompt('Um nome curto para a tarefa que você ensinou (vira o nome da skill). Pode deixar em branco.', '');
+    if (nome === null) return;
+    el.concluir().disabled = true;
+    try {
+      const r = await (await fetch(`/api/agentes/${id}/ensinar/concluir`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome })
+      })).json();
+      if (!r.ok && r.motivo) { alertaSistema(r.motivo); if (r.precisaAdmin) ADMIN.abrir(r.motivo); }
+    } catch (e) { alertaSistema('não consegui falar com o servidor'); }
+    await carregarEnsino();
+    atualizar();
+  }
+
   function alertaSistema(txt) {
     el.linhas().insertAdjacentHTML('beforeend',
       `<div class="cv-msg sistema">${esc(txt)}</div>`);
@@ -175,11 +235,12 @@ const CONVERSA = (() => {
 
   function ligarEventos() {
     el.enviar().addEventListener('click', enviar);
+    el.concluir().addEventListener('click', concluir);
     el.texto().addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
     });
     document.querySelectorAll('.cv-op').forEach(b => b.addEventListener('click', () => setModo(b.dataset.modo)));
   }
 
-  return { abrir, fechar, aberto, ligarEventos, atualizar, rechecar, get modo() { return modo; } };
+  return { abrir, fechar, aberto, ligarEventos, atualizar, rechecar, concluir, get modo() { return modo; } };
 })();

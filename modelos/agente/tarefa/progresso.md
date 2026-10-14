@@ -28,6 +28,7 @@ Cada linha é um componente da ANATOMIA.md, com teste no fim. Marque `[x]` só c
 ## Anotações
 - Pasta criada pelo escritório em {{DATA}}, já com `server.js` (painel, `/saude`, `/log`), `rodar.js` (lançador com modos, pós-verificação, perguntas e reflexão), `tools/base.js` e `tools/arquivos.js`, `cercas.json` e a estrutura de `memoria/`. Confira em vez de recriar; estenda em vez de substituir.
 - A skill de referência está em `.claude/skills/criar-agente-tarefa/`: o COMO de cada componente, os módulos de ferramenta (`referencias/modulos.md`) e as armadilhas.
+- Caminho curto: em Conversar › Ensinar o dono demonstra a tarefa e "Tarefa concluída" a destila em `.claude/skills/<tarefa>/SKILL.md`, numa amostra e em propostas. Isso adianta os componentes 1, 3 e 6, mas não os marca: o teste de cada um continua valendo.
 
 ## Registro do que foi executado
 - {{DATA}} — pasta criada pelo escritório; nenhum componente testado ainda.

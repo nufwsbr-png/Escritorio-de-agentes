@@ -18,5 +18,8 @@ node_modules/
 # dados reais de clientes nas amostras: só cópias anonimizadas entram
 amostras/*/entrada/
 
+# as demonstrações do modo Ensinar (transcrição pode ter dado de cliente); a skill destilada fica em .claude/skills/ e entra
+ensino/
+
 # a amostra de demonstracao entra no git
 !amostras/caso-01/entrada/

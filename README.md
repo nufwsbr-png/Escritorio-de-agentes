@@ -147,6 +147,21 @@ Na aba **Contratar**, **＋ contratar agente**. A primeira pergunta é o tipo:
 |---|---|---|---|
 | **Atendimento no WhatsApp** | **OpenRouter**, chave no `.env` do agente | 18 | OpenRouter (crédito pré-pago), Supabase (grátis), Google (agenda e planilha), Meta WhatsApp Business ou WAHA |
 | **Agente de tarefa** (por setor: lista configurável por cliente, ou um nome seu) | **Claude Code da máquina**, em rodadas isoladas pelo `rodar.js`, sem chave de modelo | 17 | só o que a tarefa pedir (pasta, CRM, planilha, e-mail…) |
+| **👀 Agente que aprende vendo** (um agente de tarefa, caminho mais curto) | o mesmo Claude Code; você **demonstra** a tarefa num chat e ela vira a skill dele | 17, com 1, 3 e 6 adiantados | as mesmas do agente de tarefa |
+
+**Aprende vendo** funciona assim: o monitor abre em **Conversar › 👀
+Ensinar**, que é o Claude Code rodando na pasta do agente, camuflado. Você
+faz a tarefa ali, do seu jeito, de verdade, dentro das pastas autorizadas e
+das plataformas marcadas para ele. Quando terminar, **✅ Tarefa concluída**
+pede um nome e a mesma sessão destila a demonstração em
+`.claude/skills/<tarefa>/SKILL.md` (quando usar, entrada, passo a passo com
+caminhos e comandos exatos, as decisões que você tomou, quando parar e
+perguntar, como conferir, nunca), na primeira amostra com gabarito em
+`amostras/` e em propostas para a constituição, que você aprova em 📝
+Propostas. Depois, `node rodar.js amostras/caso-NN` em ensaio mostra se ele
+faz igual. Uma skill por tarefa; ensine quantas quiser. Todo agente de tarefa
+tem o modo Ensinar, não só os criados assim. A transcrição fica em `ensino/`,
+fora do git.
 
 Os setores da segunda linha vêm de `data/config.json` (`setores`). Sem a
 chave, valem os padrões: Prospecção & SDR, Conteúdo, Copy, Financeiro, Dados
@@ -172,6 +187,8 @@ cercas.json                 9. permissões do Claude Code por rodada
 server.js                   11. painel trancado, /saude, /log (e o chat de teste, no atendente)
 progresso-do-agente.md      15. a lista dos componentes e onde parou
 .claude/skills/<skill>/     a skill de referência da trilha
+.claude/skills/<tarefa>/    as skills que você ensinou vendo (uma por tarefa)
+ensino/                     as demonstrações (transcrição e resumo), fora do git
 ```
 
 O sistema é registrado em `data/sistemas.json`, o boneco entra pela recepção
@@ -207,7 +224,7 @@ o `.env` tocado.
 | Botão | O que faz |
 |---|---|
 | **▶ Ligar / ■ Desligar** | sobe e derruba o sistema (processo solto: reiniciar o escritório não derruba ninguém) |
-| **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a anatomia. A sessão sobrevive a reinício |
+| **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a anatomia; **👀 Ensinar** (só agente de tarefa) é você fazendo a tarefa e, em **✅ Tarefa concluída**, ela virando a skill dele. A sessão sobrevive a reinício; o Ensinar tem sessão própria |
 | **📋 Ficha** | a constituição seção por seção, para o dono do negócio preencher sem abrir arquivo |
 | **🧠 Memória** | `memoria/escritorio.md`: o que ele anotou nas conversas e reuniões. Entra em toda chamada do escritório; o administrador pode corrigir |
 | **✉️ Recados** | o que outros agentes e o dono deixaram para ele. Quem deixa recado anda até a mesa do outro |
@@ -216,9 +233,12 @@ o `.env` tocado.
 | **🧪 Testar** | o testador: casos difíceis, inclusive com instrução plantada, duas réguas (constituição e fato), relatório com triagem e comparação com a rodada anterior |
 | **📜 Log** | as últimas linhas do log |
 
-**Resolver** e **Construir** rodam o Claude Code com uma lista fixa de
+**Resolver**, **Construir** e **Ensinar** rodam o Claude Code com uma lista fixa de
 ferramentas: editar arquivos, buscar na web e rodar `node`, `npm`, `git`,
-`python`, `curl` e comandos básicos do sistema. Nada além disso.
+`python`, `curl` e comandos básicos do sistema. Nada além disso. O Ensinar
+libera edição também nas pastas de `PASTAS_AUTORIZADAS` do agente, porque é
+você demonstrando em arquivos de verdade; o prompt recebe só os nomes das
+variáveis do `.env`, nunca valores.
 
 ## Como os agentes falam com o escritório
 
@@ -425,6 +445,7 @@ agentes.js         contratar é construir: anatomia, trilhas, setores, progresso
 plataformas.js     cadastro único das plataformas e o bloco do .env de cada agente (módulo e CLI)
 abertura.js        a abertura por trás da skill: config, avisos, senha, Claude, exemplo (módulo e CLI)
 planta.js          salas da planta encaixadas na grade, validação e capacidade (módulo e CLI)
+ensino.js          o agente que aprende vendo: demonstrações, transcrição, skills aprendidas e os prompts do Ensinar
 util.js            slug, executável do Claude, leitura de .env, CLI
 memoria.js         memória do escritório, lições, recados e propostas
 testador.js        o exame do agente, com duas réguas e instrução plantada

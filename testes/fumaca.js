@@ -106,9 +106,25 @@ async function cenarioPadrao(b) {
   ok(await b.ev('!!document.querySelector(".aj-aviso")'), 'Ajustes avisa que não foi aberto');
   await b.ev('document.getElementById("modal-x").click()');
   await b.ev('CONTRATAR.abrir()'); await espera(1200);
+  ok(await b.ev('!!document.getElementById("ct-vendo")'), 'contratar passo 1 mostra "Agente que aprende vendo"');
   await b.ev('document.querySelector("#modal-body [data-s=sdr]")?.click()'); await espera(500);
   ok(await b.ev('document.querySelectorAll("#modal-body .pl-caixa").length') === 2, 'contratar passo 2 mostra as caixas das plataformas');
+  ok(String(await b.ev('document.getElementById("ct-ok")?.textContent')).includes('construção'), 'pela anatomia, o botão diz construção');
+  await b.ev('document.getElementById("ct-back").click()'); await espera(300);
+  await b.ev('document.getElementById("ct-vendo").click()'); await espera(500);
+  ok(await b.ev('!!document.getElementById("ct-setor-sel")'), 'aprende vendo: passo 2 pede o setor');
+  ok(String(await b.ev('document.getElementById("ct-ok")?.textContent')).includes('ensinar'), 'aprende vendo: o botão diz ensinar');
   await b.ev('document.getElementById("modal-x").click()');
+  // o modo Ensinar no Conversar do exemplo (agente de tarefa): botão visível, "Tarefa concluída" aparece só nele
+  await b.ev('__escritorio.sistema("EXEMPLO")'); await espera(1000);
+  await b.ev('document.getElementById("mon-chat").click()'); await espera(800);
+  ok(await b.ev('!document.querySelector(".cv-op[data-modo=ensinar]").classList.contains("hidden")'), 'Conversar do agente de tarefa mostra Ensinar');
+  ok(await b.ev('document.getElementById("cv-concluir").classList.contains("hidden")'), '"Tarefa concluída" escondido fora do Ensinar');
+  await b.ev('document.querySelector(".cv-op[data-modo=ensinar]").click()'); await espera(900);
+  ok(await b.ev('!document.getElementById("cv-concluir").classList.contains("hidden")'), '"Tarefa concluída" aparece em Ensinar');
+  ok(await b.ev('document.getElementById("cv-concluir").disabled'), '"Tarefa concluída" desabilitado sem demonstração');
+  ok(await b.ev('document.getElementById("cv-linhas").textContent.includes("você faz, ele aprende")'), 'Ensinar explica o que fazer');
+  await b.ev('document.getElementById("mon-x").click()'); await espera(300);
 }
 
 async function cenarioPlanta(b) {

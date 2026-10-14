@@ -1354,10 +1354,12 @@ for (const [botao, tipo] of [['ficha', 'ficha'], ['memoria', 'memoria'], ['recad
 }
 // recém-contratado: entra pela recepção e o monitor já abre em Construir
 document.addEventListener('agente-contratado', async e => {
-  const { agente, sistema, trilha } = e.detail;
+  const { agente, sistema, trilha, aprendizado } = e.detail;
   syncActors(); renderAll();
   toast(`${agente.name} foi contratado(a) — entrando pela recepção, em treinamento.`);
   await abrirMonitor(agente);
+  // aprende vendo: abre em Ensinar, sem mensagem inicial — quem fala primeiro é a pessoa, mostrando a tarefa
+  if (aprendizado === 'vendo') { CONVERSA.abrir(sistema, 'ensinar'); return; }
   CONVERSA.abrir(sistema, 'construir',
     'quero construir este agente' + (trilha === 'atendimento' ? ' de atendimento' : ' de tarefa') +
       '. Leia CLAUDE.md, ANATOMIA.md e progresso-do-agente.md e comece pelo primeiro componente em aberto, consultando a skill de referência em .claude/skills para o como.');

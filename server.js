@@ -67,6 +67,7 @@ const nomeDoAgente = (idSistema) => {
 const MEMORIA = require('./memoria').init({ ROOT, DADOS, lerRegistro, nomeDe: nomeDoAgente });
 const PLATAFORMAS = require('./plataformas').init({ ROOT, DADOS, lerRegistro, lerRegistroBruto, gravarRegistro });
 const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig, plataformas: PLATAFORMAS });
+const ENSINO = require('./ensino').init({ lerRegistro });   // o agente que aprende vendo: pastas de ensino, skills aprendidas, prompts
 let ABERTURA = null;   // precisa de AVISOS, que nasce mais abaixo; ver depois de AVISOS
 
 /* lê o corpo JSON de um POST/PUT, com limite de tamanho */
@@ -481,7 +482,7 @@ async function estado() {
       id, nome: s.nome, tipo: s.tipo, sobre: s.sobre || '', dicas: s.dicas || [],
       aviso: s.aviso || null,
       // agente construído pelo escritório: setor, trilha e onde a construção está
-      setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null,
+      setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null, aprendizado: s.aprendizado || null,
       construcao: AGENTES.progressoDe(s.pasta, s.trilha),
       plataformas: Array.isArray(s.plataformas) ? s.plataformas : [],
       propostasPendentes: MEMORIA.propostas(id).filter(p => p.estado === 'pendente').length,
@@ -552,7 +553,7 @@ function lerConversas() {
   try {
     const d = JSON.parse(fs.readFileSync(CONVERSAS_ARQ, 'utf8'));
     for (const [id, c] of Object.entries(d))
-      conversas.set(id, { sessionId: c.sessionId || null, historico: c.historico || [], rodando: false, proc: null, erro: null });
+      conversas.set(id, { sessionId: c.sessionId || null, historico: c.historico || [], rodando: false, proc: null, erro: null, ensino: c.ensino || null });
   } catch (e) { /* primeira vez */ }
 }
 let gravandoConversas = null;
@@ -560,7 +561,7 @@ function gravarConversas() {
   clearTimeout(gravandoConversas);
   gravandoConversas = setTimeout(() => {
     const d = {};
-    for (const [id, c] of conversas) d[id] = { sessionId: c.sessionId, historico: c.historico.slice(-40) };
+    for (const [id, c] of conversas) d[id] = { sessionId: c.sessionId, historico: c.historico.slice(-40), ensino: c.ensino || null };
     try { fs.writeFileSync(CONVERSAS_ARQ, JSON.stringify(d, null, 2) + '\n'); } catch (e) {}
   }, 300);
 }
@@ -604,20 +605,36 @@ const PAPEL =
   'provável, a evidência que te levou até ela, e o que fazer — nessa ordem. Prefira rodar ' +
   'os scripts de diagnóstico do próprio projeto a adivinhar. Se não tiver certeza, diga.';
 
-function conversaDe(id) {
-  let c = conversas.get(id);
-  if (!c) { c = { sessionId: null, historico: [], rodando: false, proc: null, erro: null }; conversas.set(id, c); }
+/* Dois canais por agente: a conversa normal (investigar, resolver, construir)
+   e o ensino (ensinar, destilar), que tem sessão própria para a demonstração
+   não se misturar com o resto. A chave do ensino leva o sufixo @ensino. */
+const CANAL_ENSINO = (modo) => modo === 'ensinar' || modo === 'destilar';
+const chaveConversa = (id, canal) => canal === 'ensino' ? id + '@ensino' : id;
+function conversaDe(id, canal) {
+  const k = chaveConversa(id, canal);
+  let c = conversas.get(k);
+  if (!c) { c = { sessionId: null, historico: [], rodando: false, proc: null, erro: null, ensino: null }; conversas.set(k, c); }
   return c;
 }
 
-function perguntar(id, texto, modo) {
+/** texto, modo e (opcional) rotulo: o que aparece no histórico no lugar do texto enviado (a destilação manda um prompt longo) */
+function perguntar(id, texto, modo, rotulo) {
   const s = lerRegistro()[id];
   if (!s) return { ok: false, motivo: 'sistema não está no registro' };
   if (!s.pasta) return { ok: false, motivo: 'esse sistema não tem pasta local para investigar' };
   if (!fs.existsSync(s.pasta)) return { ok: false, motivo: 'pasta não encontrada: ' + s.pasta };
+  if (CANAL_ENSINO(modo) && s.trilha === 'atendimento') return { ok: false, motivo: 'o atendente não aprende vendo: o cérebro dele é outro. Ensinar é para agentes de tarefa' };
 
-  const c = conversaDe(id);
+  const c = conversaDe(id, CANAL_ENSINO(modo) ? 'ensino' : 'normal');
   if (c.rodando) return { ok: false, motivo: 'ele ainda está respondendo a anterior' };
+
+  /* ensinar: a primeira mensagem abre uma demonstração nova (ensino/NN-data/),
+     com transcrição própria; a anterior já foi destilada e fechada */
+  if (modo === 'ensinar' && !c.ensino) {
+    try { c.ensino = ENSINO.iniciar(s.pasta); } catch (e) { return { ok: false, motivo: 'não consegui criar a pasta de ensino: ' + e.message }; }
+    c.historico = []; c.sessionId = null;
+  }
+  if (CANAL_ENSINO(modo) && c.ensino) ENSINO.anotar(s.pasta, c.ensino, modo === 'ensinar' ? 'voce' : 'sistema', rotulo || texto);
 
   /* construir: a ANATOMIA diz o que todo agente precisa ter; o progresso é
      essa lista; a skill da trilha diz como construir cada componente. Pode
@@ -631,19 +648,23 @@ function perguntar(id, texto, modo) {
       'mas a lista e a ordem são as do progresso. O guia executa e o dono confere: você constrói, roda o teste e mostra a evidência; só para nas pausas ' +
       'que dependem do dono (decisão de negócio, credencial, clique num site, aprovação). Nunca invente conteúdo de negócio: rascunhe e peça confirmação; ' +
       'lacuna vira [A PREENCHER]. Nunca cole chave no chat. Mantenha /saude, /painel e /log no server.js. Responda em português do Brasil.'
+    : modo === 'ensinar' ? ENSINO.papelEnsinar(s, s.pasta)
+    : modo === 'destilar' ? ENSINO.papelDestilar(s, s.pasta)
     : PAPEL) + MEMORIA.contextoDe(id);
 
   // -p sem valor lê o prompt da entrada padrão: a pergunta nunca passa
   // pela linha de comando, então não precisa de escape nenhum
-  const altera = modo === 'resolver' || modo === 'construir';
+  const altera = modo === 'resolver' || modo === 'construir' || CANAL_ENSINO(modo);
   const args = ['-p', '--output-format', 'json',
                 '--permission-mode', altera ? 'acceptEdits' : 'plan',
                 '--append-system-prompt', papel];
   if (altera) args.push('--allowedTools', ...FERRAMENTAS);
+  // ensinar: a pessoa demonstra em arquivos de verdade, então as pastas autorizadas do agente podem ser editadas; nada além delas
+  if (CANAL_ENSINO(modo)) for (const p of ENSINO.pastasAutorizadas(s.pasta)) args.push('--add-dir', p);
   if (c.sessionId) args.push('--resume', c.sessionId);
 
-  c.rodando = true; c.erro = null;
-  c.historico.push({ quem: 'voce', texto, quando: Date.now(), modo });
+  c.rodando = true; c.erro = null; c.modoAtual = modo;
+  c.historico.push({ quem: 'voce', texto: rotulo || texto, quando: Date.now(), modo });
   gravarConversas();
 
   let saida = '', erroSaida = '';
@@ -659,7 +680,7 @@ function perguntar(id, texto, modo) {
   const prazo = setTimeout(() => {
     try { proc.kill(); } catch (e) { /* já morreu */ }
     c.erro = 'demorou demais e foi interrompido';
-  }, modo === 'construir' ? LIMITE_CONSTRUIR : LIMITE_CONVERSA);
+  }, (modo === 'construir' || CANAL_ENSINO(modo)) ? LIMITE_CONSTRUIR : LIMITE_CONVERSA);
 
   proc.stdout.on('data', d => { saida += d; });
   proc.stderr.on('data', d => { erroSaida += d; });
@@ -689,25 +710,50 @@ function perguntar(id, texto, modo) {
       modo, custo: j ? j.total_cost_usd : null, erro: j ? !!j.is_error : false
     });
     if (c.historico.length > 40) c.historico.splice(0, c.historico.length - 40);
+    if (CANAL_ENSINO(modo) && c.ensino) ENSINO.anotar(s.pasta, c.ensino, 'agente', resposta);
+    if (modo === 'destilar' && !c.erro) {
+      // o escritório instala a skill (a sessão nem sempre consegue escrever em .claude/); depois a demonstração fecha
+      const inst = ENSINO.instalarSkill(s.pasta, c.ensino);
+      const ult = c.historico[c.historico.length - 1];
+      ult.notas = (ult.notas || []).concat(inst.ok ? ['🎓 skill ' + (inst.substituiu ? 'atualizada' : 'instalada') + ': ' + inst.arquivo] : ['🎓 skill não instalada: ' + inst.motivo]);
+      ENSINO.anotar(s.pasta, c.ensino, 'sistema', inst.ok ? 'skill instalada em ' + inst.arquivo : 'skill não instalada: ' + inst.motivo);
+      c.sessionId = null; c.ensino = null;
+    }
     gravarConversas();
   });
 
-  console.log(`  💬 ${id}: "${texto.slice(0, 60)}" (${modo})`);
+  console.log(`  💬 ${id}: "${(rotulo || texto).slice(0, 60)}" (${modo})`);
   return { ok: true };
 }
 
-function estadoConversa(id) {
-  const c = conversaDe(id);
+function estadoConversa(id, canal) {
+  const c = conversaDe(id, canal);
   return {
     rodando: c.rodando, erro: c.erro, precisaLogin: !!c.precisaLogin,
-    temSessao: !!c.sessionId, historico: c.historico
+    temSessao: !!c.sessionId, historico: c.historico,
+    ensino: c.ensino || null, destilando: !!(c.rodando && c.modoAtual === 'destilar')
   };
 }
 
-function esquecerConversa(id) {
-  const c = conversaDe(id);
+/** "Tarefa concluída": a mesma sessão que viu a demonstração vira skill, amostra e propostas */
+function concluirEnsino(id, nomeTarefa) {
+  const s = lerRegistro()[id];
+  if (!s || !s.pasta) return { ok: false, motivo: 'sistema sem pasta' };
+  const c = conversaDe(id, 'ensino');
+  if (c.rodando) return { ok: false, motivo: 'espere a resposta terminar antes de concluir' };
+  if (!c.ensino || !c.historico.some(m => m.quem === 'voce' && m.modo === 'ensinar')) return { ok: false, motivo: 'nada para destilar: faça a demonstração primeiro, em Ensinar' };
+  const nome = String(nomeTarefa || '').trim().slice(0, 60);
+  let prompt = ENSINO.promptDestilar(s, s.pasta, nome, c.ensino);
+  // sem a sessão (escritório reiniciado, sessão expirada), a destilação lê a transcrição
+  if (!c.sessionId) prompt = 'Leia primeiro ' + c.ensino.replace(/\\/g, '/') + '/transcricao.md: é a demonstração inteira, que você não tem mais em memória.\n\n' + prompt;
+  const r = perguntar(id, prompt, 'destilar', '✅ Tarefa concluída' + (nome ? ': ' + nome : ''));
+  return r.ok ? { ok: true, ensino: c.ensino } : r;
+}
+
+function esquecerConversa(id, canal) {
+  const c = conversaDe(id, canal);
   if (c.proc) { try { c.proc.kill(); } catch (e) { /* já morreu */ } }
-  conversas.set(id, { sessionId: null, historico: [], rodando: false, proc: null, erro: null });
+  conversas.set(chaveConversa(id, canal), { sessionId: null, historico: [], rodando: false, proc: null, erro: null, ensino: null });
   gravarConversas();
   return { ok: true };
 }
@@ -1021,11 +1067,25 @@ const servidor = http.createServer(async (req, res) => {
     if (req.method !== 'POST') return json(res, 405, { ok: false, motivo: 'use POST' });
     return json(res, 200, acao === 'ligar' ? await ligar(id) : desligar(id));
   }
+  /* ---- o agente que aprende vendo: skills aprendidas, demonstrações e "Tarefa concluída" ---- */
+  const me = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/(ensino|ensinar\/concluir)$/i);
+  if (me) {
+    const [, id, acao] = me;
+    if (acao === 'ensino') {
+      const e = ENSINO.estado(id);
+      return json(res, e.ok ? 200 : 404, e.ok ? { ...e, conversa: estadoConversa(id, 'ensino') } : e);
+    }
+    if (!admin) return soAdmin();
+    if (req.method !== 'POST') return json(res, 405, { ok: false, motivo: 'use POST' });
+    return corpoJson(req, 1e4).then(b => { const r = concluirEnsino(id, b.nome); json(res, r.ok ? 200 : 400, r); })
+      .catch(e => json(res, 400, { ok: false, motivo: e.message }));
+  }
   const mc = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/(chat|limpar)$/i);
   if (mc) {
     const [, id, acao] = mc;
-    if (acao === 'limpar') return json(res, 200, esquecerConversa(id));
-    if (req.method === 'GET') return json(res, 200, estadoConversa(id));
+    const canal = url.searchParams.get('canal') === 'ensino' ? 'ensino' : 'normal';
+    if (acao === 'limpar') { if (canal === 'ensino' && !admin) return soAdmin(); return json(res, 200, esquecerConversa(id, canal)); }
+    if (req.method === 'GET') return json(res, 200, estadoConversa(id, canal));
     let corpo = '';
     req.on('data', d => { corpo += d; if (corpo.length > 20000) req.destroy(); });
     req.on('end', () => {
@@ -1033,8 +1093,8 @@ const servidor = http.createServer(async (req, res) => {
       try { b = JSON.parse(corpo || '{}'); } catch (e) { /* corpo inválido */ }
       const texto = String(b.texto || '').trim();
       if (!texto) return json(res, 400, { ok: false, motivo: 'pergunta vazia' });
-      const modo = b.modo === 'resolver' ? 'resolver' : b.modo === 'construir' ? 'construir' : 'investigar';
-      // investigar só lê; resolver e construir alteram o projeto, então pedem administrador
+      const modo = b.modo === 'resolver' ? 'resolver' : b.modo === 'construir' ? 'construir' : b.modo === 'ensinar' ? 'ensinar' : 'investigar';
+      // investigar só lê; resolver, construir e ensinar alteram o projeto (e o ensinar age nas pastas do agente), então pedem administrador
       if (modo !== 'investigar' && !admin) return soAdmin();
       json(res, 200, perguntar(id, texto, modo));
     });

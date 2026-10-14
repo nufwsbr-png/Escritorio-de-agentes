@@ -28,6 +28,7 @@ Cada linha é um componente da ANATOMIA.md, com teste no fim. Marque `[x]` só c
 ## Anotações
 - Este é o agente que vem com todo escritório novo. Serve de molde: a pasta tem a anatomia padrão que os agentes contratados recebem.
 - Para ver a construção do zero, contrate um agente novo na aba Contratar.
+- Caminho curto: em Conversar › Ensinar o dono demonstra a tarefa e "Tarefa concluída" a destila em `.claude/skills/<tarefa>/SKILL.md`, numa amostra e em propostas. Isso adianta os componentes 1, 3 e 6, mas não os marca: o teste de cada um continua valendo.
 
 ## Registro do que foi executado
 - 13/10/2026 — pasta criada pelo escritório na anatomia padrão; caso-01 rodado em ensaio como demonstração.

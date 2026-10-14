@@ -26,6 +26,7 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 | Contratar: anatomia, trilhas, setores, progresso, ficha | `agentes.js` | o construtor |
 | Plataformas do negócio (CRM, planilha, agenda, pasta…): cadastro e permissão por agente | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente | o botão 🔌 Plataformas, `node plataformas.js` |
 | Abertura do escritório (as dez perguntas) | `abertura.js`, skill `/criar-escritorio` | a skill, pelos scripts |
+| Agente que aprende vendo: modo Ensinar, "Tarefa concluída", skills aprendidas | `ensino.js`; no agente, `ensino/` (fora do git) e `.claude/skills/<tarefa>/SKILL.md` | o servidor (canal de ensino da conversa) e a destilação, na pasta do agente |
 | Planta: salas lidas da planta do cliente | `planta.js`, `data/planta.json` | a skill, `node planta.js gerar` |
 | Memória do escritório, recados e propostas | `memoria.js`, `data/mensagens.json`, `data/propostas.json` | o servidor |
 | Testador, reunião, avisos | `testador.js`, `reuniao.js`, `avisos.js`; `data/testes/`, `data/reunioes/`, `data/avisos.json` | o servidor, o botão 🔔 Avisos |

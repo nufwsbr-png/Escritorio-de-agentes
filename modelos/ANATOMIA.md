@@ -177,6 +177,25 @@ reinicia, testa, registra, só então a próxima. Um servidor só no ar.
 | Saída para o real | número de teste, depois o real; templates com descadastro | modo proposta até 10 aprovações seguidas |
 | Skill de referência | `criar-agente` (23 passos) | `criar-agente-tarefa` (23 passos) |
 
+## Dois caminhos para a mesma anatomia
+
+**Construir pela anatomia:** o construtor segue a lista acima, um componente
+por vez, com a skill de referência da trilha dizendo o como. É o caminho de
+quem constrói do zero.
+
+**Aprender vendo:** o dono faz a tarefa uma vez em Conversar › Ensinar, que
+é o Claude Code rodando na pasta do agente, agindo de verdade dentro das
+pastas autorizadas e das plataformas permitidas. Em "Tarefa concluída", a
+mesma sessão destila a demonstração em `.claude/skills/<tarefa>/SKILL.md`
+(quando usar, entrada, passo a passo exato, decisões do dono, quando parar e
+perguntar, como conferir, nunca), na primeira amostra com gabarito e em
+propostas para a constituição. Uma skill por tarefa; o agente pode ter
+várias. O lançador lista as skills aprendidas em toda rodada e o agente segue
+a que se aplica. Isso adianta os componentes 1, 3 e 6, mas não dispensa
+nenhum: o agente nasce em ensaio, confere-se na amostra que ele faz igual, e
+o portão continua sendo o portão. Só agente de tarefa aprende vendo: o
+atendente tem outro cérebro.
+
 ## A pasta de todo agente
 
 ```
@@ -201,4 +220,6 @@ server.js                   11. painel trancado, /saude, /log (e o chat de teste
 progresso-do-agente.md      15. a lista dos componentes e onde parou
 log.txt                     15. registro de cada rodada e conversa
 .claude/skills/<skill>/     a skill de referência da trilha: o COMO de cada componente
+.claude/skills/<tarefa>/    uma skill por tarefa que o dono ensinou vendo (destilada da demonstração)
+ensino/NN-data/             a transcrição de cada demonstração e o resumo da destilação (fora do git)
 ```

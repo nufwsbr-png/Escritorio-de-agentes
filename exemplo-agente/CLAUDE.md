@@ -16,6 +16,15 @@ da trilha está em `.claude/skills/criar-agente-tarefa/`: ela diz **como** const
 cada peça, com as armadilhas que aconteceram de verdade e o clique a clique
 dos sites. Consulte-a por componente; a ordem e a lista são as do progresso.
 
+Há um caminho mais curto para a mesma anatomia: **Ensinar**. O dono faz a
+tarefa em Conversar › Ensinar (é o Claude Code nesta pasta, agindo de
+verdade dentro das pastas autorizadas e das plataformas permitidas) e, em
+"Tarefa concluída", a demonstração vira `.claude/skills/<tarefa>/SKILL.md`,
+a primeira amostra em `amostras/` e propostas para a constituição. Durante a
+demonstração, nada de editar `prompt-agente.md`, constituição, lições,
+`cercas.json` ou `.claude/skills/`: isso é a destilação que faz, no fim. A
+anatomia continua valendo: o agente nasce em ensaio e passa pelo portão.
+
 ## Contrato com o escritório (não quebre)
 
 O escritório sobe este sistema com `node server.js` e a variável `PORT`
@@ -50,6 +59,8 @@ rotas e a porta pela variável `PORT`.
 | `memoria/entidades/` | o lançador | estado de cada entidade, a partir da pós-verificação, nunca só do relato |
 | `memoria/escritorio.md` | o escritório | o que o agente anotou nas conversas e reuniões do escritório |
 | `cercas.json` | o construtor | permissões do Claude Code por rodada. Fica aqui, não em `.claude/settings.json`, para não travar o construtor |
+| `.claude/skills/<tarefa>/SKILL.md` | a destilação do Ensinar | uma skill por tarefa que o dono **demonstrou** em Conversar › Ensinar: o passo a passo exato, as decisões dele, quando parar e perguntar, como conferir. O lançador lista as skills aprendidas em toda rodada e o agente segue a que se aplica. Nomes de variáveis, nunca valores; clientes anonimizados |
+| `ensino/NN-data/` | o escritório | a transcrição de cada demonstração e o `resumo.md` da destilação. Fora do git: pode ter dado de cliente |
 | `.env` | o dono e o escritório | segredos e escopo. O bloco entre `# >>> plataformas do escritório` e `# <<< plataformas do escritório <<<` é do ESCRITÓRIO: traz as plataformas permitidas (`PLATAFORMAS_PERMITIDAS`) e as variáveis delas; não edite à mão, não acrescente plataforma fora dele. O resto é do dono. Nunca imprima um valor: no chat, no progresso e no log só os NOMES |
 | `progresso-do-agente.md` | o construtor | a lista dos componentes. O escritório conta os `[x]` e procura o PORTÃO marcado e `## CONCLUÍDO` |
 | `log.txt` | o servidor e o lançador | cada rodada e cada conversa, uma linha com data |

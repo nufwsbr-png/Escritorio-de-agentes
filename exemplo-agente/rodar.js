@@ -71,8 +71,12 @@ function modoPedido(opts) {
 /* ---------------- o prompt: identidade + lições + recorte ---------------- */
 function sistema(modo) {
   const lic = base.licoes();
+  const skills = base.skillsAprendidas();
   return base.identidade() +
     '\n\nLIÇÕES APROVADAS PELO DONO (valem como regra; se conflitarem com a constituição, a constituição vence):\n' + (lic.length ? lic.join('\n') : '- (nenhuma ainda)') +
+    // o que o dono ensinou vendo: a SKILL.md é o passo a passo que ele mesmo demonstrou; o agente segue, não reinventa
+    (skills.length ? '\n\nSKILLS APRENDIDAS COM O DONO (ele demonstrou a tarefa e a demonstração virou o passo a passo; leia a SKILL.md da que se aplica a esta entidade ANTES de agir e siga-a exatamente, na ordem; se nenhuma se aplica, diga isso no relato):\n' +
+      skills.map(s => '- ' + s.nome + (s.descricao ? ': ' + s.descricao : '') + ' (' + s.arquivo + ')').join('\n') : '') +
     '\n\nREGRAS DA RODADA:' +
     '\n- Modo: ' + modo.toUpperCase() + '. ' + (modo === 'ensaio' ? 'Em ENSAIO você só lê: descreva, passo a passo, exatamente o que faria (origem, destino, nome), sem executar nada.'
       : modo === 'proposta' ? 'Em PROPOSTA você executa pelas ferramentas de tools/, que gravam em saidas/<entidade>/proposta/ para o dono aprovar.'

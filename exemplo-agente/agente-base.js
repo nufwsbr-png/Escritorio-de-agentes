@@ -75,6 +75,19 @@ const linhasDe = (rel) => semComentarios(ler(rel)).split(/\r?\n/).map(l => l.tri
 const licoes = () => linhasDe('memoria/licoes.md');
 const licoesPropostas = () => linhasDe('memoria/licoes-propostas.md');
 
+/** as skills que o dono ensinou vendo (.claude/skills/<tarefa>/SKILL.md), fora a referência da trilha (criar-agente*) */
+function skillsAprendidas() {
+  let nomes = [];
+  try { nomes = fs.readdirSync(arq('.claude', 'skills'), { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name); } catch (e) { return []; }
+  return nomes.filter(n => !/^criar-agente/.test(n)).map(n => {
+    const t = ler(path.join('.claude', 'skills', n, 'SKILL.md'));
+    if (!t) return null;
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(t);
+    const campo = (k) => { const m = fm && new RegExp('^' + k + ':\\s*(.+)$', 'm').exec(fm[1]); return m ? m[1].trim().replace(/^["']|["']$/g, '') : ''; };
+    return { id: n, nome: campo('name') || n, descricao: campo('description'), arquivo: '.claude/skills/' + n + '/SKILL.md' };
+  }).filter(Boolean);
+}
+
 function proporLicao(linha) {
   linha = String(linha).replace(/\s+/g, ' ').trim();
   if (!linha.startsWith('- ')) linha = '- ' + linha;
@@ -217,7 +230,7 @@ ${erro ? '<span style="color:var(--bad);font-size:12.5px">' + esc(erro) + '</spa
 module.exports = {
   PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias, acharClaude,
   ler, escrever, semComentarios, hoje, log, tail, progresso,
-  identidade, licoes, licoesPropostas, proporLicao, decidirLicao,
+  identidade, licoes, licoesPropostas, skillsAprendidas, proporLicao, decidirLicao,
   validarConstituicao, salvarConstituicao, voltarConstituicao, commitar,
   avisarEscritorio, temSenha, entrar, sessaoValida, cookieSessao, gatilhoAutorizado,
   lerCorpo, esc, ESTILO, paginaLogin
