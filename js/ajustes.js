@@ -19,7 +19,8 @@ const AJUSTES = (() => {
     if (!c) return '<span class="aj-status off">não consegui consultar</span>';
     if (!c.instalado) return '<span class="aj-status off">Claude Code não encontrado nesta máquina</span> <span class="hint">instale e rode <code>claude auth login</code></span>';
     if (!c.conectado) return '<span class="aj-status warn">instalado, mas sem login</span> <span class="hint">rode <code>claude auth login</code> num terminal, no mesmo usuário do Windows</span>';
-    return `<span class="aj-status ok">conectado</span> <span class="hint">${esc(c.conta || '')}${c.metodo ? ' · ' + esc(c.metodo) : ''}. Conversar, Construir, reunião, testador e as rodadas dos agentes de tarefa gastam a cota desta conta.</span>`;
+    const conta = c.conta ? esc(c.conta) : (ADMIN.ehAdmin() ? '' : 'conta visível só para o administrador');
+    return `<span class="aj-status ok">conectado</span> <span class="hint">${conta}${c.metodo ? (conta ? ' · ' : '') + esc(c.metodo) : ''}. Conversar, Construir, reunião, testador e as rodadas dos agentes de tarefa gastam a cota desta conta.</span>`;
   }
 
   async function abrir() {

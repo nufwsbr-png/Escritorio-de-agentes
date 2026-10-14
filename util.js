@@ -70,4 +70,21 @@ async function rodarCli(acoes, argv = process.argv.slice(2), imprime = s => cons
   }
 }
 
-module.exports = { slug, acharClaude, lerEnvArquivo, rodarCli };
+/** troca ${NOME} por env.NOME em qualquer string dentro do objeto; devolve também as variáveis que faltaram (vazias ou ausentes) */
+function expandirVars(obj, env) {
+  const faltam = new Set();
+  const pega = (k) => { const v = env instanceof Map ? env.get(k) : env[k]; if (v === undefined || v === '') { faltam.add(k); return ''; } return String(v); };
+  const anda = (x) => Array.isArray(x) ? x.map(anda)
+    : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, anda(v)]))
+    : typeof x === 'string' ? x.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, k) => pega(k)) : x;
+  return { valor: anda(obj), faltam: [...faltam] };
+}
+
+/** divide uma linha de comando em partes, respeitando aspas duplas: `npx -y "C:/pasta com espaço"` */
+function partirComando(linha) {
+  const partes = []; const re = /"([^"]*)"|(\S+)/g; let m;
+  while ((m = re.exec(String(linha || '')))) partes.push(m[1] !== undefined ? m[1] : m[2]);
+  return partes;
+}
+
+module.exports = { slug, acharClaude, lerEnvArquivo, rodarCli, expandirVars, partirComando };

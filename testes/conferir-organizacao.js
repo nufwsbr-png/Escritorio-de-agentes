@@ -19,7 +19,8 @@ const { execFileSync } = require('child_process');
 
 const ANATOMIA = ['CLAUDE.md', 'ANATOMIA.md', 'prompt-agente.md', path.join('skills', 'constituicao.md'),
   path.join('tools', 'base.js'), path.join('memoria', 'licoes.md'), 'progresso-do-agente.md', 'server.js', '.gitignore'];
-const PADRAO_CHAVE = /(api[_-]?key|apikey|token|senha|password|secret|chave)\s*[:=]\s*["'][^"'\s]{12,}["']/i;
+// `${VAR}` é referência a variável (mcp.json gerado), não chave
+const PADRAO_CHAVE = /(api[_-]?key|apikey|token|senha|password|secret|chave)\s*[:=]\s*["'](?!\$\{)[^"'\s]{12,}["']/i;
 const URL_FIXA = /https?:\/\/(?!localhost|127\.0\.0\.1|\[::1\]|\$\{)[a-z0-9.-]+\.[a-z]{2,}/i;
 const PORTA_FIXA = /:4[0-9]{3}(?![\w.])/;   // só porta em endereço (":4401"), não um tempo em ms nem um tamanho
 // onde endereço externo fixo pode existir

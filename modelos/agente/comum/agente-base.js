@@ -75,6 +75,27 @@ const linhasDe = (rel) => semComentarios(ler(rel)).split(/\r?\n/).map(l => l.tri
 const licoes = () => linhasDe('memoria/licoes.md');
 const licoesPropostas = () => linhasDe('memoria/licoes-propostas.md');
 
+/* ---------------- MCP: o que o escritório marcou para este agente ---------------- */
+/** troca ${NOME} por process.env.NOME dentro do objeto; devolve as variáveis que faltaram */
+function expandirVars(obj, env = process.env) {
+  const faltam = new Set();
+  const anda = (x) => Array.isArray(x) ? x.map(anda)
+    : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, anda(v)]))
+    : typeof x === 'string' ? x.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, k) => { const v = env[k]; if (v === undefined || v === '') { faltam.add(k); return ''; } return String(v); }) : x;
+  return { valor: anda(obj), faltam: [...faltam] };
+}
+/** mcp.json (gerado pelo escritório, com ${VAR}) expandido com o .env: { config, servidores, incompletos } ou null se não há MCP */
+function mcpDaRodada() {
+  let cfg = null; try { cfg = JSON.parse(ler('mcp.json', 'null')); } catch (e) { return null; }
+  if (!cfg || !cfg.mcpServers || !Object.keys(cfg.mcpServers).length) return null;
+  const servidores = {}, incompletos = [];
+  for (const [id, s] of Object.entries(cfg.mcpServers)) {
+    const r = expandirVars(s);
+    if (r.faltam.length) incompletos.push(id + ' (faltam ' + r.faltam.join(', ') + ')'); else servidores[id] = r.valor;
+  }
+  return { config: Object.keys(servidores).length ? { mcpServers: servidores } : null, servidores: Object.keys(servidores), incompletos };
+}
+
 /** as skills que o dono ensinou vendo (.claude/skills/<tarefa>/SKILL.md), fora a referência da trilha (criar-agente*) */
 function skillsAprendidas() {
   let nomes = [];
@@ -230,7 +251,7 @@ ${erro ? '<span style="color:var(--bad);font-size:12.5px">' + esc(erro) + '</spa
 module.exports = {
   PASTA, arq, AGENTE, PORT, ESCRITORIO, carregarEnv, variaveisVazias, acharClaude,
   ler, escrever, semComentarios, hoje, log, tail, progresso,
-  identidade, licoes, licoesPropostas, skillsAprendidas, proporLicao, decidirLicao,
+  identidade, licoes, licoesPropostas, skillsAprendidas, expandirVars, mcpDaRodada, proporLicao, decidirLicao,
   validarConstituicao, salvarConstituicao, voltarConstituicao, commitar,
   avisarEscritorio, temSenha, entrar, sessaoValida, cookieSessao, gatilhoAutorizado,
   lerCorpo, esc, ESTILO, paginaLogin

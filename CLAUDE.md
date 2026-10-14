@@ -24,7 +24,7 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 | Servidor do escritório: tela, API, sobe e vigia sistemas, tranca | `server.js` | o construtor |
 | Senha e sessão do administrador | `admin.js`, hash em `data/admin.json` | o botão 🔐 Admin ou `node abertura.js senha` |
 | Contratar: anatomia, trilhas, setores, progresso, ficha | `agentes.js` | o construtor |
-| Plataformas do negócio (CRM, planilha, agenda, pasta…): cadastro e permissão por agente | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente | o botão 🔌 Plataformas, `node plataformas.js` |
+| Plataformas do negócio (CRM, planilha, agenda, pasta, servidor MCP…): cadastro e permissão por agente | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente e `mcp.json` (tipo mcp, sem valores) | o botão 🔌 Plataformas, `node plataformas.js` |
 | Abertura do escritório (as dez perguntas) | `abertura.js`, skill `/criar-escritorio` | a skill, pelos scripts |
 | Agente que aprende vendo: modo Ensinar, "Tarefa concluída", skills aprendidas | `ensino.js`; no agente, `ensino/` (fora do git) e `.claude/skills/<tarefa>/SKILL.md` | o servidor (canal de ensino da conversa) e a destilação, na pasta do agente |
 | Planta: salas lidas da planta do cliente | `planta.js`, `data/planta.json` | a skill, `node planta.js gerar` |

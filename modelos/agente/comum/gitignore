@@ -2,6 +2,9 @@
 .env
 google-credentials.json
 *.pem
+# o mcp.json expandido com o .env, só durante uma chamada (o lançador e o Ensinar apagam depois)
+.mcp-rodada.json
+.mcp-ensino.json
 
 # o que o agente produz operando
 log.txt

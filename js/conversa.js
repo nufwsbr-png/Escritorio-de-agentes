@@ -120,18 +120,33 @@ const CONVERSA = (() => {
     pintar(e);
   }
 
+  /** o botão que abre o painel 🔌 Plataformas deste agente sem sair do monitor: marcar uma pasta ou um sistema vale na próxima mensagem */
+  const botaoPlataformas = (texto) => `<button class="mini act cv-plat">${esc(texto || '🔌 Plataformas deste agente')}</button>`;
+
   function introEnsino(e) {
     const skills = (ensino && ensino.skills) || [];
     const pastas = (ensino && ensino.pastasAutorizadas) || [];
     const plats = (ensino && ensino.plataformas) || [];
+    const faltaEscopo = !pastas.length && !plats.length;
     return `<div class="cv-msg sistema"><b>Modo Ensinar: você faz, ele aprende.</b><br><br>
       Este chat é o Claude Code rodando na pasta do agente. Faça a tarefa aqui, do seu jeito, como faria no terminal:
-      ele age de verdade, só dentro das pastas autorizadas${pastas.length ? ' (' + pastas.map(esc).join('; ') + ')' : ' (nenhuma ainda: ponha o caminho em PASTAS_AUTORIZADAS no .env dele)'}
-      e das plataformas permitidas${plats.length ? ' (' + plats.map(esc).join(', ') + ')' : ' (nenhuma marcada)'}.<br><br>
+      ele age de verdade, só dentro das pastas autorizadas${pastas.length ? ' (' + pastas.map(esc).join('; ') + ')' : ' (nenhuma ainda)'}
+      e das plataformas permitidas${plats.length ? ' (' + plats.map(esc).join(', ') + ')' : ' (nenhuma marcada)'}.
+      ${faltaEscopo ? '<br><br><b>Antes de começar</b>, dê a ele o alcance da tarefa: marque a pasta de trabalho (plataforma do tipo pasta) e os sistemas que ela usa. ' : '<br><br>Faltou pasta ou sistema? Marque e siga: a próxima mensagem já vem com o acesso. '}${botaoPlataformas()}<br><br>
       Quando terminar, clique <b>✅ Tarefa concluída</b>: a demonstração vira uma skill em <code>.claude/skills/</code>, a primeira amostra com gabarito
       e propostas para a constituição. Depois confira com <code>node rodar.js amostras/caso-NN</code> se ele faz igual.
       ${skills.length ? '<br><br>Skills que ele já aprendeu: ' + skills.map(s => '<b>' + esc(s.nome) + '</b>' + (s.descricao ? ' — ' + esc(s.descricao) : '')).join('; ') + '.' : ''}
       ${e && e.ensino ? '<br><br>Demonstração em andamento: <code>' + esc(String(e.ensino).replace(/\\\\/g, '/')) + '</code>.' : ''}</div>`;
+  }
+
+  function ligarBotoesPlataformas() {
+    el.linhas().querySelectorAll('.cv-plat').forEach(b => b.addEventListener('click', () => {
+      if (!id || typeof EXTRAS === 'undefined') return;
+      // o painel de plataformas abre por cima; ao fechar, o monitor volta ao Conversar em Ensinar
+      fechar();
+      EXTRAS.abrir(id, 'plataformas');
+      const volta = setInterval(() => { if (!EXTRAS.aberto()) { clearInterval(volta); abrir(id, 'ensinar'); } }, 600);
+    }));
   }
 
   function pintar(e) {
@@ -142,7 +157,9 @@ const CONVERSA = (() => {
       const quem = m.quem === 'voce' ? 'Você' : m.modo === 'destilar' ? 'Escritório' : ehEnsino() ? 'Claude Code' : 'Agente';
       const tag = m.modo === 'resolver' ? ' · modo resolver' : m.modo === 'construir' ? ' · construindo' : m.modo === 'ensinar' ? ' · ensinando' : m.modo === 'destilar' ? ' · destilando a skill' : '';
       const notas = (m.notas || []).length ? `<div class="cv-notas">${m.notas.map(esc).join(' · ')}</div>` : '';
-      return `<div class="cv-msg ${m.quem}${m.modo === 'destilar' ? ' destilar' : ''}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}</div>`;
+      // o Claude Code disse que falta pasta ou sistema: o botão de marcar aparece embaixo da fala
+      const falta = m.quem === 'agente' && m.modo === 'ensinar' && /FALTA:|🔌 Plataformas/.test(m.texto) ? `<div class="cv-notas">${botaoPlataformas('🔌 marcar em Plataformas deste agente')}</div>` : '';
+      return `<div class="cv-msg ${m.quem}${m.modo === 'destilar' ? ' destilar' : ''}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}${falta}</div>`;
     }).join('');
 
     const semLogin = e.precisaLogin || (claude && claude.instalado && !claude.conectado);
@@ -177,6 +194,7 @@ const CONVERSA = (() => {
     }
 
     c.innerHTML = html;
+    ligarBotoesPlataformas();
     const travado = e.rodando || semLogin || (claude && !claude.instalado);
     el.enviar().disabled = travado;
     el.enviar().textContent = e.rodando ? (ehEnsino() ? 'fazendo…' : 'pensando…') : semLogin ? 'sem login' : 'Enviar';

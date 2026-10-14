@@ -17,7 +17,8 @@
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
-const { slug, lerEnvArquivo, rodarCli } = require('./util');
+const UTIL = require('./util');
+const { slug, lerEnvArquivo, rodarCli } = UTIL;
 
 let dep = null;   // { ROOT, DADOS, lerRegistro, lerRegistroBruto, gravarRegistro }
 const ARQ = () => path.join(dep.DADOS || path.join(dep.ROOT, 'data'), 'plataformas.json');
@@ -37,8 +38,13 @@ const TIPOS = {
   email:     { nome: 'E-mail',                      emoji: '✉️', sufixos: ['USUARIO', 'SENHA_APP', 'PASTA'], canonicos: ['EMAIL_USUARIO', 'EMAIL_SENHA_APP', 'EMAIL_PASTA'] },
   banco:     { nome: 'Banco de dados',              emoji: '🗄️', sufixos: ['URL', 'CHAVE'],                 canonicos: ['BANCO_URL', 'BANCO_CHAVE'] },
   navegador: { nome: 'Sistema pelo navegador',      emoji: '🌐', sufixos: ['URL', 'PERFIL'],                canonicos: ['SISTEMA_URL', 'NAVEGADOR_PERFIL'] },
-  link:      { nome: 'Site ou link',                emoji: '🔖', sufixos: ['URL'],                          canonicos: [] }
+  link:      { nome: 'Site ou link',                emoji: '🔖', sufixos: ['URL'],                          canonicos: [] },
+  // servidor MCP: COMANDO (local, ex.: npx -y @modelcontextprotocol/server-filesystem C:/pasta) OU URL (remoto); TOKEN vira
+  // Authorization Bearer no remoto e variável de ambiente no local. Vai para o mcp.json do agente com ${VAR}, nunca com valor.
+  mcp:       { nome: 'Servidor MCP (ferramentas do Claude Code)', emoji: '🧩', sufixos: ['COMANDO', 'URL', 'TOKEN'], canonicos: [] }
 };
+const MCP_ARQ = 'mcp.json';
+const MCP_LEIA = 'gerado pelo escritório a partir das plataformas do tipo mcp marcadas para este agente; ${VAR} é expandido pelo lançador a partir do .env na hora da chamada. Não edite: marque em 🔌 Plataformas.';
 const SEM_PREFIXO = new Set(['GOOGLE_CREDENCIAIS_JSON']);
 const NOME_VAR = /^[A-Z][A-Z0-9_]*$/;
 const prefixoDe = (id) => String(id).toUpperCase().replace(/-/g, '_') + '_';
@@ -229,6 +235,57 @@ function manuaisDe(textoEnv) {
 }
 
 /* ---------------- sincronização ---------------- */
+/* ---------------- MCP: o mcp.json do agente, com ${VAR} no lugar dos valores ---------------- */
+/** a configuração de servidores MCP das plataformas `mcp` permitidas: sem valor nenhum, só ${PREFIXO_VAR} do bloco do .env */
+function mcpConfigPara(ids) {
+  const todas = lerTodas();
+  const servidores = {}, avisos = [];
+  for (const id of ids || []) {
+    const p = todas.find(x => x.id === id);
+    if (!p || p.tipo !== 'mcp') continue;
+    const pref = prefixoDe(p.id), vars = p.variaveis || {};
+    const tem = (s) => String(vars[pref + s] || '').trim() !== '';
+    const ref = (s) => '${' + pref + s + '}';
+    if (tem('URL')) {
+      servidores[p.id] = { type: 'http', url: ref('URL'), ...(tem('TOKEN') ? { headers: { Authorization: 'Bearer ' + ref('TOKEN') } } : {}) };
+    } else if (tem('COMANDO')) {
+      const partes = UTIL.partirComando(vars[pref + 'COMANDO']);
+      const env = {};
+      for (const k of Object.keys(vars)) if (k !== pref + 'COMANDO' && k !== pref + 'URL' && String(vars[k]).trim() !== '') env[k] = '${' + k + '}';
+      servidores[p.id] = { command: partes[0], args: partes.slice(1), ...(Object.keys(env).length ? { env } : {}) };
+    } else avisos.push(p.id + ': sem ' + pref + 'COMANDO nem ' + pref + 'URL; fora do mcp.json');
+  }
+  return { mcpServers: servidores, avisos };
+}
+
+/** grava (ou limpa) o mcp.json de um agente; só mexe no arquivo que o próprio escritório gerou */
+function gravarMcpDoAgente(pasta, ids) {
+  const arq = path.join(pasta, MCP_ARQ);
+  const { mcpServers, avisos } = mcpConfigPara(ids);
+  let atual = null; try { atual = JSON.parse(fs.readFileSync(arq, 'utf8')); } catch (e) { /* não há */ }
+  const nosso = !atual || (atual._leia && /gerado pelo escritório/.test(atual._leia));
+  if (!nosso) return { servidores: Object.keys(mcpServers), avisos: avisos.concat('mcp.json do agente não é do escritório: não tocado') };
+  if (!Object.keys(mcpServers).length) { if (atual) fs.unlinkSync(arq); return { servidores: [], avisos }; }
+  const novo = JSON.stringify({ _leia: MCP_LEIA, mcpServers }, null, 2) + '\n';
+  if (!atual || JSON.stringify(atual) !== JSON.stringify(JSON.parse(novo))) fs.writeFileSync(arq, novo);
+  return { servidores: Object.keys(mcpServers), avisos };
+}
+
+/** para uma chamada do Claude Code na pasta do agente (Ensinar): o mcp.json expandido com o .env dele, ou null.
+    Quem chama grava num arquivo temporário da pasta, passa --mcp-config e apaga depois: segredo não vai na linha de comando. */
+function mcpParaChamada(pasta) {
+  let cfg = null; try { cfg = JSON.parse(fs.readFileSync(path.join(pasta, MCP_ARQ), 'utf8')); } catch (e) { return null; }
+  if (!cfg || !cfg.mcpServers || !Object.keys(cfg.mcpServers).length) return null;
+  const env = UTIL.lerEnvArquivo(path.join(pasta, '.env'));
+  const servidores = {}, incompletos = [];
+  for (const [id, s] of Object.entries(cfg.mcpServers)) {
+    const r = UTIL.expandirVars(s, env);
+    if (r.faltam.length) incompletos.push(id + ' (faltam ' + r.faltam.join(', ') + ')'); else servidores[id] = r.valor;
+  }
+  if (!Object.keys(servidores).length) return { config: null, servidores: [], incompletos };
+  return { config: { mcpServers: servidores }, servidores: Object.keys(servidores), incompletos };
+}
+
 function sincronizarAgente(idSistema) {
   const s = dep.lerRegistro()[idSistema];
   if (!s) return { ok: false, motivo: 'sistema não encontrado: ' + idSistema };
@@ -242,7 +299,9 @@ function sincronizarAgente(idSistema) {
   catch (e) { return { ok: false, motivo: e.message }; }
   if (novo !== atual) fs.writeFileSync(arq, novo);
   const nomes = bloco.split('\n').map(l => /^([A-Z][A-Z0-9_]*)=/.exec(l)).filter(Boolean).map(m => m[1]);
-  return { ok: true, variaveis: nomes, mudou: novo !== atual };
+  let mcp = { servidores: [], avisos: [] };
+  try { mcp = gravarMcpDoAgente(s.pasta, s.plataformas || []); } catch (e) { mcp.avisos.push('mcp.json: ' + e.message); }
+  return { ok: true, variaveis: nomes, mudou: novo !== atual, mcps: mcp.servidores, avisos: mcp.avisos };
 }
 function sincronizarQuemTem(idPlataforma) {
   return usadaPor(idPlataforma).filter(sid => sincronizarAgente(sid).ok);
@@ -263,14 +322,15 @@ function definirDoAgente(idSistema, ids) {
   bruto[idSistema].plataformas = lista;
   dep.gravarRegistro(bruto);
   const r = sincronizarAgente(idSistema);
-  return { ok: true, plataformas: lista, sincronizado: r.ok, motivo: r.ok ? undefined : r.motivo, variaveis: r.variaveis || [] };
+  return { ok: true, plataformas: lista, sincronizado: r.ok, motivo: r.ok ? undefined : r.motivo, variaveis: r.variaveis || [], mcps: r.mcps || [], avisos: r.avisos || [] };
 }
 
 module.exports = {
   init(d) { dep = d; return module.exports; },
-  TIPOS, INICIO, FIM, prefixoDe, variaveisSugeridas,
+  TIPOS, INICIO, FIM, MCP_ARQ, prefixoDe, variaveisSugeridas,
   listar, obter, salvar, remover, criarLista, usadaPor,
   blocoEnvPara, aplicarBloco, separarBloco, manuaisDe,
+  mcpConfigPara, gravarMcpDoAgente, mcpParaChamada,
   sincronizarAgente, sincronizarTodos, definirDoAgente
 };
 

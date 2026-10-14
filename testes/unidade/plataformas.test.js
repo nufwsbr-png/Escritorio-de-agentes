@@ -137,3 +137,47 @@ test('revisão: aplicarBloco respeita o comentário da primeira seção e não m
   assert.equal(c.P.aplicarBloco(com, bloco), com, 'idempotente');
   assert.throws(() => c.P.aplicarBloco('# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>\nX="1"\n', bloco), /corrompido/);
 });
+
+test('mcp: plataforma do tipo mcp vira mcp.json do agente com ${VAR}, nunca valor; remoto por URL, local por COMANDO', (t) => {
+  const c = cenario(); t.after(c.limpar);
+  c.P.salvar({ id: 'drive-mcp', nome: 'Drive MCP', tipo: 'mcp', variaveis: { DRIVE_MCP_COMANDO: 'npx -y @mcp/gdrive "C:/pasta x"', DRIVE_MCP_TOKEN: 'segredo-mcp-1' } });
+  c.P.salvar({ id: 'crm-mcp', nome: 'CRM MCP', tipo: 'mcp', variaveis: { CRM_MCP_URL: 'https://mcp.crm.app/sse', CRM_MCP_TOKEN: 'segredo-mcp-2' } });
+  c.P.salvar({ id: 'vazio-mcp', nome: 'Vazio MCP', tipo: 'mcp', variaveis: { VAZIO_MCP_COMANDO: '' } });
+  c.P.salvar({ id: 'ophir', nome: 'Ophir', tipo: 'api', variaveis: { OPHIR_URL: 'u', OPHIR_TOKEN: 'tk' } });
+  const cfg = c.P.mcpConfigPara(['drive-mcp', 'crm-mcp', 'vazio-mcp', 'ophir']);
+  assert.deepEqual(cfg.mcpServers['drive-mcp'], { command: 'npx', args: ['-y', '@mcp/gdrive', 'C:/pasta x'], env: { DRIVE_MCP_TOKEN: '${DRIVE_MCP_TOKEN}' } });
+  assert.deepEqual(cfg.mcpServers['crm-mcp'], { type: 'http', url: '${CRM_MCP_URL}', headers: { Authorization: 'Bearer ${CRM_MCP_TOKEN}' } });
+  assert.equal('ophir' in cfg.mcpServers, false); assert.equal('vazio-mcp' in cfg.mcpServers, false);
+  assert.match(cfg.avisos.join(' '), /vazio-mcp/);
+  assert.ok(!JSON.stringify(cfg).includes('segredo-mcp'), 'o mcp.json não leva valor');
+
+  // sincronizar grava o mcp.json ao lado do .env, só para quem tem mcp; o .env leva as variáveis (prefixadas, sem canônico)
+  assert.equal(c.P.definirDoAgente('a', ['drive-mcp', 'crm-mcp']).ok, true);
+  assert.equal(c.P.definirDoAgente('b', ['ophir']).ok, true);
+  const mcpA = JSON.parse(fs.readFileSync(path.join(c.pastas.a, 'mcp.json'), 'utf8'));
+  assert.deepEqual(Object.keys(mcpA.mcpServers).sort(), ['crm-mcp', 'drive-mcp']); assert.match(mcpA._leia, /gerado pelo escritório/);
+  assert.equal(fs.existsSync(path.join(c.pastas.b, 'mcp.json')), false);
+  assert.match(env(c.pastas.a), /^DRIVE_MCP_TOKEN="segredo-mcp-1"$/m); assert.doesNotMatch(env(c.pastas.a), /SISTEMA_API/);
+
+  // para a chamada: expandido com o .env do agente; servidor com variável vazia fica de fora e é apontado
+  const ch = c.P.mcpParaChamada(c.pastas.a);
+  assert.deepEqual(ch.servidores.sort(), ['crm-mcp', 'drive-mcp']);
+  assert.equal(ch.config.mcpServers['crm-mcp'].headers.Authorization, 'Bearer segredo-mcp-2');
+  assert.equal(ch.config.mcpServers['drive-mcp'].env.DRIVE_MCP_TOKEN, 'segredo-mcp-1');
+  // remoto sem token é válido (sem Authorization); token esvaziado só no .env (desalinhado) deixa o servidor de fora
+  c.P.salvar({ id: 'crm-mcp', nome: 'CRM MCP', tipo: 'mcp', variaveis: { CRM_MCP_URL: 'https://mcp.crm.app/sse', CRM_MCP_TOKEN: '' } });
+  assert.equal('headers' in JSON.parse(fs.readFileSync(path.join(c.pastas.a, 'mcp.json'), 'utf8')).mcpServers['crm-mcp'], false);
+  c.P.salvar({ id: 'crm-mcp', nome: 'CRM MCP', tipo: 'mcp', variaveis: { CRM_MCP_URL: 'https://mcp.crm.app/sse', CRM_MCP_TOKEN: 'segredo-mcp-2' } });
+  fs.writeFileSync(path.join(c.pastas.a, '.env'), env(c.pastas.a).replace('CRM_MCP_TOKEN="segredo-mcp-2"', 'CRM_MCP_TOKEN=""'));
+  const ch2 = c.P.mcpParaChamada(c.pastas.a);
+  assert.deepEqual(ch2.servidores, ['drive-mcp']); assert.match(ch2.incompletos.join(' '), /crm-mcp \(faltam CRM_MCP_TOKEN\)/);
+
+  // tirar os mcp do agente apaga o mcp.json gerado; um mcp.json que não é do escritório não é tocado
+  assert.equal(c.P.definirDoAgente('a', ['ophir']).ok, true);
+  assert.equal(fs.existsSync(path.join(c.pastas.a, 'mcp.json')), false);
+  assert.equal(c.P.mcpParaChamada(c.pastas.a), null);
+  fs.writeFileSync(path.join(c.pastas.b, 'mcp.json'), '{"mcpServers":{"meu":{"command":"x"}}}');
+  const rb = c.P.definirDoAgente('b', ['drive-mcp']);
+  assert.match(rb.avisos.join(' '), /não é do escritório/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(c.pastas.b, 'mcp.json'), 'utf8')).mcpServers, { meu: { command: 'x' } });
+});

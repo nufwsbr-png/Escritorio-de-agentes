@@ -80,6 +80,7 @@ const PLATAFORMAS_UI = (() => {
     corpo.innerHTML = `
       <h3 style="font-family:var(--f-display);margin:0 0 4px">${id ? 'Editar plataforma' : 'Cadastrar plataforma'}</h3>
       <p class="hint" style="margin-bottom:12px">O nome vira o id e o prefixo das variáveis. O tipo sugere as variáveis e diz como os agentes a enxergam.</p>
+      <p class="hint pl-dica hidden" id="pl-dica-mcp" style="margin:-6px 0 12px">🧩 Servidor MCP: preencha <b>COMANDO</b> para um servidor local (ex.: <code>npx -y @modelcontextprotocol/server-filesystem C:/pasta</code>) <b>ou</b> <b>URL</b> para um remoto. <b>TOKEN</b> vira Authorization no remoto e variável de ambiente no local. O escritório grava um <code>mcp.json</code> na pasta de cada agente marcado, sem valores; o lançador libera só esses servidores, em proposta e real.</p>
       <div class="two">
         <div class="frow"><label>Nome</label><input id="pl-nome" value="${esc(p.nome)}" maxlength="60" placeholder="ex.: Ophir (CRM jurídico)"></div>
         <div class="frow"><label>Tipo</label><select id="pl-tipo" ${id ? 'disabled' : ''}>${opcoesTipo}</select></div>
@@ -110,6 +111,8 @@ const PLATAFORMAS_UI = (() => {
     };
     if (!id && !Object.keys(p.variaveis).length) sugerir();
     if ($('#pl-sugerir')) $('#pl-sugerir').onclick = sugerir;
+    const dica = () => $('#pl-dica-mcp').classList.toggle('hidden', $('#pl-tipo').value !== 'mcp');
+    dica(); $('#pl-tipo').onchange = dica;
     $('#pl-mais').onclick = () => { $('#pl-vars').insertAdjacentHTML('beforeend', linhaVar(prefixo(), '')); ligaLinhas(); };
     $('#pl-voltar').onclick = () => abrir();
     $('#pl-salvar').onclick = async () => {

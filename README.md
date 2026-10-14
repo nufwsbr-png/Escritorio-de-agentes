@@ -219,6 +219,16 @@ de referência leem. Trocar uma chave no escritório regrava o bloco de todos
 os agentes que a têm; depois é só religar. Robôs cadastrados à mão nunca têm
 o `.env` tocado.
 
+**Servidor MCP é um tipo de plataforma** (🧩). Cadastre o servidor uma vez,
+com `COMANDO` (local, por exemplo
+`npx -y @modelcontextprotocol/server-filesystem C:/pasta`) ou `URL` (remoto)
+e `TOKEN`. Marcar o agente faz o escritório gravar um `mcp.json` na pasta
+dele, sem valores, só `${VARIÁVEL}`. O lançador expande com o `.env` na hora
+da rodada, passa só esses servidores ao Claude Code (configuração estrita) e
+libera só as ferramentas deles, em proposta e real; em ensaio o agente
+continua só lendo. O Ensinar usa os mesmos servidores, para você demonstrar
+com eles. Nenhum MCP da máquina entra sem estar marcado.
+
 ## O monitor de cada agente
 
 | Botão | O que faz |

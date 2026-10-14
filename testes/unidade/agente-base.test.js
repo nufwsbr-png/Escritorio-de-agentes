@@ -31,3 +31,21 @@ test('o molde e o exemplo-agente têm o mesmo agente-base.js e rodar.js', () => 
   for (const [de, para] of [['modelos/agente/comum/agente-base.js', 'exemplo-agente/agente-base.js'], ['modelos/agente/tarefa/rodar.js', 'exemplo-agente/rodar.js'], ['modelos/agente/comum/tools/base.js', 'exemplo-agente/tools/base.js']])
     assert.equal(fs.readFileSync(path.join(ROOT, de), 'utf8'), fs.readFileSync(path.join(ROOT, para), 'utf8'), para + ' difere do molde ' + de);
 });
+
+test('agente-base.mcpDaRodada expande o mcp.json com o .env da pasta e deixa de fora o servidor sem variável', () => {
+  const c = pastaAgente();
+  try {
+    fs.writeFileSync(path.join(c.pasta, '.env'), 'DRIVE_MCP_TOKEN="seg-1"\nCRM_MCP_URL="https://mcp.crm.app/sse"\nCRM_MCP_TOKEN=""\n');
+    fs.writeFileSync(path.join(c.pasta, 'mcp.json'), JSON.stringify({ _leia: 'gerado pelo escritório', mcpServers: {
+      'drive-mcp': { command: 'npx', args: ['-y', 'x'], env: { DRIVE_MCP_TOKEN: '${DRIVE_MCP_TOKEN}' } },
+      'crm-mcp': { type: 'http', url: '${CRM_MCP_URL}', headers: { Authorization: 'Bearer ${CRM_MCP_TOKEN}' } } } }));
+    delete process.env.DRIVE_MCP_TOKEN; delete process.env.CRM_MCP_URL; delete process.env.CRM_MCP_TOKEN;
+    const base = require(path.join(c.pasta, 'agente-base.js'));   // carrega o .env desta pasta
+    const m = base.mcpDaRodada();
+    assert.deepEqual(m.servidores, ['drive-mcp']);
+    assert.equal(m.config.mcpServers['drive-mcp'].env.DRIVE_MCP_TOKEN, 'seg-1');
+    assert.match(m.incompletos.join(' '), /crm-mcp \(faltam CRM_MCP_TOKEN\)/);
+    fs.unlinkSync(path.join(c.pasta, 'mcp.json'));
+    assert.equal(base.mcpDaRodada(), null);
+  } finally { delete process.env.DRIVE_MCP_TOKEN; delete process.env.CRM_MCP_URL; delete process.env.CRM_MCP_TOKEN; c.limpar(); }
+});

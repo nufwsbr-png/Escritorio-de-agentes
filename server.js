@@ -658,9 +658,20 @@ function perguntar(id, texto, modo, rotulo) {
   const args = ['-p', '--output-format', 'json',
                 '--permission-mode', altera ? 'acceptEdits' : 'plan',
                 '--append-system-prompt', papel];
-  if (altera) args.push('--allowedTools', ...FERRAMENTAS);
-  // ensinar: a pessoa demonstra em arquivos de verdade, então as pastas autorizadas do agente podem ser editadas; nada além delas
-  if (CANAL_ENSINO(modo)) for (const p of ENSINO.pastasAutorizadas(s.pasta)) args.push('--add-dir', p);
+  const ferramentas = [...FERRAMENTAS];
+  // ensinar: a pessoa demonstra em arquivos de verdade, então as pastas autorizadas do agente podem ser editadas; nada além delas.
+  // E os servidores MCP marcados para o agente (mcp.json + .env dele), expandidos num arquivo temporário da pasta, só eles.
+  let mcpArq = null;
+  if (CANAL_ENSINO(modo)) {
+    for (const p of ENSINO.pastasAutorizadas(s.pasta)) args.push('--add-dir', p);
+    const mcp = PLATAFORMAS.mcpParaChamada(s.pasta);
+    if (mcp && mcp.config) {
+      mcpArq = path.join(s.pasta, '.mcp-ensino.json');
+      try { fs.writeFileSync(mcpArq, JSON.stringify(mcp.config)); args.push('--mcp-config', mcpArq, '--strict-mcp-config'); for (const id of mcp.servidores) ferramentas.push('mcp__' + id); }
+      catch (e) { mcpArq = null; }
+    }
+  }
+  if (altera) args.push('--allowedTools', ...ferramentas);
   if (c.sessionId) args.push('--resume', c.sessionId);
 
   c.rodando = true; c.erro = null; c.modoAtual = modo;
@@ -684,9 +695,10 @@ function perguntar(id, texto, modo, rotulo) {
 
   proc.stdout.on('data', d => { saida += d; });
   proc.stderr.on('data', d => { erroSaida += d; });
-  proc.on('error', e => { c.erro = 'não consegui executar o claude: ' + e.message; });
+  const limpaMcp = () => { if (mcpArq) { try { fs.unlinkSync(mcpArq); } catch (e) {} mcpArq = null; } };
+  proc.on('error', e => { c.erro = 'não consegui executar o claude: ' + e.message; limpaMcp(); });
   proc.on('exit', () => {
-    clearTimeout(prazo);
+    clearTimeout(prazo); limpaMcp();
     c.rodando = false; c.proc = null;
     let j = null;
     try { j = JSON.parse(saida); } catch (e) { /* saída não era JSON */ }
@@ -783,7 +795,8 @@ function estadoClaude() {
       const dados = {
         instalado: !!j,
         conectado: !!(j && j.loggedIn),
-        metodo: j ? j.authMethod : null
+        metodo: j ? j.authMethod : null,
+        conta: j ? (j.email || j.account || null) : null   // só sai da rota para o administrador
       };
       loginCache = { quando: Date.now(), dados };
       res(dados);
@@ -998,7 +1011,10 @@ const servidor = http.createServer(async (req, res) => {
   if (rota === '/api/ajustes' && req.method === 'GET') return json(res, 200, ABERTURA.atual());
   if (rota === '/api/planta' && req.method === 'GET') { const p = lerPlanta(); return json(res, 200, p || { padrao: true }); }
   if (rota === '/api/claude' && req.method === 'GET') {
-    return json(res, 200, await estadoClaude());
+    // o e-mail da conta é dado da máquina, não do cliente: só o administrador vê (decisão do dono, 14/10/2026)
+    const e = { ...(await estadoClaude()) };
+    if (!admin) delete e.conta;
+    return json(res, 200, e);
   }
   /* A equipe mora aqui, não no navegador. Ver o comentário em roster.js:
      o localStorage já apagou o quadro inteiro uma vez. */

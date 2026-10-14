@@ -38,3 +38,13 @@ test('rodarCli executa a ação pedida e responde --ajuda', async () => {
   const r = await rodarCli({ soma: () => 0 }, ['inexistente'], imprime);
   assert.equal(r, 1);
 });
+
+test('expandirVars troca ${VAR} em objetos e listas e aponta o que faltou; partirComando respeita aspas', () => {
+  const UTIL = require('../../util');
+  const r = UTIL.expandirVars({ url: '${A}/x', headers: { Authorization: 'Bearer ${B}' }, args: ['${A}', 'fixo'] }, new Map([['A', 'http://h'], ['B', '']]));
+  assert.deepEqual(r.valor, { url: 'http://h/x', headers: { Authorization: 'Bearer ' }, args: ['http://h', 'fixo'] });
+  assert.deepEqual(r.faltam, ['B']);
+  assert.deepEqual(UTIL.expandirVars({ a: '${C}' }, { C: 'v' }).faltam, []);
+  assert.deepEqual(UTIL.partirComando('npx -y @mcp/server-filesystem "C:/pasta com espaço" --ro'), ['npx', '-y', '@mcp/server-filesystem', 'C:/pasta com espaço', '--ro']);
+  assert.deepEqual(UTIL.partirComando(''), []);
+});

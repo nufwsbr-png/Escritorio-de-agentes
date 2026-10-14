@@ -13,7 +13,7 @@ function pastaAgente() {
   fs.writeFileSync(path.join(pasta, '.env'),
     '# .env\nPASTAS_AUTORIZADAS="' + autorizada.replace(/\\/g, '\\\\') + ';C:\\\\nao\\\\existe"\n' +
     '# >>> plataformas do escritório (gerado; edite no escritório, não aqui) >>>\nPLATAFORMAS_PERMITIDAS="ophir;drive"\nOPHIR_TOKEN="segredo-77"\nSISTEMA_API_TOKEN="segredo-77"\n# <<< plataformas do escritório <<<\n' +
-    'PAINEL_SENHA="senha-oculta"\nMODO_REAL="nao"\nVAZIA=""\n');
+    'PAINEL_SENHA="oculta-9"\nMODO_REAL="nao"\nVAZIA=""\n');
   fs.mkdirSync(path.join(pasta, '.claude', 'skills', 'criar-agente-tarefa'), { recursive: true });
   fs.writeFileSync(path.join(pasta, '.claude', 'skills', 'criar-agente-tarefa', 'SKILL.md'), '---\nname: criar-agente-tarefa\ndescription: referência\n---\n');
   fs.mkdirSync(path.join(pasta, 'amostras', 'caso-01'), { recursive: true });
@@ -63,14 +63,14 @@ test('o .env entra nos prompts só como nomes e caminhos: nenhum valor, nenhuma 
     const s = { nome: 'Tati', setor: 'Faturamento', negocio: 'Clínica X' };
     const papel = ENSINO.papelEnsinar(s, c.pasta);
     assert.ok(papel.includes(c.autorizada) && papel.includes('ophir, drive') && papel.includes('OPHIR_TOKEN'));
-    assert.ok(!papel.includes('segredo-77') && !papel.includes('senha-oculta'), 'o papel não vaza valor');
+    assert.ok(!papel.includes('segredo-77') && !papel.includes('oculta-9'), 'o papel não vaza valor');
     assert.match(papel, /DEMONSTRAR/); assert.match(papel, /Não edite prompt-agente\.md/);
     const rel = ENSINO.iniciar(c.pasta);
     const p = ENSINO.promptDestilar(s, c.pasta, 'Organizar notas fiscais', rel);
     assert.ok(p.includes('.claude/skills/organizar-notas-fiscais/SKILL.md'));
     assert.ok(p.includes('amostras/caso-02/esperado.md'), 'o caso-01 já existe, a demonstração vira o caso-02');
     assert.ok(p.includes(rel) && p.includes('<proposta arquivo="skills/constituicao.md"'));
-    assert.ok(!p.includes('segredo-77') && !p.includes('senha-oculta'));
+    assert.ok(!p.includes('segredo-77') && !p.includes('oculta-9'));
     assert.ok(p.includes(rel + '/skill-destilada.md'), 'a destilação grava em ensino/, o escritório instala');
     const semNome = ENSINO.promptDestilar(s, c.pasta, '', rel);
     assert.ok(semNome.includes('.claude/skills/tarefa-01/SKILL.md'), 'sem nome, a skill ganha o número da demonstração');

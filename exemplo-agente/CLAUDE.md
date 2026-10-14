@@ -59,6 +59,7 @@ rotas e a porta pela variável `PORT`.
 | `memoria/entidades/` | o lançador | estado de cada entidade, a partir da pós-verificação, nunca só do relato |
 | `memoria/escritorio.md` | o escritório | o que o agente anotou nas conversas e reuniões do escritório |
 | `cercas.json` | o construtor | permissões do Claude Code por rodada. Fica aqui, não em `.claude/settings.json`, para não travar o construtor |
+| `mcp.json` | o escritório | os servidores MCP marcados para este agente em 🔌 Plataformas, com `${VARIÁVEL}` no lugar dos valores. O lançador expande com o `.env` na rodada (proposta e real) e libera só eles. Não edite: marque no escritório |
 | `.claude/skills/<tarefa>/SKILL.md` | a destilação do Ensinar | uma skill por tarefa que o dono **demonstrou** em Conversar › Ensinar: o passo a passo exato, as decisões dele, quando parar e perguntar, como conferir. O lançador lista as skills aprendidas em toda rodada e o agente segue a que se aplica. Nomes de variáveis, nunca valores; clientes anonimizados |
 | `ensino/NN-data/` | o escritório | a transcrição de cada demonstração e o `resumo.md` da destilação. Fora do git: pode ter dado de cliente |
 | `.env` | o dono e o escritório | segredos e escopo. O bloco entre `# >>> plataformas do escritório` e `# <<< plataformas do escritório <<<` é do ESCRITÓRIO: traz as plataformas permitidas (`PLATAFORMAS_PERMITIDAS`) e as variáveis delas; não edite à mão, não acrescente plataforma fora dele. O resto é do dono. Nunca imprima um valor: no chat, no progresso e no log só os NOMES |

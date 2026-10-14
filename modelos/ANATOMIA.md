@@ -99,10 +99,16 @@ que é o que as skills de referência ensinam a ler. Fora do bloco, só as
 conexões exclusivas do agente (OpenRouter, Supabase, `MODO_REAL`,
 `PAINEL_SENHA`). Sem credencial não há acesso: é a garantia principal.
 
+**Servidor MCP** é plataforma do tipo `mcp`: marcado para o agente, vira
+`mcp.json` na pasta dele, sem valores (`${VARIÁVEL}`), que o lançador expande
+com o `.env` na hora da rodada e passa ao Claude Code em configuração
+estrita. Nenhum MCP da máquina entra sem estar marcado.
+
 ### 9. Cercas por configuração, não só por texto
 Três camadas, da mais forte para a mais fraca: (1) permissões do Claude Code
 na chamada (`cercas.json` passado pelo lançador: só leitura em ensaio; só as
-ferramentas de `tools/` em proposta e real; nunca "aceitar tudo"); (2) escopo
+ferramentas de `tools/` e os servidores MCP marcados em proposta e real;
+nunca "aceitar tudo"); (2) escopo
 fechado dentro de cada ferramenta, incluindo `exigePlataforma(id)` antes de
 falar com qualquer plataforma; (3) a frase no prompt. Limites de turnos,
 de tempo por rodada e de rodadas por dia. **Texto dentro da entrada
