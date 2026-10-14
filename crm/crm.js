@@ -311,14 +311,32 @@ function estadoDoEscritorio() {
     } catch (e) { resolve(null); }
   });
 }
+/* A equipe: as pessoas (login) e os funcionários-agentes. Do agente, o CRM mostra o que o escritório diz dele agora
+   (estado, setor, treinamento, a cara do boneco) e o que ele tem aqui (fichas com ele, propostas esperando).
+   O boneco é o do escritório: o look vem de lá e fica guardado em usuarios.json, para a tela desenhar o mesmo
+   boneco quando o escritório estiver fora do ar. Contratar, treinar e dar plataforma continuam só no escritório. */
 async function equipe() {
   const u = usuarios(); const cg = cargos();
   const est = await estadoDoEscritorio();
   const porta = Number((dep.env || process.env).ESCRITORIO_PORTA) || 4321;
+  const fichas = (await dep.D.listar('fichas')).filter(f => f.status === 'ativa');
+  const pend = (await dep.D.listar('propostas')).filter(p => p.estado === 'pendente');
+  const comigo = (tipo, id) => fichas.filter(f => f.responsavel && f.responsavel.tipo === tipo && f.responsavel.id === id).length;
+  let mudou = false;
+  const agentes = u.agentes.map(a => {
+    const s = Array.isArray(est) ? est.find(x => x.id === a.id) : null;
+    if (s && s.look && s.look.skin && JSON.stringify(s.look) !== JSON.stringify(a.look)) { a.look = s.look; mudou = true; }
+    const treinando = !!(s && s.construcao && s.construcao.emTreinamento);
+    return { id: a.id, nome: a.nome, cargo: a.cargo, cargoNome: (cg[a.cargo] || {}).nome || a.cargo, setor: s ? s.setor : null, trilha: s ? s.trilha : null,
+             estado: s ? (treinando ? 'em treinamento' : s.estado) : 'escritório fora do ar', emTreinamento: treinando,
+             construcao: s && s.construcao ? { passo: s.construcao.passo, total: s.construcao.total, pct: s.construcao.pct } : null,
+             look: a.look || null, fichas: comigo('agente', a.id), propostasPendentes: pend.filter(p => p.autor && p.autor.id === a.id).length,
+             monitor: 'http://localhost:' + porta + '/#agente=' + a.id };
+  });
+  if (mudou) gravarUsuarios(u);
   return {
-    pessoas: u.pessoas.map(p => ({ id: p.id, nome: p.nome, cargo: p.cargo, cargoNome: (cg[p.cargo] || {}).nome || p.cargo, ativa: p.ativa !== false })),
-    agentes: u.agentes.map(a => { const s = Array.isArray(est) ? est.find(x => x.id === a.id) : null; return { id: a.id, nome: a.nome, cargo: a.cargo, cargoNome: (cg[a.cargo] || {}).nome || a.cargo, setor: s ? s.setor : null, estado: s ? (s.construcao && s.construcao.emTreinamento ? 'em treinamento' : s.estado) : 'escritório fora do ar', monitor: 'http://localhost:' + porta + '/#agente=' + a.id }; }),
-    escritorioNoAr: Array.isArray(est), cargos: cg
+    pessoas: u.pessoas.map(p => ({ id: p.id, nome: p.nome, cargo: p.cargo, cargoNome: (cg[p.cargo] || {}).nome || p.cargo, ativa: p.ativa !== false, fichas: comigo('pessoa', p.id) })),
+    agentes, escritorioNoAr: Array.isArray(est), escritorio: 'http://localhost:' + porta + '/', cargos: cg
   };
 }
 

@@ -7,11 +7,13 @@
    monitor e os painéis extras abrem, o modal de plataformas e as caixas do
    contratar aparecem, o aviso de "não aberto" e os Ajustes funcionam, e a
    planta de 7 salas da clínica redesenha o escritório (salas, mesas, caminho
-   até a reunião). Sem planta, as 5 salas de sempre.
+   até a reunião). Sem planta, as 5 salas de sempre. No fim, um CRM criado por
+   crm/criar.js numa pasta temporária: login, a aba Equipe com o boneco do
+   agente e o estado lido do escritório, o link #agente=<id> abrindo o monitor.
 
    Precisa do Chrome instalado. Uso: node testes/fumaca.js  (ou npm test)
    =========================================================== */
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
@@ -19,7 +21,7 @@ const os = require('os');
 const assert = require('node:assert');
 
 const ROOT = path.join(__dirname, '..');
-const PORT = 4398, DEVTOOLS = 9336;
+const PORT = 4398, DEVTOOLS = 9336, PORT_CRM = 4396;
 const URL_ALVO = 'http://localhost:' + PORT + '/';
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
   '/usr/bin/google-chrome', '/usr/bin/chromium', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
@@ -44,7 +46,10 @@ function dadosDeTeste(comPlanta) {
     const r = P.gerar(JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'salas-clinica.json'), 'utf8')));
     assert.equal(r.ok, true, r.motivo);
     fs.writeFileSync(path.join(DADOS, 'planta.json'), JSON.stringify(r.planta, null, 2));
-    fs.writeFileSync(path.join(DADOS, 'config.json'), JSON.stringify({ empresa: 'Clínica Teste', nome: 'Escritório da Clínica Teste' }));
+    fs.writeFileSync(path.join(DADOS, 'config.json'), JSON.stringify({ empresa: 'Clínica Teste', nome: 'Escritório da Clínica Teste', porta: PORT }));
+    const ag = path.join(DADOS, 'ag-leo'); fs.mkdirSync(ag); fs.writeFileSync(path.join(ag, '.env'), '');
+    reg.leo = { nome: 'Léo', tipo: 'local', pasta: ag, comando: 'node', args: ['server.js'], porta: 4395, trilha: 'tarefa', setor: 'Prospecção', plataformas: [] };
+    fs.writeFileSync(path.join(DADOS, 'sistemas.json'), JSON.stringify(reg, null, 2));
   }
   return DADOS;
 }
@@ -165,15 +170,58 @@ async function cenarioPlanta(b) {
     return 'não chegou: ' + Math.round(ac.x) + ',' + Math.round(ac.y) + ' em ' + WORLD.roomAt(Math.round(ac.x), Math.round(ac.y));
   })()`);
   ok(chegou === 'chegou', 'um boneco anda do corredor até a sala de reunião (' + chegou + ')');
+  await b.ev('location.hash = "#agente=exemplo"'); await espera(1200);
+  ok(await b.ev('!document.getElementById("monitor").classList.contains("hidden") && document.getElementById("mon-nome").textContent.length > 0'), '#agente=exemplo abre o monitor do exemplo (o link que o CRM usa)');
+  await b.ev('document.getElementById("mon-x").click()'); await b.ev('history.replaceState(null, "", location.pathname)'); await espera(300);
+  const sis = await getJson('http://127.0.0.1:' + PORT + '/api/sistemas');
+  ok(!!(sis.find(s => s.id === 'exemplo') || {}).look, '/api/sistemas leva o look do boneco do exemplo (a tela gravou a equipe)');
   await b.ev('document.getElementById("z-fit").click()'); await espera(600);
   if (process.env.FUMACA_FOTO) { const shot = await b.foto(); fs.writeFileSync(process.env.FUMACA_FOTO, Buffer.from(shot, 'base64')); }
+}
+
+/* ---------------- o CRM ---------------- */
+async function subirCrm(DADOS) {
+  const CRM = fs.mkdtempSync(path.join(os.tmpdir(), 'esc-crm-'));
+  fs.mkdirSync(path.join(CRM, 'painel')); for (const f of ['index.html', 'app.js', 'style.css']) fs.copyFileSync(path.join(ROOT, 'crm', 'painel', f), path.join(CRM, 'painel', f));
+  const resp = path.join(CRM, 'r.json');
+  fs.writeFileSync(resp, JSON.stringify({ entidade: { singular: 'paciente', plural: 'pacientes', chave: 'telefone' }, etapas: [{ nome: 'Novo contato', responsavel: 'leo' }, { nome: 'Avaliação', responsavel: 'pessoa:chefe' }],
+    pessoas: [], agentes: [{ id: 'leo', cargo: 'Prospecção' }], chefe: 'Dra. Carla', autonomia: 'b', sensiveis: ['cpf'], acesso: 'aqui', fichas: { onde: 'local' }, porta: PORT_CRM }));
+  const r = spawnSync(process.execPath, ['crm/criar.js', 'aplicar', resp], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, ESCRITORIO_DADOS: DADOS, CRM_PASTA: CRM } });
+  const j = JSON.parse((r.stdout || '').trim().split('\n').pop() || '{}'); if (!j.ok) throw new Error('criar o CRM falhou: ' + r.stdout + r.stderr);
+  const p = spawn(process.execPath, ['server.js'], { cwd: path.join(ROOT, 'crm'), env: { ...process.env, CRM_PASTA: CRM, PORT: String(PORT_CRM), ESCRITORIO_PORTA: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let saida = ''; p.stdout.on('data', d => saida += d); p.stderr.on('data', d => saida += d);
+  for (let i = 0; i < 50; i++) { try { await getJson('http://127.0.0.1:' + PORT_CRM + '/saude'); return { p, CRM }; } catch (e) { await espera(200); } }
+  throw new Error('o CRM não subiu: ' + saida);
+}
+async function cenarioCrm(b, CRM) {
+  console.log('\nCenário 3: o CRM com o escritório no ar');
+  await b.ir('http://localhost:' + PORT_CRM + '/');
+  ok(await b.ev('!document.getElementById("login").classList.contains("hidden")'), 'o CRM pede login');
+  ok(await b.ev('typeof AVATAR !== "undefined" && typeof ISO !== "undefined"'), 'a tela do CRM carregou o avatar.js e o iso.js do escritório');
+  // a tela pede a senha inicial ao servidor, que a mostra UMA vez e apaga o arquivo: o teste lê na tela, como a chefe
+  const cods = await b.ev('[...document.querySelectorAll("#primeira code")].map(c => c.textContent)');
+  ok(Array.isArray(cods) && cods.length === 2 && cods[1].length >= 8, 'a primeira abertura mostra login e senha do chefe (uma vez, só de localhost)');
+  const senha = { login: cods[0], senha: cods[1] };
+  await b.ev('document.getElementById("lg-login").value = "' + senha.login + '"; document.getElementById("lg-senha").value = "' + senha.senha + '"; document.getElementById("form-login").requestSubmit()'); await espera(1500);
+  ok(await b.ev('document.getElementById("login").classList.contains("hidden")'), 'o chefe entrou');
+  ok(!fs.existsSync(path.join(CRM, 'data', 'primeira-senha.json')), 'a senha inicial foi apagada depois de mostrada');
+  await b.ev('document.getElementById("modal-x").click()');
+  ok(await b.ev('document.querySelectorAll(".coluna").length') === 2, 'o quadro tem as 2 etapas');
+  await b.ev('document.querySelector("#abas [data-aba=equipe]").click()'); await espera(1500);
+  ok(await b.ev('document.querySelectorAll(".item.agente canvas.boneco").length') === 1, 'a aba Equipe desenha o boneco do Léo');
+  ok(await b.ev('document.querySelector(".item.agente canvas.boneco").width') > 0, 'o boneco foi pintado (canvas com tamanho)');
+  ok(String(await b.ev('document.querySelector(".item.agente .estado")?.textContent')) === 'desligado', 'o estado vem do escritório: o Léo está desligado');
+  ok(String(await b.ev('document.querySelector(".item.agente a[href*=agente]")?.href')).includes(':' + PORT + '/#agente=leo'), 'o link para o monitor aponta para o escritório');
+  ok(await b.ev('document.body.textContent.includes("Prospecção") && document.body.textContent.includes("0 pacientes com ele")'), 'cargo, setor e as fichas com ele aparecem');
+  ok(!(await b.ev('document.body.innerHTML.includes("CRM_TOKEN") || document.body.innerHTML.includes("tokenHash")')), 'a tela não mostra token nenhum');
+  if (process.env.FUMACA_FOTO_CRM) { const shot = await b.foto(); fs.writeFileSync(process.env.FUMACA_FOTO_CRM, Buffer.from(shot, 'base64')); }
 }
 
 (async () => {
   if (typeof WebSocket === 'undefined') { console.log('fumaça pulada: precisa do Node 22 ou mais novo (WebSocket nativo); o resto do npm test vale'); process.exit(0); }
   if (!CHROME) { console.log('fumaça pulada: Chrome não encontrado (defina CHROME=caminho)'); process.exit(0); }
   const DADOS1 = dadosDeTeste(false), DADOS2 = dadosDeTeste(true);
-  let esc = null, b = null;
+  let esc = null, b = null, crm = null;
   try {
     b = await abrirChrome();
     esc = await subirEscritorio(DADOS1);
@@ -182,14 +230,17 @@ async function cenarioPlanta(b) {
     esc = await subirEscritorio(DADOS2);
     b.erros.length = 0;
     await cenarioPlanta(b);
+    crm = await subirCrm(DADOS2);
+    await cenarioCrm(b, crm.CRM);
     ok(b.erros.length === 0, 'nenhum erro de JavaScript' + (b.erros.length ? ': ' + b.erros.join(' | ') : ''));
   } catch (e) {
     falhas++; console.log('  ✖ a fumaça quebrou: ' + e.message);
   } finally {
     if (b) b.fechar();
     if (esc) esc.kill();
+    if (crm) crm.p.kill();
     await espera(600);
-    for (const d of [DADOS1, DADOS2]) fs.rmSync(d, { recursive: true, force: true });
+    for (const d of [DADOS1, DADOS2, crm && crm.CRM].filter(Boolean)) fs.rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
   console.log(falhas ? '\nfumaça: ' + falhas + ' falha(s)' : '\nfumaça ok');
   process.exit(falhas ? 1 : 0);

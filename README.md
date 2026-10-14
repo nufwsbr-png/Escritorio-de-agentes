@@ -303,7 +303,12 @@ rejeita), tarefas, equipe, painel e importação de planilha. Uma ficha, um
 responsável por vez: quando uma pessoa está com a ficha, o agente não escreve
 nela; ao devolver, o que a pessoa fez é decisão final. Fichas ficam em
 arquivos locais ou no Supabase (cadastrado em 🔌 Plataformas), à escolha na
-criação; a senha do chefe aparece uma vez na primeira abertura da tela.
+criação; a senha do chefe aparece uma vez na primeira abertura da tela. Na
+aba **Equipe**, cada agente aparece com o mesmo boneco do escritório, o
+cargo, o estado lido do escritório (no ar, desligado, em treinamento), as
+fichas e propostas que tem e um link que abre o monitor dele
+(`/#agente=<id>`); contratar, treinar e dar plataforma continuam só no
+escritório.
 
 No agente, a plataforma `crm` traz a ferramenta `tools/crm.js` (ler, procurar,
 criar sem duplicar, anotar, campo, mover, tarefa, mensagem) e muda onde a

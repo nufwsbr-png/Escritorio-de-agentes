@@ -11,7 +11,20 @@
   let EU = null, CFG = null, EQUIPE = { pessoas: [], agentes: [] };
   let ESCRITORIO_PORTA = 4321;   // o servidor diz a porta certa em /api/config (escritorioPorta)
   const nomeResp = r => { if (!r) return 'ninguém'; const l = r.tipo === 'pessoa' ? EQUIPE.pessoas : EQUIPE.agentes; const x = l.find(p => p.id === r.id); return x ? x.nome : r.id; };
-  const ini = r => r ? '<span class="ini ' + (r.tipo === 'agente' ? 'ag' : '') + '" title="' + esc(r.tipo === 'agente' ? 'agente' : 'pessoa') + '">' + esc(nomeResp(r).slice(0, 1).toUpperCase()) + '</span>' : '';
+  /* quem está com a ficha: o boneco do escritório para agente, a inicial para pessoa.
+     O boneco é um <canvas> pintado depois que o HTML entra (pintarBonecos). */
+  const ini = r => !r ? '' : r.tipo === 'agente' && temBoneco()
+    ? '<canvas class="mini" data-boneco="' + esc(r.id) + '" title="agente"></canvas>'
+    : '<span class="ini ' + (r.tipo === 'agente' ? 'ag' : '') + '" title="' + esc(r.tipo === 'agente' ? 'agente' : 'pessoa') + '">' + esc(nomeResp(r).slice(0, 1).toUpperCase()) + '</span>';
+  const temBoneco = () => typeof AVATAR !== 'undefined' && typeof ISO !== 'undefined';
+  /** a cara do agente: a que o escritório mandou (guardada no CRM) ou, sem ela, a semente do id — a mesma regra do escritório */
+  const lookDe = id => { const a = EQUIPE.agentes.find(x => x.id === id); return (a && a.look && a.look.skin) ? a.look : AVATAR.makeLook(id); };
+  function pintarBonecos(raiz) {
+    if (!temBoneco()) return;
+    for (const cv of (raiz || document).querySelectorAll('canvas[data-boneco]')) {
+      try { AVATAR.portrait(cv, lookDe(cv.dataset.boneco), Number(cv.dataset.tamanho) || 0.45); } catch (e) { /* um boneco que não desenha não derruba a tela */ }
+    }
+  }
   const etapaNome = id => (CFG.etapas.find(e => e.id === id) || { nome: id }).nome;
 
   /* ---------------- marca do escritório, se ele estiver no ar ---------------- */
@@ -83,6 +96,7 @@
         <select id="q-status"><option value="">ativas</option><option value="perdida" ${filtro.status === 'perdida' ? 'selected' : ''}>perdidas</option><option value="arquivada" ${filtro.status === 'arquivada' ? 'selected' : ''}>arquivadas</option></select>
         <span class="hint">${r.fichas.length} ${esc(r.fichas.length === 1 ? CFG.entidade.singular : CFG.entidade.plural)}${EU.permissoes && EU.permissoes.mover ? ' · arraste para mover' : ''}</span></div>
       <div class="quadro">${colunas}</div>`;
+    pintarBonecos(m);
     $('#q-nova').onclick = () => novaFicha();
     $('#q-busca').onchange = () => { filtro.q = $('#q-busca').value; quadro(m); };
     $('#q-minhas').onchange = () => { filtro.minhas = $('#q-minhas').checked; quadro(m); };
@@ -145,6 +159,7 @@
         <div class="hist">${f.historico.slice().reverse().map(h => `<div><span class="q">${quando(h.quando)} · ${esc(h.autor.nome)}${h.autor.tipo === 'agente' ? ' (agente)' : ''}</span><br>${esc(h.texto)}</div>`).join('') || '<span class="hint">nada ainda</span>'}</div>
         ${f.feitoPeloDono && f.feitoPeloDono.length ? '<p class="hint" style="margin-top:6px">Feito por pessoa (decisão final para o agente): ' + f.feitoPeloDono.map(x => esc(x.por + ': ' + x.texto)).join('; ') + '</p>' : ''}
       </div></div><p class="hint" id="f-msg" style="margin-top:8px"></p>`);
+    pintarBonecos($('#modal-body'));
     const acao = async (rota, corpo) => { const r = await api('/api/fichas/' + f.id + '/' + rota, 'POST', corpo); $('#f-msg').textContent = r.ok ? (r.proposta ? 'Virou proposta: ' + r.motivo : 'Feito.') : (r.motivo || 'não deu'); if (r.ok) { setTimeout(() => ficha(f.id), 300); quadro($('#main')); contadores(); } };
     const on = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
     on('#fc-salvar', async () => { for (const c of campos) { const v = $('#fc-' + c).value; if (v !== (f.campos[c] || '')) await api('/api/fichas/' + f.id + '/campo', 'POST', { campo: c, valor: v }); } const n = $('#fc-novo').value.trim(); if (n) await api('/api/fichas/' + f.id + '/campo', 'POST', { campo: n, valor: '' }); ficha(f.id); });
@@ -186,13 +201,33 @@
     for (const b of m.querySelectorAll('[data-f]')) b.onclick = () => ficha(b.dataset.f);
     for (const b of m.querySelectorAll('[data-feita]')) b.onclick = async () => { const res = prompt('Resultado (opcional):') || ''; await api('/api/tarefas/' + b.dataset.feita + '/feita', 'POST', { resultado: res }); tarefas(m); contadores(); };
   }
+  /* A equipe: as pessoas com login e os funcionários-agentes com o boneco do escritório, o estado lido de lá
+     (no ar, desligado, em treinamento…), as fichas com cada um e o link para o monitor. Enquanto a aba está
+     aberta, o estado é relido a cada 5 s. Contratar, treinar e dar plataforma é no escritório. */
+  let relogioEquipe = null;
   async function equipe(m) {
-    EQUIPE = await api('/api/equipe'); if (!EQUIPE.ok) return;
+    clearInterval(relogioEquipe);
+    const r = await api('/api/equipe'); if (!r.ok) return; EQUIPE = r;
     const cor = e => /no ar/.test(e) ? 'ok' : /treinamento|subindo/.test(e) ? 'warn' : 'bad';
-    m.innerHTML = `<div class="barra"><b>Equipe</b><span class="hint">pessoas entram com login; agentes são funcionários com cargo. Contratar, treinar e dar plataforma é no escritório.</span></div>
-      <div class="grade">${EQUIPE.pessoas.map(p => `<div class="item"><span class="ini">${esc(p.nome.slice(0, 1).toUpperCase())}</span> <b>${esc(p.nome)}</b><div class="hint">${esc(p.cargoNome)}${p.ativa ? '' : ' · desativada'}</div></div>`).join('')}
-      ${EQUIPE.agentes.map(a => `<div class="item"><span class="ini ag">${esc(a.nome.slice(0, 1).toUpperCase())}</span> <b>${esc(a.nome)}</b> <span class="estado ${cor(a.estado)}">${esc(a.estado)}</span><div class="hint">${esc(a.cargoNome)} · agente${a.setor ? ' · ' + esc(a.setor) : ''} · <a href="${esc(a.monitor)}" target="_blank" rel="noopener">monitor no escritório</a></div></div>`).join('')}</div>
-      ${EQUIPE.escritorioNoAr ? '' : '<p class="hint" style="margin-top:10px">O escritório não está no ar: o estado dos agentes não pôde ser lido.</p>'}`;
+    const n = (q, s, p) => q + ' ' + (q === 1 ? s : p);
+    m.innerHTML = `<div class="barra"><b>Equipe</b><span class="hint">pessoas entram com login; agentes são funcionários com cargo. Contratar, treinar e dar plataforma é no escritório.</span>
+        ${EQUIPE.escritorioNoAr ? '<a class="btn small" href="' + esc(EQUIPE.escritorio) + '" target="_blank" rel="noopener">abrir o escritório ↗</a>' : ''}</div>
+      <h4 class="secao">Agentes</h4>
+      <div class="grade equipe">${EQUIPE.agentes.map(a => `<div class="item agente" data-id="${esc(a.id)}">
+          ${temBoneco() ? '<canvas class="boneco" data-boneco="' + esc(a.id) + '" data-tamanho="1.5"></canvas>' : '<span class="ini ag grande">' + esc(a.nome.slice(0, 1).toUpperCase()) + '</span>'}
+          <div class="quem"><b>${esc(a.nome)}</b> <span class="estado ${cor(a.estado)}">${esc(a.estado)}</span>
+            <div class="hint">${esc(a.cargoNome)} · agente${a.setor ? ' · ' + esc(a.setor) : ''}</div>
+            <div class="hint">${n(a.fichas, CFG.entidade.singular, CFG.entidade.plural)} com ele${a.propostasPendentes ? ' · <span class="prop">' + n(a.propostasPendentes, 'proposta esperando', 'propostas esperando') + '</span>' : ''}${a.emTreinamento && a.construcao ? ' · construção ' + a.construcao.pct + '%' : ''}</div>
+            <div class="hint"><a href="${esc(a.monitor)}" target="_blank" rel="noopener">monitor no escritório ↗</a></div></div></div>`).join('') || '<p class="hint">Nenhum agente é funcionário deste CRM. Contrate no escritório e inclua na criação do CRM.</p>'}</div>
+      <h4 class="secao">Pessoas</h4>
+      <div class="grade equipe">${EQUIPE.pessoas.map(p => `<div class="item agente"><span class="ini grande">${esc(p.nome.slice(0, 1).toUpperCase())}</span><div class="quem"><b>${esc(p.nome)}</b>${p.ativa ? '' : ' <span class="estado bad">desativada</span>'}<div class="hint">${esc(p.cargoNome)}</div><div class="hint">${n(p.fichas, CFG.entidade.singular, CFG.entidade.plural)} com ela</div></div></div>`).join('')}</div>
+      ${EQUIPE.escritorioNoAr ? '' : '<p class="hint" style="margin-top:10px">O escritório não está no ar: o estado dos agentes não pôde ser lido. O boneco é o último que o escritório mostrou.</p>'}`;
+    pintarBonecos(m);
+    relogioEquipe = setInterval(async () => {
+      if (aba !== 'equipe' || !document.body.contains(m) || !m.querySelector('.equipe')) { clearInterval(relogioEquipe); return; }
+      const r2 = await api('/api/equipe'); if (!r2.ok) return; EQUIPE = r2;
+      for (const a of EQUIPE.agentes) { const el = m.querySelector('.agente[data-id="' + a.id + '"] .estado'); if (el) { el.textContent = a.estado; el.className = 'estado ' + cor(a.estado); } }
+    }, 5000);
   }
   async function painel(m) {
     const p = await api('/api/painel'); if (!p.ok) return;

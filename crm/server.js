@@ -69,6 +69,8 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === '/saude') { const p = cfg ? await CRM.painel() : null; return json(res, 200, { ok: true, nome: 'CRM', desde: DESDE, escritorioPorta: Number(process.env.ESCRITORIO_PORTA) || 4321, resumo: p ? { entidade: p.entidade.plural, ativas: p.ativas, propostasPendentes: p.propostasPendentes, tarefasAbertas: p.tarefasAbertas, onde: D.onde } : 'sem configuração' }); }
     if (rota === '/log') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end(tail(200).join('\n')); }
     if (rota === '/' || rota === '/painel') return estatico(res, 'index.html');
+    // o boneco é o mesmo do escritório: a tela do CRM usa o avatar.js e o iso.js dele, servidos daqui (o CRM mora dentro do escritório)
+    if (rota === '/escritorio/avatar.js' || rota === '/escritorio/iso.js') { res.writeHead(200, { 'Content-Type': TIPOS['.js'], 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(__dirname, '..', 'js', path.basename(rota)))); }
     if (!rota.startsWith('/api/')) return estatico(res, rota.replace(/^\/+/, ''));
     if (!cfg) return json(res, 503, { ok: false, motivo: 'o CRM ainda não foi criado: use /criar-crm no Claude Code' });
     // escrita só do próprio CRM (Origin, quando o navegador manda) ou de quem tem token

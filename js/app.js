@@ -1650,7 +1650,16 @@ AJUSTES.avisoSemAbertura();
 SISTEMAS.atualizar();
 setInterval(() => SISTEMAS.atualizar(), 15000);
 // a equipe vem do disco, então o boot espera por ela antes de montar o andar
-ROSTER.load().then(() => { syncActors(); renderAll(); fit(); });
+ROSTER.load().then(() => { syncActors(); renderAll(); fit(); abrirPeloEndereco(); });
+/** http://localhost:4321/#agente=<id do sistema> abre o monitor daquele agente
+    (é o link que o CRM põe na aba Equipe) */
+function abrirPeloEndereco() {
+  const m = /^#agente=([a-z0-9_-]+)$/i.exec(location.hash || '');
+  if (!m) return;
+  const a = ROSTER.all().find(a => a.sistema === m[1]);
+  if (a) abrirMonitor(a);
+}
+window.addEventListener('hashchange', abrirPeloEndereco);
 syncActors();
 resize();
 fit();

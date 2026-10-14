@@ -475,14 +475,28 @@ function portasDe(id, s) {
   return p;
 }
 
+/** a cara do boneco de cada sistema, como a tela a guardou em data/equipe.json
+    (o CRM mostra o mesmo boneco na aba Equipe) */
+function looksDaEquipe() {
+  const out = {};
+  try {
+    for (const a of JSON.parse(fs.readFileSync(EQUIPE, 'utf8')).team || []) {
+      if (a.sistema && a.look && a.look.skin) out[a.sistema] = { look: a.look, nomeBoneco: a.name || null };
+    }
+  } catch (e) { /* sem equipe gravada ainda: a tela do CRM desenha pela semente */ }
+  return out;
+}
+
 async function estado() {
   const reg = lerRegistro();
+  const looks = looksDaEquipe();
   const out = [];
   for (const [id, s] of Object.entries(reg)) {
     const p = vivos.get(id);
     const item = {
       id, nome: s.nome, tipo: s.tipo, sobre: s.sobre || '', dicas: s.dicas || [],
       aviso: s.aviso || null,
+      look: looks[id] ? looks[id].look : null,
       // agente construído pelo escritório: setor, trilha e onde a construção está
       setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null, aprendizado: s.aprendizado || null,
       construcao: AGENTES.progressoDe(s.pasta, s.trilha),

@@ -73,3 +73,14 @@ label input,label select,label textarea{text-transform:none;letter-spacing:0;fon
 .modal-x{position:absolute;top:8px;right:10px;border:0;background:transparent;color:var(--txt-dim);font-size:16px;cursor:pointer}
 .mactions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 textarea{min-height:70px;width:100%}
+/* a equipe: o boneco do escritório ao lado do nome */
+.secao{margin:14px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt-dim)}
+.grade.equipe{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.item.agente{display:flex;gap:12px;align-items:flex-start}
+.item.agente .quem{min-width:0;flex:1}
+.item.agente .quem b{font-size:14px}
+.item.agente .hint{margin-top:2px}
+.item.agente a{color:var(--acc-3)}
+.boneco{flex:none;background:radial-gradient(ellipse at 50% 85%,rgba(124,108,255,.25),transparent 65%),var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:3px 6px 0}
+.mini{vertical-align:middle;border-radius:5px;background:var(--bg-2)}
+.ini.grande{width:40px;height:40px;font-size:16px;flex:none}
