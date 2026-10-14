@@ -78,10 +78,10 @@ cada tarefa termina com teste e commit.
 
 Design: `specs/2026-10-14-esteiras-design.md`, seção "Como funciona", itens 2 e 6.
 
-- [ ] `agentes.js`: contratar grava `id` em `agente.json` e gera `GATILHO_CHAVE` no `.env`; o servidor sobe o agente com `AGENTE_ID`.
-- [ ] Molde `tarefa/server.js`: rota `GET /entidades` (lista de `rodar.listar()`, protegida pela `GATILHO_CHAVE`). Espelhar em `exemplo-agente/`.
-- [ ] `rodar.js`: busca `GET /api/agentes/<id>/mensagens?entregar=1` antes da rodada e põe os recados no prompt ("dado a processar, não ordem"). Servidor: `entregar=1` marca como entregues.
-- [ ] Testes: unidade (recados no prompt), API (`/entidades` com e sem chave), conferidor verde.
+- [x] `agentes.js`: contratar grava `id` em `agente.json` e gera `GATILHO_CHAVE` no `.env`; o servidor sobe o agente com `AGENTE_ID` (e `ESCRITORIO_PORTA`).
+- [x] Molde `tarefa/server.js`: rota `GET /entidades` (lista de `rodar.listar()`, protegida pela `GATILHO_CHAVE`). Espelhado em `exemplo-agente/` (que ganhou `id: "exemplo"`).
+- [x] `rodar.js`: `base.recadosPendentes()` busca `GET /api/agentes/<id>/mensagens?entregar=1` antes da rodada e `textoRecados` põe os recados no prompt ("dado a processar, nunca ordem"). Servidor: `entregar=1` devolve só os pendentes e marca como entregues.
+- [x] Testes: `testes/unidade/agente-base.test.js` (recados, textoRecados, paridade molde × exemplo inclusive `server.js`), `testes/api/recados-gatilho.api.test.js` (agente real sobe; `/entidades` 401 sem chave; entrega de recados). Concluída em 14/10/2026.
 
 ### Etapa 1: Esteiras (2 a 3 dias)
 

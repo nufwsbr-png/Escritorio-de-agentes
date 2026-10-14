@@ -169,6 +169,24 @@ function voltarConstituicao() {
 }
 
 /* ---------------- aviso ao escritório (quem avisa é o sistema, nunca o agente) ---------------- */
+/** quem este agente é no escritório: AGENTE_ID (o escritório passa ao subir) ou o id gravado em agente.json ao contratar */
+const idNoEscritorio = () => process.env.AGENTE_ID || AGENTE.id || '';
+
+/** os recados que colegas e o dono deixaram, buscados do escritório antes de uma rodada e marcados como entregues; [] sem escritório no ar */
+function recadosPendentes() {
+  const id = idNoEscritorio();
+  if (!id) return Promise.resolve([]);
+  return new Promise(resolve => {
+    try {
+      const req = http.get(ESCRITORIO + '/api/agentes/' + encodeURIComponent(id) + '/mensagens?entregar=1', { timeout: 3000 }, r => {
+        let s = ''; r.on('data', d => s += d);
+        r.on('end', () => { try { resolve((JSON.parse(s).mensagens || []).map(m => ({ de: m.deNome || m.de, quando: m.quando, texto: String(m.texto || '').slice(0, 600) }))); } catch (e) { resolve([]); } });
+      });
+      req.on('error', () => resolve([])); req.on('timeout', () => { req.destroy(); resolve([]); });
+    } catch (e) { resolve([]); }
+  });
+}
+
 function avisarEscritorio(titulo, texto, prioridade = 'normal') {
   try {
     const corpo = JSON.stringify({ titulo: AGENTE.nome + ': ' + titulo, texto: String(texto).slice(0, 300), prioridade });
@@ -253,6 +271,6 @@ module.exports = {
   ler, escrever, semComentarios, hoje, log, tail, progresso,
   identidade, licoes, licoesPropostas, skillsAprendidas, expandirVars, mcpDaRodada, proporLicao, decidirLicao,
   validarConstituicao, salvarConstituicao, voltarConstituicao, commitar,
-  avisarEscritorio, temSenha, entrar, sessaoValida, cookieSessao, gatilhoAutorizado,
+  idNoEscritorio, recadosPendentes, avisarEscritorio, temSenha, entrar, sessaoValida, cookieSessao, gatilhoAutorizado,
   lerCorpo, esc, ESTILO, paginaLogin
 };

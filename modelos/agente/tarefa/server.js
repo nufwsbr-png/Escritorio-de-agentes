@@ -126,6 +126,13 @@ http.createServer(async (req, res) => {
       cerebro: 'claude-code', progresso: base.progresso(), resumo: rodar.resumo().porStatus, trancado: base.temSenha() }));
   }
   if (rota === '/log') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end(base.tail(200).join('\n')); }
+  // o escritório lê o estado das entidades (esteiras) com a mesma chave do gatilho; sem dado de cliente, só id e status
+  if (rota === '/entidades' && req.method === 'GET') {
+    if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
+    const lista = rodar.listar().map(e => ({ id: e.id, status: e.status, rodadas: e.rodadas.length, ultimoModo: e.ultimoModo || null, atualizado: e.atualizado || null,
+      pergunta: e.status === 'aguardando pergunta' && e.pergunta ? e.pergunta.texto : undefined, erro: e.status === 'com erro' ? e.erro : undefined }));
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: true, entidades: lista, resumo: rodar.resumo().porStatus }));
+  }
   if (rota === '/gatilho' && req.method === 'POST') {
     if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
     const b = await base.lerCorpo(req);

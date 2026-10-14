@@ -399,7 +399,8 @@ async function ligarDeFato(id) {
   const child = spawn(s.comando, s.args || [], {
     cwd: s.pasta,
     shell: win,
-    env: Object.assign({}, process.env, s.env || {}),
+    // AGENTE_ID: o agente sabe quem é no escritório (recados, esteiras), mesmo em pastas antigas sem id no agente.json
+    env: Object.assign({}, process.env, s.env || {}, { AGENTE_ID: id, ESCRITORIO_PORTA: String(PORT) }),
     detached: true,
     windowsHide: true,
     stdio: win ? 'ignore' : ['ignore', fd, fd]
@@ -925,6 +926,8 @@ const servidor = http.createServer(async (req, res) => {
         .catch(e => json(res, 400, { ok: false, motivo: e.message }));
     }
     if (acao === 'mensagens') {
+      // ?entregar=1: o lançador do agente busca só os recados pendentes antes da rodada e eles ficam marcados como entregues
+      if (req.method === 'GET' && url.searchParams.get('entregar') === '1') { const m = MEMORIA.pendentesPara(id, true); return json(res, 200, { mensagens: m, entregues: m.length }); }
       if (req.method === 'GET') return json(res, 200, { mensagens: MEMORIA.caixaDe(id) });
       return corpoJson(req, 1e4).then(b => json(res, 200, MEMORIA.enviar({ de: 'dono', para: id, texto: b.texto || '' })))
         .catch(e => json(res, 400, { ok: false, motivo: e.message }));

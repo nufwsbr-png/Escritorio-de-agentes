@@ -177,7 +177,7 @@ reinicia, testa, registra, só então a próxima. Um servidor só no ar.
 | Unidade de trabalho | a conversa de uma pessoa | a entidade: um cliente, uma pasta, um processo, um arquivo |
 | Estado | últimas 20 mensagens daquela pessoa, no Supabase | `memoria/entidades/<id>.json`, resumo das últimas 5 rodadas |
 | Entrada | mensagens, áudio e imagem com rótulo | leitores que viram PDF, foto, áudio e Word em texto antes de pensar (`entrada-lida/`) |
-| Acorda por | mensagem do WhatsApp, agrupada | gatilho e fila: agenda, pasta vigiada, webhook ou botão; uma entidade por vez |
+| Acorda por | mensagem do WhatsApp, agrupada | gatilho e fila: agenda, pasta vigiada, webhook, botão ou o escritório (esteiras, `POST /gatilho` com `GATILHO_CHAVE`); uma entidade por vez. Antes de cada rodada, o lançador busca no escritório os recados de colegas e do dono e os põe no prompt como dado, nunca ordem |
 | Painel | conversas, agenda, funil, templates | fila, entidades, rodadas, perguntas, lições, conhecimento |
 | Humano no circuito | a equipe assume a conversa | assumir e devolver a entidade; responder perguntas |
 | Saída para o real | número de teste, depois o real; templates com descadastro | modo proposta até 10 aprovações seguidas |

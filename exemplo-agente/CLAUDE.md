@@ -36,6 +36,8 @@ precisam existir sempre:
 | `GET /saude` | JSON `{ ok, nome, setor, desde, ... }`, sem dado de cliente | o escritório pinta o boneco e religa quem caiu |
 | `GET /painel` | o painel do dono, página inteira | o monitor do agente embute aqui |
 | `GET /log` | texto com as últimas linhas de `log.txt` | o botão Log do monitor |
+| `GET /entidades` (agente de tarefa) | id, status e rodadas de cada entidade, sem dado de cliente; exige o cabeçalho `x-chave` = `GATILHO_CHAVE` | o escritório, para as esteiras |
+| `POST /gatilho` (agente de tarefa) | acorda uma rodada para `{ entidade }`; mesma chave | o escritório (esteiras) e webhooks |
 
 Estenda o `server.js`; não o substitua por outro servidor sem manter as três
 rotas e a porta pela variável `PORT`.

@@ -15,6 +15,7 @@
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 let dep = null;   // { ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config, plataformas }
 
@@ -134,10 +135,14 @@ function criarAgente(b) {
 
   try {
     fs.mkdirSync(pasta, { recursive: true });
-    fs.writeFileSync(path.join(pasta, 'agente.json'), JSON.stringify({ nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta, aprendizado,
+    fs.writeFileSync(path.join(pasta, 'agente.json'), JSON.stringify({ id, nome, setor: setorNome, setorId: setor.id, trilha: setor.trilha, negocio, porta, aprendizado,
                                             criadoEm: new Date().toISOString(), tarefa: '' }, null, 2) + '\n');
     copiarMolde(path.join(MODELOS, 'agente', 'comum'), pasta);
     copiarMolde(path.join(MODELOS, 'agente', trilha.molde), pasta);
+    // a chave do gatilho nasce preenchida: é com ela que o escritório acorda o agente (esteiras) e lê /entidades. Só no .env.
+    const envArq = path.join(pasta, '.env');
+    const envTxt = fs.readFileSync(envArq, 'utf8');
+    if (/^GATILHO_CHAVE=""\s*$/m.test(envTxt)) fs.writeFileSync(envArq, envTxt.replace(/^GATILHO_CHAVE=""/m, 'GATILHO_CHAVE="' + crypto.randomBytes(16).toString('hex') + '"'));
     fs.writeFileSync(path.join(pasta, 'ANATOMIA.md'), fs.readFileSync(path.join(MODELOS, 'ANATOMIA.md'), 'utf8'));
     for (const d of ['memoria/entidades', 'amostras', 'saidas', 'quarentena']) fs.mkdirSync(path.join(pasta, d), { recursive: true });
     copiarDir(skillDe, path.join(pasta, '.claude', 'skills', trilha.skill));
