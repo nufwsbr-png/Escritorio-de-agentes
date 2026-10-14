@@ -6,6 +6,15 @@ máquina; nenhuma dependência. Cada agente contratado nasce com a **anatomia**
 de `modelos/ANATOMIA.md` e vive em `agentes/<id>/`, com pasta e sistema
 próprios. Os dados do escritório ficam em `data/`, fora do git.
 
+## Plano mestre: leia antes de trabalhar
+
+`docs/superpowers/plans/2026-10-14-plano-mestre.md` guarda **tudo que foi
+combinado com o dono** e a ordem das etapas que faltam (fundações, esteiras,
+Cuki BOT analista, Cuki BOT no WhatsApp via WAHA, Criar CRM). Leia-o no
+começo de toda sessão de construção, siga a próxima tarefa desmarcada, marque
+o que terminar com o commit, e registre ali qualquer decisão nova do dono no
+mesmo dia. Não reabra decisões já tomadas.
+
 ## O que fazer quando a pessoa quer criar o escritório
 
 Use a skill **`/criar-escritorio`** (`.claude/skills/criar-escritorio/`). Ela
