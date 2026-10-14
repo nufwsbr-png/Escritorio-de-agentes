@@ -118,7 +118,7 @@ Design: `specs/2026-10-14-cuki-bot-design.md`, Parte 2.
 
 ### Etapa 4: Criar CRM (5 a 8 dias, em sub-etapas com ok entre elas)
 
-Design: `specs/2026-10-14-criar-crm-perguntas.md` (perguntas e híbrido) e um design técnico a escrever no início da etapa (`specs/<data>-crm-design.md`), com aprovação do dono.
+Design: `specs/2026-10-14-criar-crm-perguntas.md` (perguntas e híbrido) e o design técnico `specs/2026-10-14-crm-design.md` (escrito em 14/10/2026; aguarda aprovação do dono antes da 4a).
 
 - [ ] 4a. Skill `/criar-crm`: chama o Cuki BOT (vermelho trava), faz as 6 perguntas essenciais + 5 ajustes com proposta pronta, inclui a pergunta "onde ficam as fichas" (local ou Supabase), grava `crm/config.json` pelos scripts.
 - [ ] 4b. O sistema `crm/`: contrato do escritório (`/saude`, `/painel`, `/log`, porta), camada de dados isolada (arquivos locais ou Supabase conforme a resposta), fichas, etapas (as da esteira), cargos, usuários (pessoas com login; agentes com token), histórico com autor, propostas pendentes, tarefas, importação.
