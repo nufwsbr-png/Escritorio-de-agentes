@@ -5,7 +5,9 @@
 # plataformas permitidas a este agente (🔌 Plataformas). Não edite o bloco à mão; o resto é seu.
 
 # --- escopo: só aqui dentro o agente pode ler e escrever (caminhos absolutos, separados por ;)
-PASTAS_AUTORIZADAS=""
+# As pastas das plataformas do tipo "pasta" marcadas para este agente já entram em PASTAS_AUTORIZADAS pelo bloco
+# do escritório, acima. Para uma pasta FORA das plataformas, descomente a linha abaixo: o escritório soma as duas.
+# PASTAS_AUTORIZADAS=""
 
 # --- modos (dois interruptores para o real: MODO_REAL=sim no .env E --real na chamada)
 # MODO="proposta"       deixa o gatilho rodar em proposta em vez de ensaio

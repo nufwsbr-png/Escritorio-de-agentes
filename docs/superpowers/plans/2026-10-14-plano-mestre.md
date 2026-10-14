@@ -87,13 +87,14 @@ Design: `specs/2026-10-14-esteiras-design.md`, seção "Como funciona", itens 2 
 
 Design: `specs/2026-10-14-esteiras-design.md`.
 
-- [ ] `esteiras.js`: definição, estado por entidade, vigília (20 s), passagem por gatilho + recado, aprovação/devolução, paradas por entidade, fila (um gatilho por agente por vez), avisos.
-- [ ] Rotas: `GET/POST /api/esteiras`, `POST /api/esteiras/:id/entrar`, `POST /api/esteiras/:id/:entidade/aprovar|devolver`.
-- [ ] Entrada por pasta vigiada (subpasta nova na pasta compartilhada), opcional por esteira.
-- [ ] Tela: botão 🧵 Esteiras, colunas por etapa, cartões, botões Aprovar/Devolver; boneco entrega na mesa do colega.
-- [ ] Skill `/criar-esteira` (cinco perguntas simples, proposta pronta; grava por `node esteiras.js criar`).
-- [ ] Testes: unidade (máquina de estados com agentes falsos), API, fumaça (painel). Verificação real com 2 agentes de tarefa de teste e relato em `verificacoes/`.
-- [ ] Docs: README (seção "Esteiras"), `CLAUDE.md` raiz (linha na tabela), `ANATOMIA.md` (componente 11 cita gatilho do escritório e recados nas rodadas).
+- [x] `esteiras.js`: definição, estado por entidade, vigília (20 s), passagem por gatilho + recado, aprovação/devolução (devolver = gatilho com `refazer` e a observação), paradas por entidade, fila (um gatilho por agente por vez; tenta ligar agente fora do ar, uma vez por minuto), avisos. Commit e114129.
+- [x] Rotas: `GET /api/esteiras`, `GET /api/esteiras/agentes`, `POST /api/esteiras` (admin), `DELETE /api/esteiras/:id` (admin), `POST /api/esteiras/:id/entrar`, `POST /api/esteiras/:id/:entidade/aprovar|devolver`. CLI `node esteiras.js listar|agentes|criar|remover|entrar|estado`.
+- [x] Entrada por pasta vigiada (subpasta nova na pasta compartilhada; `_` e `.` ignorados), opcional por esteira.
+- [x] Tela: botão 🧵 Esteiras, colunas por etapa, cartões com status e motivo, Aprovar/Devolver, ＋ entidade, formulário do administrador; o boneco entrega na mesa do colega pela animação de recados que já existia.
+- [x] Skill `/criar-esteira` (cinco perguntas simples, proposta pronta; grava por `node esteiras.js criar`).
+- [x] Testes: `testes/unidade/esteiras.test.js` (agentes falsos: passagem, aprovação, devolução, fila, pasta vigiada, ensaiada), `testes/api/esteiras.api.test.js`, fumaça (painel). `ESCRITORIO_SEM_VIGILIA=1` desliga a vigília nos testes.
+- [x] Verificação real com 2 agentes de tarefa e o Claude Code em ensaio: a entidade entrou, o escritório ligou os agentes, passou o bastão com recado e concluiu; relato em `verificacoes/2026-10-14-esteiras.md`. Correções do dia: `PASTAS_AUTORIZADAS` comentada no molde do `.env` (a pasta de plataforma entra pelo bloco), `MultiEdit` fora do `cercas.json`. **Etapa 1 concluída em 14/10/2026.**
+- [x] Docs: README (seção "Esteiras"), `CLAUDE.md` raiz (linha na tabela), `ANATOMIA.md` (gatilho do escritório e recados nas rodadas), molde `CLAUDE.md` (rotas `/entidades` e `/gatilho`).
 
 ### Etapa 2: Cuki BOT analista (1 a 2 dias)
 

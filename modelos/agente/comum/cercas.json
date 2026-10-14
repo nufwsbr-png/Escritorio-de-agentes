@@ -2,7 +2,7 @@
   "_leia": "Permissões do Claude Code em cada rodada do agente. O lançador (rodar.js) passa este arquivo com --settings, e ainda restringe por modo: ensaio só lê; proposta e real liberam as ferramentas de tools/. Fica aqui, e não em .claude/settings.json, para não travar o construtor quando o escritório abre Conversar nesta pasta. Nunca use 'aceitar tudo'.",
   "permissions": {
     "deny": [
-      "Write", "Edit", "MultiEdit", "NotebookEdit",
+      "Write", "Edit", "NotebookEdit",
       "WebFetch", "WebSearch",
       "Bash(rm *)", "Bash(del *)", "Bash(rmdir *)", "Bash(erase *)", "Bash(Remove-Item *)",
       "Bash(git *)", "Bash(npm *)", "Bash(npx *)", "Bash(curl *)", "Bash(powershell *)",
