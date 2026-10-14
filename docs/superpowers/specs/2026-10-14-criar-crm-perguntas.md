@@ -164,12 +164,11 @@ advocacia, loja) lido de `config.json` e pergunta.
 - Skill `/criar-crm` na pasta do projeto, com as perguntas acima e os scripts
   que gravam.
 
-## Em aberto, para o dono decidir antes do design
+## Decidido pelo dono em 14/10/2026
 
-- Onde guardar os dados do CRM: arquivos JSON em `crm/data/` (zero
-  dependência, igual ao escritório) ou um banco como o Supabase, que o
-  atendente já usa (acesso de fora e várias pessoas ao mesmo tempo ficam mais
-  fáceis). Recomendação: JSON local para começar, com a camada de dados
-  isolada para trocar depois.
-- Se o CRM substitui o estado em `memoria/entidades/` dos agentes ou só o
-  espelha. Recomendação: substitui, para não haver duas verdades.
+- **Onde ficam as fichas** (arquivos locais na pasta do CRM ou Supabase na
+  nuvem): não se decide agora; **vira uma pergunta do Criar CRM**, com
+  proposta do Cuki BOT (local se "só aqui", nuvem se "de fora também").
+- **Quem guarda a ficha do cliente quando o CRM existe: o CRM, sozinho (A).**
+  O agente deixa de guardar estado em `memoria/entidades/` e passa a ler e
+  escrever na ficha do CRM por `tools/crm.js`. Uma verdade só.
