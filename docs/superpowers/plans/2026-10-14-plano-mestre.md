@@ -100,10 +100,10 @@ Design: `specs/2026-10-14-esteiras-design.md`.
 
 Design: `specs/2026-10-14-cuki-bot-design.md`, Parte 1.
 
-- [ ] `cuki.js`: medidas por área (agentes, plataformas, fluxo, base, aptidão CRM), semáforo, `data/cuki/laudos/<data>.json`.
-- [ ] Laudo pelo Claude Code **sem ferramentas**, com as medidas como contexto; `data/cuki/laudos/<data>.md`. Teste varre o contexto: nenhum valor de variável.
-- [ ] Rotas `GET /api/cuki/laudo`, `POST /api/cuki/analisar` (admin). Tela: botão 🩺, laudo com semáforo, "rodar de novo". Boneco "Cuki BOT, analista" na recepção; clicar abre o laudo.
-- [ ] Testes: unidade (medidas com escritório de teste: agente fora do ar → vermelho), API, fumaça. Verificação real: um laudo do escritório de exemplo.
+- [x] `cuki.js`: medidas por área (agentes, plataformas, fluxo, base, aptidão CRM), semáforo, `data/cuki/laudos/<data>.json`. Commit 19d6f5a.
+- [x] Laudo: a parte garantida por código (semáforo, "o que fazer antes") + a leitura e as propostas para o CRM pelo Claude Code **sem ferramentas** (`--tools ""`, cwd `data/cuki/`), com as medidas como entrada; `data/cuki/laudos/<data>.md`. `ESCRITORIO_CUKI_SEM_CLAUDE=1` nos testes. Teste varre as medidas: nenhum valor de variável.
+- [x] Rotas `GET /api/cuki/laudo`, `POST /api/cuki/analisar` (admin, 202 e roda solto). Tela: botão 🩺, semáforo por área, laudo, "Analisar de novo". Boneco "Cuki BOT, analista" no balcão da recepção (`REC-1`, nos dois layouts); clicar abre o laudo.
+- [x] Testes: unidade (frágil → vermelhos; saudável → verde; amarelos), API, fumaça. Verificação real com o Claude: `verificacoes/2026-10-14-cuki-bot.md` (nenhum segredo vazou; papel ajustado para não inferir sobre agente fora do ar). **Etapa 2 concluída em 14/10/2026.**
 
 ### Etapa 3: Cuki BOT no WhatsApp via WAHA (2 dias)
 

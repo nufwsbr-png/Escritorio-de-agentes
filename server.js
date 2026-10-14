@@ -400,7 +400,8 @@ async function ligarDeFato(id) {
     cwd: s.pasta,
     shell: win,
     // AGENTE_ID: o agente sabe quem é no escritório (recados, esteiras), mesmo em pastas antigas sem id no agente.json
-    env: Object.assign({}, process.env, s.env || {}, { AGENTE_ID: id, ESCRITORIO_PORTA: String(PORT) }),
+    // PORT do agente vem do registro: sem isso o filho herdaria o PORT do próprio escritório e subiria na porta errada
+    env: Object.assign({}, process.env, s.env || {}, { AGENTE_ID: id, ESCRITORIO_PORTA: String(PORT) }, s.porta && !(s.env || {}).PORT ? { PORT: String(s.porta) } : {}),
     detached: true,
     windowsHide: true,
     stdio: win ? 'ignore' : ['ignore', fd, fd]
