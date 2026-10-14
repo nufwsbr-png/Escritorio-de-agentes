@@ -31,5 +31,6 @@ data/cuki/
 
 # o CRM criado pela skill /criar-crm: configuração do cliente, segredos e fichas
 crm/config.json
+crm/respostas.json
 crm/.env
 crm/data/

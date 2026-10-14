@@ -30,6 +30,8 @@ async function cenario(opts = {}) {
   if (opts.semB) delete registro.b;
   const plats = [{ id: 'drive', nome: 'Drive', tipo: 'pasta', variaveis: { DRIVE_PASTA: pastaReal } }];
   if (!opts.semVazia) plats.push({ id: 'ophir', nome: 'Ophir', tipo: 'api', url: 'http://127.0.0.1:1', variaveis: { OPHIR_URL: 'http://127.0.0.1:1', OPHIR_TOKEN: '' } });
+  // a plataforma crm do escritório: CRM_TOKEN vazio no cadastro mas preenchido por agente (não é 'variável vazia'); CRM fora do ar fica amarelo, não vermelho
+  if (opts.comCrm) plats.push({ id: 'crm', nome: 'CRM', tipo: 'api', url: 'http://127.0.0.1:1', variaveis: { CRM_URL: 'http://127.0.0.1:1', CRM_TOKEN: '' }, porAgente: { a: { CRM_TOKEN: 'tok-a' } } });
   const C = require('../../cuki').init({
     DADOS, lerRegistro: () => registro,
     agentes: { progressoDe: (pasta) => { const t = fs.readFileSync(path.join(pasta, 'progresso-do-agente.md'), 'utf8'); const f = (t.match(/^- \[x\]/gm) || []).length, ab = (t.match(/^- \[ \]/gm) || []).length; const portao = /^- \[x\].*PORT/m.test(t); return { passo: f, total: f + ab, portao, concluido: false, emTreinamento: !portao }; } },
@@ -94,4 +96,14 @@ test('escritório saudável fica verde; pergunta parada, lições acumuladas e e
     assert.equal(m.areas.fluxo.cor, 'amarelo'); assert.match(m.areas.fluxo.motivos.join(), /esteira há mais de 1 dia/);
     assert.equal(m.areas.aptidao.cor, 'vermelho', 'sem agente verde não há aptidão'); assert.match(m.areas.aptidao.motivos.join(), /Tati quase lá/);
   } finally { c2.limpar(); }
+});
+
+test('a plataforma crm do escritório: token por agente não conta como vazio e CRM fora do ar é amarelo (a skill /criar-crm precisa rodar de novo)', async () => {
+  const c = await cenario({ semVazia: true, comCrm: true, entidades: [{ id: 'amostras/caso-01', status: 'pronta', atualizado: ontem() }] });
+  try {
+    const m = await c.C.medir();
+    const crm = m.areas.plataformas.plataformas.find(p => p.id === 'crm');
+    assert.deepEqual(crm.vazias, [], 'CRM_TOKEN preenchido por agente não é vazio');
+    assert.equal(crm.cor, 'amarelo'); assert.match(crm.teste, /ligue-o pelo escritório/);
+  } finally { c.limpar(); }
 });

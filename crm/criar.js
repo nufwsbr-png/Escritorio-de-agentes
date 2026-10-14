@@ -20,6 +20,7 @@
    =========================================================== */
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 const crypto = require('crypto');
 const UTIL = require('../util');
 
@@ -187,7 +188,30 @@ function normalizar(r, atualCfg) {
 
 /* ---------------- aplicar ---------------- */
 function lerEnv() { const o = {}; try { for (const l of fs.readFileSync(arqEnv(), 'utf8').split(/\r?\n/)) { const m = /^([A-Z][A-Z0-9_]*)=(.*)$/.exec(l); if (m) o[m[1]] = m[2].replace(/^"|"$/g, ''); } } catch (e) {} return o; }
-function aplicar(respostas) {
+/* pede ao escritório (se estiver no ar) para religar os agentes que entraram no CRM: o bloco de plataformas mudou no .env deles e o processo só lê o .env ao subir */
+function pedeEscritorio(metodo, rota, ms = 4000) {
+  return new Promise(resolve => {
+    try {
+      const req = http.request({ host: '127.0.0.1', port: portaEscritorio(), path: rota, method: metodo, headers: { 'Content-Type': 'application/json' }, timeout: ms }, r => { let s = ''; r.on('data', d => s += d); r.on('end', () => { try { resolve({ status: r.statusCode, json: JSON.parse(s) }); } catch (e) { resolve({ status: r.statusCode, json: null }); } }); });
+      req.on('error', () => resolve({ status: 0 })); req.on('timeout', () => { req.destroy(); resolve({ status: 0 }); }); req.end(metodo === 'POST' ? '{}' : undefined);
+    } catch (e) { resolve({ status: 0 }); }
+  });
+}
+async function religarAgentes(ids) {
+  const est = await pedeEscritorio('GET', '/api/sistemas');
+  if (est.status !== 200 || !Array.isArray(est.json)) return { escritorioNoAr: false, religados: [], aviso: 'escritório fora do ar: ligue e desligue os agentes do CRM quando ele subir, para pegarem o CRM' };
+  const religados = [], falhas = [];
+  for (const id of ids) {
+    const s = est.json.find(x => x.id === id);
+    if (!s || s.estado !== 'no ar') continue;
+    await pedeEscritorio('POST', '/api/sistemas/' + id + '/desligar');
+    await new Promise(r => setTimeout(r, 1500));
+    const r = await pedeEscritorio('POST', '/api/sistemas/' + id + '/ligar');
+    (r.status === 200 && r.json && r.json.ok ? religados : falhas).push(id);
+  }
+  return { escritorioNoAr: true, religados, falhas, aviso: falhas.length ? 'não consegui religar: ' + falhas.join(', ') + ' (ligue pelo escritório)' : '' };
+}
+async function aplicar(respostas) {
   const atualCfg = lerJson(arqConfig(), {});
   const { erros, cfg } = normalizar(respostas || {}, atualCfg);
   if (erros.length) return { ok: false, erros };
@@ -207,7 +231,8 @@ function aplicar(respostas) {
   // 3. o registro do escritório: o CRM é um sistema local, com .env gerenciado (crm: true) para as plataformas que ele usa (Supabase)
   const bruto = lerBruto();
   const anterior = bruto.crm || {};
-  bruto.crm = { ...anterior, nome: 'CRM', tipo: 'local', pasta: PASTA, comando: 'node', args: ['server.js'], env: { PORT: String(cfg.porta), ESCRITORIO_PORTA: String(cfg.escritorioPorta) }, porta: cfg.porta, abre: '/', crm: true,
+    // o escritório roda o comando com cwd = pasta; o caminho absoluto do server.js (e CRM_PASTA, quando a pasta não é crm/) deixa o CRM subir de qualquer pasta, inclusive nos testes
+  bruto.crm = { ...anterior, nome: 'CRM', tipo: 'local', pasta: PASTA, comando: 'node', args: [path.join(__dirname, 'server.js')], env: { PORT: String(cfg.porta), ESCRITORIO_PORTA: String(cfg.escritorioPorta), ...(PASTA !== __dirname ? { CRM_PASTA: PASTA } : {}) }, porta: cfg.porta, abre: '/', crm: true,
     plataformas: cfg.fichas.onde === 'supabase' ? [cfg.fichas.plataforma] : [],
     sobre: 'O CRM do escritório: a ficha de cada ' + cfg.entidade.singular + ', o passo em que está e quem cuida. Pessoas entram com login; os agentes, com token e cargo. Criado por /criar-crm.' };
   gravarRegistro(bruto);
@@ -258,7 +283,8 @@ function aplicar(respostas) {
   if (senhaInicial) gravarJson(path.join(dirDados(), 'primeira-senha.json'), senhaInicial);
   // 6. o que o escritório precisa para falar com o CRM (data/, fora do git)
   gravarJson(path.join(DADOS, 'crm.json'), { porta: cfg.porta, url, token: seg.CRM_TOKEN_ESCRITORIO, segredoEvento: seg.CRM_SEGREDO_EVENTO, criadoEm: cfg.criadoEm });
-  return { ok: true, gravado: { config: arqConfig(), env: arqEnv(), registro: 'crm em ' + REGISTRO, plataforma: 'crm (api) marcada para ' + cfg.agentes.map(a => a.id).join(', '), tokensNovos, usuarios: { pessoas: usuarios.pessoas.length, agentes: usuarios.agentes.length }, cargos: Object.keys(cargos), supabase: cfg.fichas.onde === 'supabase' ? (sincCrm.ok ? 'bloco gravado em crm/.env' : sincCrm.motivo) : 'não (fichas locais)' },
+  const religar = await religarAgentes(cfg.agentes.map(a => a.id));
+  return { ok: true, religados: religar.religados, avisoReligar: religar.aviso, gravado: { config: arqConfig(), env: arqEnv(), registro: 'crm em ' + REGISTRO, plataforma: 'crm (api) marcada para ' + cfg.agentes.map(a => a.id).join(', '), tokensNovos, usuarios: { pessoas: usuarios.pessoas.length, agentes: usuarios.agentes.length }, cargos: Object.keys(cargos), supabase: cfg.fichas.onde === 'supabase' ? (sincCrm.ok ? 'bloco gravado em crm/.env' : sincCrm.motivo) : 'não (fichas locais)' },
            senhaDoChefe: senhaInicial ? 'gerada; aparece UMA vez na primeira abertura da tela do CRM' : 'já existia', porta: cfg.porta, proximo: 'Ligue o CRM no escritório (ele aparece como sistema) e abra http://localhost:' + cfg.porta };
 }
 

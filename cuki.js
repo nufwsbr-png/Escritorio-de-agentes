@@ -94,7 +94,9 @@ async function medirPlataformas() {
   const plataformas = [];
   for (const p of lista) {
     const vars = Object.entries(p.variaveis || {});
-    const vazias = vars.filter(([, v]) => String(v || '').trim() === '').map(([k]) => k);
+    // variável vazia no cadastro mas preenchida por agente (porAgente, como o CRM_TOKEN do CRM) não é vazia
+    const porAg = Object.values(p.porAgente || {});
+    const vazias = vars.filter(([k, v]) => String(v || '').trim() === '' && !porAg.some(x => String((x || {})[k] || '').trim() !== '')).map(([k]) => k);
     const item = { id: p.id, nome: p.nome, tipo: p.tipo, variaveis: vars.map(([k]) => k), vazias, teste: 'sem teste', cor: 'verde', usadaPor: dep.plataformas.usadaPor ? dep.plataformas.usadaPor(p.id) : [] };
     const pref = dep.plataformas.prefixoDe(p.id);
     const v = (s) => String((p.variaveis || {})[pref + s] || '').trim();
@@ -105,6 +107,8 @@ async function medirPlataformas() {
       if (url) { const r = await pede(url, 'GET', {}, 5000); item.teste = r.status && r.status < 500 ? 'endereço responde (' + r.status + ')' : 'endereço sem resposta'; if (!(r.status && r.status < 500)) item.cor = 'vermelho'; }
       else { item.teste = 'sem endereço para testar'; item.cor = 'amarelo'; }
     } else { item.teste = 'preenchida; este tipo não tem teste automático'; item.cor = 'amarelo'; }
+    // o CRM do escritório fora do ar não é vermelho: a skill /criar-crm precisa poder rodar de novo para ajustá-lo
+    if (p.id === 'crm' && item.cor === 'vermelho') { item.cor = 'amarelo'; item.teste += ' (CRM do escritório: ligue-o pelo escritório)'; }
     plataformas.push(item);
   }
   return { cor: plataformas.length ? pior(plataformas.map(p => p.cor)) : 'amarelo', plataformas, motivo: plataformas.length ? undefined : 'nenhuma plataforma cadastrada' };

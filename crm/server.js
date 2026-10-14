@@ -58,9 +58,10 @@ const cfg0 = CRM.config();
 const json = (res, code, dados) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(dados)); };
 const corpo = (req, limite = 2e5) => new Promise((resolve, reject) => { let s = ''; req.on('data', c => { s += c; if (s.length > limite) { req.destroy(); reject(new Error('corpo grande demais')); } }); req.on('end', () => { try { resolve(s ? JSON.parse(s) : {}); } catch (e) { reject(new Error('json inválido')); } }); req.on('error', reject); });
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
+/* a tela é código, mora em crm/painel/ ao lado deste arquivo; PASTA (CRM_PASTA) é só configuração, .env e dados */
 function estatico(res, rel) {
-  const arq = path.join(PASTA, 'painel', rel);
-  if (!arq.startsWith(path.join(PASTA, 'painel')) || !fs.existsSync(arq) || fs.statSync(arq).isDirectory()) { res.writeHead(404); return res.end('não achei'); }
+  const arq = path.join(__dirname, 'painel', rel);
+  if (!arq.startsWith(path.join(__dirname, 'painel')) || !fs.existsSync(arq) || fs.statSync(arq).isDirectory()) { res.writeHead(404); return res.end('não achei'); }
   res.writeHead(200, { 'Content-Type': TIPOS[path.extname(arq)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(fs.readFileSync(arq));
 }
 const ehLocal = (req) => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '');

@@ -19,7 +19,7 @@ function cenario() {
     tati: { nome: 'Tati', tipo: 'local', pasta: agA, comando: 'node', args: ['server.js'], porta: 4601, trilha: 'tarefa', setor: 'Financeiro', plataformas: [] },
     leo: { nome: 'Léo', tipo: 'local', pasta: agB, comando: 'node', args: ['server.js'], porta: 4602, trilha: 'tarefa', setor: 'Prospecção', plataformas: [] },
     zap: { nome: 'Zap', tipo: 'local', pasta: agB, comando: 'node', args: ['server.js'], porta: 4603, trilha: 'atendimento' } }, null, 2));
-  fs.writeFileSync(path.join(DADOS, 'config.json'), JSON.stringify({ empresa: 'Clínica Sorriso', subtitulo: 'clínica odontológica', dono: 'Dra. Carla', porta: 4321 }));
+  fs.writeFileSync(path.join(DADOS, 'config.json'), JSON.stringify({ empresa: 'Clínica Sorriso', subtitulo: 'clínica odontológica', dono: 'Dra. Carla', porta: 4699 }));
   fs.writeFileSync(path.join(DADOS, 'plataformas.json'), JSON.stringify([{ id: 'supa', nome: 'Supabase da clínica', tipo: 'banco', url: 'https://x.supabase.co', variaveis: { SUPA_URL: 'https://x.supabase.co', SUPA_CHAVE: 'sk-brq-1' }, notas: '', criadaEm: 'x', atualizadaEm: 'x' }]));
   return { DADOS, CRM, limpar: () => { fs.rmSync(DADOS, { recursive: true, force: true }); fs.rmSync(CRM, { recursive: true, force: true }); } };
 }
@@ -38,6 +38,8 @@ test('aplicar: config sem segredo, .env com segredos, sistema registrado, plataf
   const r = roda(DADOS, CRM, ['aplicar', arq]);
   assert.equal(r.json && r.json.ok, true, r.saida);
   assert.equal(r.json.porta, 4500); assert.deepEqual(r.json.gravado.tokensNovos, ['leo', 'tati']);
+  assert.ok(Array.isArray(r.json.religados), 'aplicar diz quem religou (escritório fora do ar aqui: ninguém)'); assert.deepEqual(r.json.religados, []); assert.match(r.json.avisoReligar, /escritório fora do ar/);
+  const regCrm = JSON.parse(fs.readFileSync(path.join(DADOS, 'sistemas.json'), 'utf8')).crm; assert.ok(path.isAbsolute(regCrm.args[0]) && /server.js$/.test(regCrm.args[0]), 'o escritório sobe o CRM pelo caminho absoluto'); assert.equal(regCrm.env.CRM_PASTA, CRM, 'CRM_PASTA vai no env quando a pasta não é crm/');
   const cfg = JSON.parse(fs.readFileSync(path.join(CRM, 'config.json'), 'utf8'));
   assert.equal(cfg.entidade.plural, 'pacientes'); assert.equal(cfg.chefe, 'dra-carla'); assert.equal(cfg.pessoas.length, 2, 'o chefe entrou na lista de pessoas');
   assert.deepEqual(cfg.etapas.map(e => e.id), ['novo-contato', 'avaliacao-marcada', 'em-tratamento', 'concluido']);

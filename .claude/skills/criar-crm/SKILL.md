@@ -118,7 +118,10 @@ que está fora do git):
 gera os segredos em `crm/.env`, registra o sistema **crm** no escritório,
 cria a plataforma **crm** com um token por agente e marca os agentes, e cria
 pessoas e cargos. Se voltar `erros`, corrija a resposta correspondente e
-rode de novo. Confirme em duas linhas o que foi gravado e diga:
+rode de novo. Os agentes que estavam no ar são religados pelo escritório
+(`religados`), porque o bloco do CRM entrou no `.env` deles; se vier
+`avisoReligar`, repita-o para a pessoa. Confirme em duas linhas o que foi
+gravado e diga:
 
 "Ligue o CRM no escritório (ele aparece como sistema) e abra
 http://localhost:{porta}. A senha do chefe aparece uma vez na primeira
@@ -133,3 +136,9 @@ abertura da tela."
 - Lacuna fica com o padrão; não invente pessoa, etapa ou campo que a pessoa
   não citou.
 - Não prometa prazo nem funcionalidade que o design não tem.
+- Os scripts gravam onde o escritório manda: `ESCRITORIO_DADOS` e
+  `CRM_PASTA` definidas no ambiente são a pasta de dados e a pasta do CRM
+  deste escritório (um escritório de teste, por exemplo). Respeite o
+  caminho que `aplicar` devolve em `gravado`; nunca limpe nem troque essas
+  variáveis, nem rode o comando "num terminal limpo". Se o caminho parecer
+  estranho, diga em uma linha onde gravou e siga.

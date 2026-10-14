@@ -296,7 +296,8 @@ agentes entram como funcionários, com token e cargo, pela plataforma `crm`
 (um token por agente). Antes de perguntar, a skill chama o Cuki BOT
 (`node cuki.js medir`): vermelho trava. As perguntas são simples e vêm com
 proposta pronta; `node crm/criar.js aplicar` grava a configuração, registra o
-sistema `crm` e cria pessoas e cargos. O CRM sobe como qualquer sistema
+sistema `crm`, cria pessoas e cargos e religa os agentes que estavam no ar
+(o bloco do CRM entrou no `.env` deles). O CRM sobe como qualquer sistema
 (`crm/server.js`, botão 🗂️ CRM no topo do escritório) e tem quadro por etapa,
 ficha com histórico de autor, propostas dos agentes (uma pessoa aprova ou
 rejeita), tarefas, equipe, painel e importação de planilha. Uma ficha, um
