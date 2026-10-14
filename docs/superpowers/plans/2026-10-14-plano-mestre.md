@@ -122,7 +122,7 @@ Design: `specs/2026-10-14-cuki-bot-design.md`, Parte 2.
 
 Design: `specs/2026-10-14-criar-crm-perguntas.md` (perguntas e híbrido) e o design técnico `specs/2026-10-14-crm-design.md` (aprovado pelo dono em 14/10/2026).
 
-- [ ] 4a. Skill `/criar-crm`: chama o Cuki BOT (vermelho trava), faz as 6 perguntas essenciais + 5 ajustes com proposta pronta, inclui a pergunta "onde ficam as fichas" (local ou Supabase), grava `crm/config.json` pelos scripts.
+- [x] 4a. Skill `/criar-crm`: chama o Cuki BOT (`node cuki.js medir`; vermelho trava), faz as 6 perguntas essenciais + 5 ajustes com proposta pronta (`node crm/criar.js propostas`), inclui a pergunta "onde ficam as fichas" (local ou Supabase, pelo cadastro de plataformas), grava por `node crm/criar.js aplicar` (config.json, .env, registro do sistema crm, plataforma crm com token por agente, pessoas e cargos). Commit a934e48. Os scripts têm teste real por spawn; a conversa da skill em si será exercitada na verificação real do fim da etapa.
 - [ ] 4b. O sistema `crm/`: contrato do escritório (`/saude`, `/painel`, `/log`, porta), camada de dados isolada (arquivos locais ou Supabase conforme a resposta), fichas, etapas (as da esteira), cargos, usuários (pessoas com login; agentes com token), histórico com autor, propostas pendentes, tarefas, importação.
 - [ ] 4c. Agentes no CRM: plataforma `api` "CRM" marcada por agente com token e cargo; `tools/crm.js` gerada no agente (ler ficha, mover etapa, anotar, propor); o estado da entidade passa a viver no CRM (decisão A); assumir/devolver vira reatribuir; proposta pendente aparece na ficha.
 - [ ] 4d. Funcionários-agentes na tela do CRM: nome, cargo, boneco, estado lido do escritório, link para o monitor. Contratar, treinar e permitir continuam só no escritório.
