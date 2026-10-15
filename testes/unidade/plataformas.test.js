@@ -181,3 +181,95 @@ test('mcp: plataforma do tipo mcp vira mcp.json do agente com ${VAR}, nunca valo
   assert.match(rb.avisos.join(' '), /não é do escritório/);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(c.pastas.b, 'mcp.json'), 'utf8')).mcpServers, { meu: { command: 'x' } });
 });
+
+/* ---------------- o teste de conexão (5e) ---------------- */
+const http = require('http');
+async function servidorFalso(trata) {
+  const srv = http.createServer(trata);
+  await new Promise(r => srv.listen(0, '127.0.0.1', r));
+  return { url: 'http://127.0.0.1:' + srv.address().port, fechar: () => srv.close() };
+}
+
+test('testar: pasta existe (leitura e escrita) ou não; variável vazia é sem chave; o estado fica gravado', async (t) => {
+  const c = cenario(); t.after(c.limpar);
+  const existe = path.join(c.ROOT, 'clientes'); fs.mkdirSync(existe);
+  c.P.salvar({ id: 'drive', nome: 'Drive', tipo: 'pasta', variaveis: { DRIVE_PASTA: existe } });
+  c.P.salvar({ id: 'rede', nome: 'Rede', tipo: 'pasta', variaveis: { REDE_PASTA: path.join(c.ROOT, 'nao-existe') } });
+  c.P.salvar({ id: 'vazia', nome: 'Vazia', tipo: 'api', variaveis: { VAZIA_URL: 'http://127.0.0.1:1', VAZIA_TOKEN: '' } });
+  const d = await c.P.testar('drive');
+  assert.equal(d.ok, true); assert.equal(d.teste.estado, 'conectada'); assert.match(d.teste.motivo, /leitura e escrita/); assert.ok(d.teste.quando);
+  const r = await c.P.testar('rede');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /não encontrada/);
+  const v = await c.P.testar('vazia');
+  assert.equal(v.teste.estado, 'sem-chave'); assert.match(v.teste.motivo, /falta preencher VAZIA_TOKEN/); assert.deepEqual(v.teste.vazias, ['VAZIA_TOKEN']);
+  assert.equal((await c.P.testar('nao-ha')).ok, false);
+  const lista = c.P.listar();
+  assert.equal(lista.find(p => p.id === 'drive').teste.estado, 'conectada');
+  const resumo = c.P.resumoTestes();
+  assert.equal(resumo.total, 3); assert.equal(resumo.conectadas, 1); assert.equal(resumo.falharam, 1); assert.equal(resumo.semChave, 1);
+  assert.deepEqual(resumo.atencao.map(a => a.id).sort(), ['rede', 'vazia']);
+});
+
+test('testar api: manda o token no Authorization; 2xx conectada, 401 chave recusada, porta fechada não respondeu; o CRM desligado é "parada"', async (t) => {
+  const c = cenario(); t.after(c.limpar);
+  let visto = null;
+  const s = await servidorFalso((req, res) => { visto = req.headers.authorization; if (visto === 'Bearer tk-certo') { res.writeHead(200); res.end('{"ok":true}'); } else { res.writeHead(401); res.end(); } });
+  t.after(s.fechar);
+  c.P.salvar({ id: 'ophir', nome: 'Ophir', tipo: 'api', variaveis: { OPHIR_URL: s.url, OPHIR_TOKEN: 'tk-certo' } });
+  let r = await c.P.testar('ophir');
+  assert.equal(r.teste.estado, 'conectada'); assert.equal(visto, 'Bearer tk-certo');
+  assert.ok(!JSON.stringify(r).includes('tk-certo'), 'o resultado não leva o token');
+  c.P.salvar({ id: 'ophir', nome: 'Ophir', tipo: 'api', variaveis: { OPHIR_URL: s.url, OPHIR_TOKEN: 'tk-errado' } });
+  r = await c.P.testar('ophir');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /recusou a chave \(401\)/);
+  c.P.salvar({ id: 'link', nome: 'Site', tipo: 'link', url: 'http://127.0.0.1:1', variaveis: {} });
+  r = await c.P.testar('link');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /não respondeu/);
+  c.P.salvar({ id: 'crm', nome: 'CRM', tipo: 'api', url: 'http://127.0.0.1:1', variaveis: { CRM_URL: 'http://127.0.0.1:1', CRM_TOKEN: '' } });
+  c.P.definirPorAgente('crm', 'a', { CRM_TOKEN: 'tok-a' });
+  r = await c.P.testar('crm');
+  assert.equal(r.teste.estado, 'parada', 'token por agente não é vazio; CRM fora do ar é "desligada", não falha');
+  assert.match(r.teste.motivo, /ligue-o pelo escritório/);
+});
+
+test('testar whatsapp (WAHA) e banco (Supabase): a chave vai no cabeçalho certo e a sessão precisa estar WORKING', async (t) => {
+  const c = cenario(); t.after(c.limpar);
+  let sessoes = [{ name: 'default', status: 'WORKING' }];
+  const waha = await servidorFalso((req, res) => { if (req.url !== '/api/sessions' || req.headers['x-api-key'] !== 'k1') { res.writeHead(401); return res.end(); } res.writeHead(200); res.end(JSON.stringify(sessoes)); });
+  t.after(waha.fechar);
+  c.P.salvar({ id: 'zap', nome: 'Zap', tipo: 'whatsapp', variaveis: { ZAP_API_URL: waha.url, ZAP_API_CHAVE: 'k1', ZAP_SESSAO: 'default' } });
+  let r = await c.P.testar('zap');
+  assert.equal(r.teste.estado, 'conectada'); assert.match(r.teste.motivo, /sessão "default" conectada/);
+  sessoes = [{ name: 'default', status: 'SCAN_QR_CODE' }];
+  r = await c.P.testar('zap');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /SCAN_QR_CODE/); assert.match(r.teste.detalhe, /QR/);
+  sessoes = [];
+  r = await c.P.testar('zap');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /não tem a sessão/);
+  const banco = await servidorFalso((req, res) => { if (req.url === '/rest/v1/' && req.headers.apikey === 'sb-1') { res.writeHead(200); return res.end('{}'); } res.writeHead(401); res.end(); });
+  t.after(banco.fechar);
+  c.P.salvar({ id: 'supa', nome: 'Supabase', tipo: 'banco', variaveis: { SUPA_URL: banco.url, SUPA_CHAVE: 'sb-1' } });
+  assert.equal((await c.P.testar('supa')).teste.estado, 'conectada');
+  c.P.salvar({ id: 'supa', nome: 'Supabase', tipo: 'banco', variaveis: { SUPA_URL: banco.url, SUPA_CHAVE: 'sb-2' } });
+  assert.equal((await c.P.testar('supa')).teste.estado, 'falhou');
+});
+
+test('testar planilha com credencial inválida é sem chave (sem ir ao Google); mcp local sobe e lista as ferramentas; testarTodas grava tudo de uma vez', async (t) => {
+  const c = cenario(); t.after(c.limpar);
+  c.P.salvar({ id: 'sheet', nome: 'Planilha', tipo: 'planilha', variaveis: { SHEET_SHEETS_ID: 'abc', GOOGLE_CREDENCIAIS_JSON: 'isto não é json' } });
+  let r = await c.P.testar('sheet');
+  assert.equal(r.teste.estado, 'sem-chave'); assert.match(r.teste.motivo, /não é um JSON válido/);
+  c.P.salvar({ id: 'sheet', nome: 'Planilha', tipo: 'planilha', variaveis: { SHEET_SHEETS_ID: 'abc', GOOGLE_CREDENCIAIS_JSON: '{"type":"service_account"}' } });
+  r = await c.P.testar('sheet');
+  assert.equal(r.teste.estado, 'sem-chave'); assert.match(r.teste.motivo, /client_email/);
+  const falso = path.join(__dirname, '..', 'fixtures', 'mcp-falso.js');
+  c.P.salvar({ id: 'ferramentas', nome: 'Ferramentas', tipo: 'mcp', variaveis: { FERRAMENTAS_COMANDO: '"' + process.execPath + '" "' + falso + '"' } });
+  r = await c.P.testar('ferramentas');
+  assert.equal(r.teste.estado, 'conectada', JSON.stringify(r)); assert.match(r.teste.motivo, /2 ferramenta\(s\): ler_pasta, gravar_arquivo/);
+  c.P.salvar({ id: 'quebrado', nome: 'Quebrado', tipo: 'mcp', variaveis: { QUEBRADO_COMANDO: '"' + process.execPath + '" -e "process.exit(3)"' } });
+  r = await c.P.testar('quebrado');
+  assert.equal(r.teste.estado, 'falhou'); assert.match(r.teste.motivo, /terminou antes de responder/);
+  const todas = await c.P.testarTodas();
+  assert.equal(todas.ok, true); assert.equal(todas.testes.length, 3); assert.equal(todas.resumo.total, 3);
+  assert.ok(c.P.listar().every(p => p.teste && p.teste.quando), 'todas ficaram com o teste gravado');
+});

@@ -95,3 +95,30 @@ test('API de plataformas: sem admin não vaza valor nem grava; com admin cria, e
   assert.match(envNovo, /PLATAFORMAS_PERMITIDAS="drive"/);
   assert.match(envNovo, /MODO_REAL="nao"/, 'o molde continua lá, fora do bloco');
 });
+
+test('API de teste de conexão: só o administrador testa; o estado aparece na lista pública sem valor; salvar já testa', async (t) => {
+  await subir(); t.after(derrubar);
+  await api('/api/admin/senha', 'POST', { senha: 'teste123' });
+  const cookie = ((await api('/api/admin/entrar', 'POST', { senha: 'teste123' })).cookie || '').split(';')[0];
+  // salvar devolve o teste na hora: a pasta de dados existe → conectada
+  const cria = await api('/api/plataformas', 'POST', { nome: 'Docs', tipo: 'pasta', variaveis: { DOCS_PASTA: DADOS } }, cookie);
+  assert.equal(cria.status, 200); assert.equal(cria.json.teste.estado, 'conectada', JSON.stringify(cria.json.teste));
+  const criaApi = await api('/api/plataformas', 'POST', { nome: 'Ophir', tipo: 'api', variaveis: { OPHIR_URL: 'http://127.0.0.1:1', OPHIR_TOKEN: '' } }, cookie);
+  assert.equal(criaApi.json.teste.estado, 'sem-chave');
+  // sem admin não testa
+  assert.equal((await api('/api/plataformas/docs/testar', 'POST', {})).status, 403);
+  assert.equal((await api('/api/plataformas/testar', 'POST', {})).status, 403);
+  // com admin testa uma e todas
+  const uma = await api('/api/plataformas/docs/testar', 'POST', {}, cookie);
+  assert.equal(uma.status, 200); assert.equal(uma.json.teste.estado, 'conectada');
+  assert.equal((await api('/api/plataformas/nao-ha/testar', 'POST', {}, cookie)).status, 404);
+  const todas = await api('/api/plataformas/testar', 'POST', {}, cookie);
+  assert.equal(todas.status, 200); assert.equal(todas.json.resumo.total, 2); assert.equal(todas.json.resumo.conectadas, 1); assert.equal(todas.json.resumo.semChave, 1);
+  // a lista pública leva o estado, os estados conhecidos e o resumo, e nenhum valor
+  const publica = await api('/api/plataformas');
+  const docs = publica.json.plataformas.find(p => p.id === 'docs');
+  assert.equal(docs.teste.estado, 'conectada'); assert.ok(docs.teste.quando);
+  assert.equal(publica.json.estados.conectada.cor, 'verde');
+  assert.deepEqual(publica.json.resumo.atencao.map(a => a.id), ['ophir']);
+  assert.ok(!/"valor"/.test(JSON.stringify(publica.json)));
+});

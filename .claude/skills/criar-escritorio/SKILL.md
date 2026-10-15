@@ -87,6 +87,13 @@ uma vez no fim de cada bloco; mas **pergunte** uma coisa por mensagem.
    (`POST /api/admin/entrar` com a senha gerada, cookie `esc_admin`). Se o
    escritório não subir, deixe o pedido anotado em `data/abertura.log` e diga
    como contratar pela aba Contratar.
-3. Abra `http://localhost:<porta>` no navegador e resuma o que gravou: nomes
+3. **Confira as conexões**: `node plataformas.js testar` devolve o estado de
+   cada uma (`conectada`, `sem-chave`, `falhou`, `parada`) e um motivo em
+   palavras, nunca o valor. Liste para a pessoa, como "para conectar agora",
+   as que ficaram `sem-chave` ou `falhou`, com o motivo, e diga onde colar:
+   botão **🔌 Conexões** do escritório, como administrador; cada conexão tem
+   **Testar**, e a tela mostra 🟢 conectada, 🟡 sem chave, 🔴 falhou. Se
+   todas estiverem conectadas, diga isso em uma linha.
+4. Abra `http://localhost:<porta>` no navegador e resuma o que gravou: nomes
    de arquivos e de variáveis, nunca valores. Lembre: "para refazer qualquer
    parte, abra esta pasta no Claude Code e digite /criar-escritorio".

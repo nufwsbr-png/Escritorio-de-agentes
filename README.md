@@ -281,6 +281,21 @@ de referência leem. Trocar uma chave no escritório regrava o bloco de todos
 os agentes que a têm; depois é só religar. Robôs cadastrados à mão nunca têm
 o `.env` tocado.
 
+**Cada conexão mostra se funciona.** O escritório testa cada uma ao salvar,
+ao subir e a cada 15 minutos, do jeito do tipo: sistema com API (chamada com
+o token), pasta (existe? dá para gravar?), banco Supabase (a chave abre o
+`/rest/v1/`), WhatsApp (o WAHA responde e a sessão está conectada), planilha
+e agenda do Google (a credencial entra e a planilha ou agenda abre), e-mail
+(o servidor IMAP aceita usuário e senha de app), servidor MCP (remoto responde;
+local sobe e lista as ferramentas), site (responde). Na tela, cada conexão
+tem o selo 🟢 **conectada**, 🟡 **sem chave** (falta preencher), 🔴
+**falhou** (sem resposta, chave recusada) ou **desligada** (o CRM do
+escritório fora do ar), com o motivo em palavras e um botão **Testar**;
+**Testar todas** no rodapé. Quando alguma precisa de você, uma faixa aparece
+no topo do escritório, e o contratar avisa ao lado da caixa. O que fica
+gravado é só o estado e o motivo, nunca o valor. O Cuki BOT usa o mesmo
+teste no laudo. Na linha de comando: `node plataformas.js testar [id]`.
+
 **Servidor MCP é um tipo de plataforma** (🧩). Cadastre o servidor uma vez,
 com `COMANDO` (local, por exemplo
 `npx -y @modelcontextprotocol/server-filesystem C:/pasta`) ou `URL` (remoto)
@@ -319,8 +334,8 @@ perguntas simples, com proposta pronta) ou pelo formulário do administrador.
 **🩺 Cuki BOT**, no topo, e o boneco na recepção. Ele confere a saúde do
 escritório e diz se está apto para o CRM, num laudo com semáforo por área:
 agentes (portão passado, no ar, última rodada, pergunta parada, lições
-acumuladas), plataformas (variáveis preenchidas, pasta existe, endereço
-responde), fluxo (entidades reais nos últimos 30 dias, esteiras paradas),
+acumuladas), conexões (o mesmo teste de 🔌 Conexões: conectada, sem chave,
+falhou, desligada), fluxo (entidades reais nos últimos 30 dias, esteiras paradas),
 base (Claude conectado, senha, avisos, abertura) e aptidão para o CRM. Mede
 por código e explica pelo modelo: o Claude Code recebe só as medidas, sem
 nenhum valor de variável, roda **sem ferramentas** e escreve a leitura e as

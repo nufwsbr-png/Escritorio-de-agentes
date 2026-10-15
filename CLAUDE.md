@@ -33,7 +33,7 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 | Servidor do escritório: tela, API, sobe e vigia sistemas, tranca | `server.js` | o construtor |
 | Senha e sessão do administrador | `admin.js`, hash em `data/admin.json` | o botão 🔐 Admin ou `node abertura.js senha` |
 | Contratar: anatomia, trilhas, setores, progresso, ficha | `agentes.js` | o construtor |
-| Conexões do negócio (na tela "🔌 Conexões"; por dentro, `plataformas`): CRM, planilha, agenda, pasta, servidor MCP…; cadastro e permissão por agente | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente e `mcp.json` (tipo mcp, sem valores) | o botão 🔌 Conexões, `node plataformas.js` |
+| Conexões do negócio (na tela "🔌 Conexões"; por dentro, `plataformas`): CRM, planilha, agenda, pasta, servidor MCP…; cadastro, permissão por agente e o **teste de conexão** por tipo (`testar`: conectada, sem chave, falhou, desligada; estado gravado na plataforma, nunca o valor; roda ao salvar, ao subir e a cada 15 min; faixa no topo quando alguma precisa de gente; o Cuki BOT usa o mesmo teste) | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente e `mcp.json` (tipo mcp, sem valores); rotas `POST /api/plataformas/testar` e `/api/plataformas/:id/testar` | o botão 🔌 Conexões (Testar, Testar todas), `node plataformas.js testar` |
 | Abertura do escritório (as dez perguntas) | `abertura.js`, skill `/criar-escritorio` | a skill, pelos scripts |
 | Esteiras: o trabalho passando de agente em agente, aprovação pela tela | `esteiras.js`, `data/esteiras.json`, estado em `data/esteiras/<esteira>/`, skill `/criar-esteira`; no agente, `GET /entidades` e `POST /gatilho` com `GATILHO_CHAVE` | o botão 🧵 Esteiras, `node esteiras.js`, a skill |
 | Cuki BOT, a IA analista: medidas, semáforo, laudo (sem ferramentas, sem segredos) | `cuki.js`, `data/cuki/laudos/`, boneco na recepção | o botão 🩺 Cuki BOT (analisar é do administrador) |
@@ -67,7 +67,7 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
   chat e no log só os **nomes** das variáveis.
 - **Endereço e chave de plataforma só pelo cadastro de plataformas.** Nada de
   escrever `OPHIR_TOKEN` à mão no `.env` de um agente: cadastre em 🔌
-  Plataformas (ou `node plataformas.js criar`) e marque o agente. O bloco entre
+  Conexões (ou `node plataformas.js criar`) e marque o agente. O bloco entre
   `# >>> plataformas do escritório` e `# <<< plataformas do escritório <<<` é
   do escritório.
 - **Dado novo do escritório vai para `data/`**, e o arquivo entra no
@@ -82,7 +82,8 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 - **Não reestruture pastas nem divida arquivos grandes sem pedir.** `server.js`
   e `js/app.js` são grandes de propósito, em seções nomeadas.
 - **Endereço fixo só onde já existe:** `avisos.js` (ntfy, CallMeBot), o
-  OpenRouter no molde do atendente, fontes no `index.html`, documentação.
+  OpenRouter no molde do atendente, fontes no `index.html`, os servidores do
+  Google e de IMAP no teste de conexão de `plataformas.js`, documentação.
 - **Textos em português do Brasil**, no tom da tela: direto, sem jargão solto.
 - **Antes de dizer "pronto", `npm test`.** Ele roda unidade, API, o conferidor
   de organização (segredos, anatomia, endereços, bloco de plataformas) e a

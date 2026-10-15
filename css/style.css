@@ -578,3 +578,27 @@ button{font-family:inherit;color:inherit}
 .tr-quem{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px}.tr-quem span{color:var(--txt-dim)}
 .tr-acao{display:inline-flex;gap:6px;align-items:center;margin:2px 8px 2px 0;flex-wrap:wrap}.tr-acao input{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--txt);font-family:inherit;font-size:13px;min-width:240px}
 .tr-vazio{padding:4px 2px}.tr-rodape{padding-top:4px;border-top:1px solid var(--line)}
+
+/* 🔌 Conexões: o estado de cada uma (conectada, sem chave, falhou, desligada) e a faixa no topo */
+.pl-cabeca{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pl-estado{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--bg-2);color:var(--txt-dim);white-space:nowrap;vertical-align:middle}
+.pl-estado .sem{width:8px;height:8px}.pl-estado small{color:var(--txt-dim);font-size:11px;margin-left:2px}
+.pl-estado.verde{color:var(--ok)}.pl-estado.amarelo{color:var(--warn)}.pl-estado.vermelho{color:#ff7a6b}
+.pl-motivo{font-size:12.5px;margin:2px 0 4px;color:var(--txt);line-height:1.45}.pl-motivo span{color:var(--txt-dim)}
+.pl-motivo.amarelo{color:var(--warn)}.pl-motivo.vermelho{color:#ff7a6b}
+.pl-item.atencao{border-left:3px solid var(--warn)}
+.pl-botoes{display:flex;flex-direction:column;gap:6px;flex:none}.pl-botoes .btn{white-space:nowrap}
+.pl-resumo{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.pl-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:var(--txt-dim)}
+.pl-chip.verde{color:var(--ok)}.pl-chip.amarelo{color:var(--warn)}.pl-chip.vermelho{color:#ff7a6b}
+.pl-aviso{font-size:13px;padding:8px 12px;border-radius:10px;background:rgba(142,240,176,.1);border:1px solid rgba(142,240,176,.35);color:#8ef0b0;margin-bottom:10px;line-height:1.5}
+.pl-aviso.atencao{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#ffd98a}
+.pl-alerta{color:var(--warn)}
+.pl-caixas .opt.pl-atencao{border-color:rgba(245,158,11,.5)}
+.pl-linha.atencao{border-left:3px solid var(--warn)}
+.faixa-topo{position:fixed;top:62px;left:0;right:0;z-index:40;padding:9px 18px;background:rgba(245,158,11,.12);border-bottom:1px solid rgba(245,158,11,.4);color:#ffd98a;font-size:13px;line-height:1.5}
+.faixa-topo.segunda{top:100px}
+.faixa-topo a{color:#ffe9b8;margin-left:8px}.faixa-topo b{color:#fff3d6}
+/* com faixa no topo (sem abertura, conexões), a legenda das salas desce para não ficar coberta */
+#app:has(#sem-abertura:not(.hidden)) #hud-left,#app:has(#faixa-conexoes:not(.hidden)) #hud-left{top:52px}
+#app:has(#sem-abertura:not(.hidden)):has(#faixa-conexoes:not(.hidden)) #hud-left{top:90px}

@@ -90,27 +90,16 @@ async function medirAgentes() {
 }
 
 async function medirPlataformas() {
-  const lista = dep.plataformas ? dep.plataformas.listar(true) : [];
-  const plataformas = [];
-  for (const p of lista) {
-    const vars = Object.entries(p.variaveis || {});
-    // variável vazia no cadastro mas preenchida por agente (porAgente, como o CRM_TOKEN do CRM) não é vazia
-    const porAg = Object.values(p.porAgente || {});
-    const vazias = vars.filter(([k, v]) => String(v || '').trim() === '' && !porAg.some(x => String((x || {})[k] || '').trim() !== '')).map(([k]) => k);
-    const item = { id: p.id, nome: p.nome, tipo: p.tipo, variaveis: vars.map(([k]) => k), vazias, teste: 'sem teste', cor: 'verde', usadaPor: dep.plataformas.usadaPor ? dep.plataformas.usadaPor(p.id) : [] };
-    const pref = dep.plataformas.prefixoDe(p.id);
-    const v = (s) => String((p.variaveis || {})[pref + s] || '').trim();
-    if (vazias.length) { item.cor = 'vermelho'; item.teste = 'variável vazia'; }
-    else if (p.tipo === 'pasta') { const existe = v('PASTA') && fs.existsSync(v('PASTA')); item.teste = existe ? 'pasta existe' : 'pasta não encontrada'; if (!existe) item.cor = 'vermelho'; }
-    else if (['api', 'navegador', 'link'].includes(p.tipo) || (p.tipo === 'mcp' && v('URL'))) {
-      const url = v('URL') || p.url;
-      if (url) { const r = await pede(url, 'GET', {}, 5000); item.teste = r.status && r.status < 500 ? 'endereço responde (' + r.status + ')' : 'endereço sem resposta'; if (!(r.status && r.status < 500)) item.cor = 'vermelho'; }
-      else { item.teste = 'sem endereço para testar'; item.cor = 'amarelo'; }
-    } else { item.teste = 'preenchida; este tipo não tem teste automático'; item.cor = 'amarelo'; }
-    // o CRM do escritório fora do ar não é vermelho: a skill /criar-crm precisa poder rodar de novo para ajustá-lo
-    if (p.id === 'crm' && item.cor === 'vermelho') { item.cor = 'amarelo'; item.teste += ' (CRM do escritório: ligue-o pelo escritório)'; }
-    plataformas.push(item);
-  }
+  const P = dep.plataformas;
+  if (!P || !P.testarTodas) return { cor: 'amarelo', plataformas: [], motivo: 'nenhuma plataforma cadastrada' };
+  // o mesmo teste da tela 🔌 Conexões (plataformas.testar): conectada, sem chave, falhou, desligada. Grava o estado, nunca o valor.
+  // Sem chave e falhou são vermelhos para o Cuki; o CRM do escritório desligado ("parada") fica amarelo, porque a skill /criar-crm precisa poder rodar de novo
+  const { testes } = await P.testarTodas();
+  const COR = { conectada: 'verde', 'sem-chave': 'vermelho', falhou: 'vermelho', parada: 'amarelo', 'sem-teste': 'amarelo' };
+  const plataformas = P.listar(false).map(p => {
+    const t = testes.find(x => x.id === p.id) || p.teste || { estado: 'sem-teste', motivo: 'ainda não testada' };
+    return { id: p.id, nome: p.nome, tipo: p.tipo, variaveis: p.variaveis, vazias: t.vazias || [], estado: t.estado, teste: t.motivo + (t.detalhe ? ' (' + t.detalhe + ')' : ''), cor: COR[t.estado] || 'amarelo', usadaPor: p.usadaPor || [] };
+  });
   return { cor: plataformas.length ? pior(plataformas.map(p => p.cor)) : 'amarelo', plataformas, motivo: plataformas.length ? undefined : 'nenhuma plataforma cadastrada' };
 }
 
@@ -172,8 +161,8 @@ function laudoTexto(m) {
   const fazer = [];
   for (const a of A.agentes.agentes) for (const x of a.motivos) if (a.cor !== 'verde') fazer.push(a.nome + ': ' + x);
   if (A.agentes.motivo) fazer.push(A.agentes.motivo + ': contrate na aba Contratar');
-  for (const p of A.plataformas.plataformas) if (p.cor === 'vermelho') fazer.push('Plataforma ' + p.nome + ': ' + p.teste + (p.vazias.length ? ' (' + p.vazias.join(', ') + ')' : '') + ' — 🔌 Plataformas');
-  if (A.plataformas.motivo) fazer.push(A.plataformas.motivo + ' — cadastre em 🔌 Plataformas');
+  for (const p of A.plataformas.plataformas) if (p.cor === 'vermelho') fazer.push('Conexão ' + p.nome + ': ' + p.teste + ' — 🔌 Conexões');
+  if (A.plataformas.motivo) fazer.push(A.plataformas.motivo + ' — cadastre em 🔌 Conexões');
   if (A.fluxo.cor !== 'verde') for (const x of A.fluxo.motivos) fazer.push('Fluxo: ' + x);
   if (A.base.cor !== 'verde') for (const x of A.base.motivos) fazer.push('Base: ' + x);
   const linhas = [
@@ -485,7 +474,7 @@ async function contextoConversa() {
   const av = dep.avisos && dep.avisos.ler ? dep.avisos.ler() : {};
   const avisos = (av.historico || []).slice(0, 5).map(h => ({ quando: h.quando, titulo: h.titulo }));
   return { agora: agora.toLocaleString('pt-BR'), empresa: cfg.empresa || '', escritorio: cfg.nome || '', dono: cfg.dono || '', agentes, esteiras, propostasPendentes: propostas.slice(0, 20), recadosUltimos7Dias: { total: recados.length, naoEntregues: recados.filter(r => !r.entregue).length, ultimos: recados.slice(-8) }, reunioes, ultimoLaudo: laudo, ultimosAvisos: avisos,
-           ondeFazer: { ligarOuDesligar: 'monitor do agente (clique no boneco) › ▶ Ligar', aprovarEtapa: '🧵 Esteiras › Aprovar', verLaudoCompleto: '🩺 Cuki BOT', plataformas: '🔌 Plataformas (administrador)', propostas: 'monitor do agente › Propostas', avisos: '🔔 Avisos' } };
+           ondeFazer: { ligarOuDesligar: 'monitor do agente (clique no boneco) › ▶ Ligar', aprovarEtapa: '🧵 Esteiras › Aprovar', verLaudoCompleto: '🩺 Cuki BOT', plataformas: '🔌 Conexões (administrador)', propostas: 'monitor do agente › Propostas', avisos: '🔔 Avisos' } };
 }
 
 const PAPEL_CONVERSA = 'Você é o Cuki BOT, a IA analista do Escritório de Agentes, falando pelo WhatsApp com uma pessoa autorizada (o dono do negócio ou alguém da equipe dele). ' +

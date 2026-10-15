@@ -111,13 +111,17 @@ async function cenarioPadrao(b) {
   for (const [botao, titulo] of [['ficha', 'Ficha'], ['memoria', 'Memória'], ['recados', 'Recados'], ['propostas', 'Propostas'], ['plataformas', 'Conexões'], ['testar', 'Testar']]) {
     await b.ev('document.getElementById("mon-' + botao + '").click()'); await espera(900);
     ok(String(await b.ev('document.querySelector("#mon-extra .ex-top b")?.textContent')).includes(titulo), 'painel ' + titulo + ' abre');
-    if (botao === 'plataformas') ok(await b.ev('document.querySelectorAll("#mon-extra .pl-caixa").length') === 2, 'painel Plataformas lista as 2 cadastradas');
+    if (botao === 'plataformas') { ok(await b.ev('document.querySelectorAll("#mon-extra .pl-caixa").length') === 2, 'painel Conexões lista as 2 cadastradas'); ok(await b.ev('document.querySelectorAll("#mon-extra .pl-estado").length') === 2, 'painel Conexões mostra o estado de cada uma'); }
   }
   await b.ev('document.getElementById("mon-x").click()'); await espera(300);
   await b.ev('PLATAFORMAS_UI.abrir()'); await espera(900);
-  ok(await b.ev('document.querySelectorAll("#modal-body .pl-item").length') === 2, 'modal Plataformas lista 2');
-  ok(!(await b.ev('document.getElementById("modal-body").innerHTML.includes("segredo-99")')), 'modal Plataformas não vaza valor');
+  ok(await b.ev('document.querySelectorAll("#modal-body .pl-item").length') === 2, 'modal Conexões lista 2');
+  ok(!(await b.ev('document.getElementById("modal-body").innerHTML.includes("segredo-99")')), 'modal Conexões não vaza valor');
+  // o escritório testou as conexões ao subir: pasta C:/x não existe e o endereço "u" é inválido → as duas falharam
+  ok(await b.ev('document.querySelectorAll("#modal-body .pl-estado.vermelho").length') === 2, 'modal Conexões mostra 🔴 falhou nas duas (testadas ao subir)');
+  ok(await b.ev('document.getElementById("modal-body").textContent.includes("não encontrada") && !!document.querySelector("#modal-body .pl-resumo") && !!document.getElementById("pl-testar-todas")'), 'modal Conexões tem o motivo em palavras, o resumo e "Testar todas"');
   await b.ev('document.getElementById("modal-x").click()');
+  ok(await b.ev('!document.getElementById("faixa-conexoes").classList.contains("hidden") && document.getElementById("faixa-conexoes").textContent.includes("precisam de você")'), 'a faixa no topo avisa que 2 conexões precisam de gente');
   ok(await b.ev('document.getElementById("btn-crm").classList.contains("hidden")'), 'sem CRM criado, o botão 🗂️ CRM fica escondido');
   await b.ev('document.getElementById("btn-cuki").click()'); await espera(1200);
   ok(String(await b.ev('document.querySelector("#modal-body h3")?.textContent')).includes('Cuki BOT'), 'Cuki BOT abre');
@@ -140,7 +144,8 @@ async function cenarioPadrao(b) {
   await b.ev('CONTRATAR.abrir()'); await espera(1200);
   ok(await b.ev('!!document.getElementById("ct-vendo")'), 'contratar passo 1 mostra "Agente que aprende vendo"');
   await b.ev('document.querySelector("#modal-body [data-s=sdr]")?.click()'); await espera(500);
-  ok(await b.ev('document.querySelectorAll("#modal-body .pl-caixa").length') === 2, 'contratar passo 2 mostra as caixas das plataformas');
+  ok(await b.ev('document.querySelectorAll("#modal-body .pl-caixa").length') === 2, 'contratar passo 2 mostra as caixas das conexões');
+  ok(await b.ev('document.querySelectorAll("#modal-body .pl-caixas .pl-estado").length === 2 && document.getElementById("modal-body").textContent.includes("ainda não estão conectadas")'), 'contratar avisa ao lado das caixas que as conexões não estão conectadas');
   ok(String(await b.ev('document.getElementById("ct-ok")?.textContent')).includes('construção'), 'pela anatomia, o botão diz construção');
   await b.ev('document.getElementById("ct-back").click()'); await espera(300);
   await b.ev('document.getElementById("ct-vendo").click()'); await espera(500);

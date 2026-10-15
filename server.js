@@ -721,6 +721,12 @@ const PONTE_CRM = {
 const ESTEIRAS = require('./esteiras').init({ DADOS, lerRegistro, plataformas: PLATAFORMAS, mensagens: MEMORIA, ligar: (id) => ligar(id),
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}), crm: PONTE_CRM });
 if (!process.env.ESCRITORIO_SEM_VIGILIA) ESTEIRAS.iniciar();
+// as conexões são testadas logo que o escritório sobe e a cada 15 minutos; o estado (nunca o valor) fica em data/plataformas.json
+if (!process.env.ESCRITORIO_SEM_VIGILIA) {
+  const testarConexoes = () => PLATAFORMAS.testarTodas().catch(e => console.log('[conexões] teste falhou: ' + e.message));
+  setTimeout(testarConexoes, 1500);
+  setInterval(testarConexoes, 15 * 60 * 1000);
+}
 // Cuki BOT, a IA analista: mede por código (agentes, plataformas, fluxo, base, aptidão para o CRM) e explica pelo modelo, sem ferramentas.
 // Parte 2: o WhatsApp dele pelo WAHA — avisa e conversa com os números autorizados (canal `cuki` dos avisos; busca e briefing no relógio dele)
 const CUKI = require('./cuki').init({ DADOS, PORT, lerRegistro, agentes: AGENTES, plataformas: PLATAFORMAS, esteiras: ESTEIRAS, admin: ADMIN, avisos: AVISOS, memoria: MEMORIA,
@@ -1028,10 +1034,11 @@ const servidor = http.createServer(async (req, res) => {
   /* ---- contratar é construir ---- */
   if (rota === '/api/setores' && req.method === 'GET') return json(res, 200, { setores: AGENTES.setores() });
   /* ---- plataformas: o cadastro único; valores só para o administrador ---- */
-  if (rota === '/api/plataformas' && req.method === 'GET') return json(res, 200, { plataformas: PLATAFORMAS.listar(false), tipos: PLATAFORMAS.TIPOS });
+  if (rota === '/api/plataformas' && req.method === 'GET') return json(res, 200, { plataformas: PLATAFORMAS.listar(false), tipos: PLATAFORMAS.TIPOS, estados: PLATAFORMAS.ESTADOS, resumo: PLATAFORMAS.resumoTestes() });
   if (rota === '/api/plataformas' && req.method === 'POST') {
     if (!admin) return soAdmin();
-    return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar(b); return json(res, r.ok ? 200 : 400, r.ok ? { ...r, plataformas: PLATAFORMAS.listar(false) } : r); })
+    // salvar já testa a conexão: a tela mostra o estado na hora (conectada, sem chave, falhou)
+    return corpoJson(req, 5e4).then(async b => { const r = PLATAFORMAS.salvar(b); if (r.ok) r.teste = (await PLATAFORMAS.testar(r.plataforma.id)).teste; return json(res, r.ok ? 200 : 400, r.ok ? { ...r, plataformas: PLATAFORMAS.listar(false) } : r); })
       .catch(e => json(res, 400, { ok: false, motivo: e.message }));
   }
   /* ---- Cuki BOT: o laudo é de quem opera; rodar a análise é do administrador (gasta uma rodada do Claude) ---- */
@@ -1116,12 +1123,22 @@ const servidor = http.createServer(async (req, res) => {
     if (!admin) return soAdmin();
     return json(res, 200, { ok: true, ...PLATAFORMAS.sincronizarTodos() });
   }
+  // testar a conexão: uma ou todas (administrador); o estado fica gravado e aparece em GET /api/plataformas
+  if (rota === '/api/plataformas/testar' && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return PLATAFORMAS.testarTodas().then(r => json(res, 200, r)).catch(e => json(res, 500, { ok: false, motivo: e.message }));
+  }
+  const mtest = rota.match(/^\/api\/plataformas\/([a-z0-9][a-z0-9-]*)\/testar$/i);
+  if (mtest && req.method === 'POST') {
+    if (!admin) return soAdmin();
+    return PLATAFORMAS.testar(mtest[1]).then(r => json(res, r.ok ? 200 : 404, r)).catch(e => json(res, 500, { ok: false, motivo: e.message }));
+  }
   const mplat = rota.match(/^\/api\/plataformas\/([a-z0-9][a-z0-9-]*)$/i);
   if (mplat) {
     if (!admin) return soAdmin();
     const id = mplat[1];
     if (req.method === 'GET') { const p = PLATAFORMAS.obter(id, true); return p ? json(res, 200, p) : json(res, 404, { ok: false, motivo: 'não encontrada' }); }
-    if (req.method === 'PUT') { if (!PLATAFORMAS.obter(id)) return json(res, 404, { ok: false, motivo: 'plataforma não encontrada: ' + id }); return corpoJson(req, 5e4).then(b => { const r = PLATAFORMAS.salvar({ ...b, id }); return json(res, r.ok ? 200 : 400, r); })
+    if (req.method === 'PUT') { if (!PLATAFORMAS.obter(id)) return json(res, 404, { ok: false, motivo: 'plataforma não encontrada: ' + id }); return corpoJson(req, 5e4).then(async b => { const r = PLATAFORMAS.salvar({ ...b, id }); if (r.ok) r.teste = (await PLATAFORMAS.testar(id)).teste; return json(res, r.ok ? 200 : 400, r); })
       .catch(e => json(res, 400, { ok: false, motivo: e.message })); }
     if (req.method === 'DELETE') { const r = PLATAFORMAS.remover(id); return json(res, r.ok ? 200 : 404, r); }
   }

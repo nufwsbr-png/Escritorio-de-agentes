@@ -30,12 +30,15 @@ async function cenario(opts = {}) {
   if (opts.semB) delete registro.b;
   const plats = [{ id: 'drive', nome: 'Drive', tipo: 'pasta', variaveis: { DRIVE_PASTA: pastaReal } }];
   if (!opts.semVazia) plats.push({ id: 'ophir', nome: 'Ophir', tipo: 'api', url: 'http://127.0.0.1:1', variaveis: { OPHIR_URL: 'http://127.0.0.1:1', OPHIR_TOKEN: '' } });
-  // a plataforma crm do escritório: CRM_TOKEN vazio no cadastro mas preenchido por agente (não é 'variável vazia'); CRM fora do ar fica amarelo, não vermelho
+  // a plataforma crm do escritório: CRM_TOKEN vazio no cadastro mas preenchido por agente (não é 'sem chave'); CRM fora do ar fica amarelo ("desligada"), não vermelho
   if (opts.comCrm) plats.push({ id: 'crm', nome: 'CRM', tipo: 'api', url: 'http://127.0.0.1:1', variaveis: { CRM_URL: 'http://127.0.0.1:1', CRM_TOKEN: '' }, porAgente: { a: { CRM_TOKEN: 'tok-a' } } });
+  // o Cuki usa o teste de conexão de verdade (plataformas.testar): o cadastro vai para data/plataformas.json
+  fs.writeFileSync(path.join(DADOS, 'plataformas.json'), JSON.stringify(plats));
+  const PLAT = require('../../plataformas').init({ ROOT: DADOS, DADOS, lerRegistro: () => registro, lerRegistroBruto: () => registro, gravarRegistro: () => {} });
   const C = require('../../cuki').init({
     DADOS, lerRegistro: () => registro,
     agentes: { progressoDe: (pasta) => { const t = fs.readFileSync(path.join(pasta, 'progresso-do-agente.md'), 'utf8'); const f = (t.match(/^- \[x\]/gm) || []).length, ab = (t.match(/^- \[ \]/gm) || []).length; const portao = /^- \[x\].*PORT/m.test(t); return { passo: f, total: f + ab, portao, concluido: false, emTreinamento: !portao }; } },
-    plataformas: { listar: () => plats, prefixoDe: (id) => id.toUpperCase() + '_', usadaPor: () => ['a'] },
+    plataformas: PLAT,
     esteiras: { entidadesDoAgente: async (id) => id === 'a' ? { ok: true, entidades } : { ok: false, motivo: 'fora' }, estado: () => ({ esteiras: opts.esteira ? [{ id: 'x' }] : [], entidades: opts.esteira ? [{ status: 'parada (pergunta)', atualizado: new Date(Date.now() - 2 * 86400000).toISOString() }] : [] }) },
     admin: { temSenha: () => !!opts.senha }, avisos: { ler: () => ({ ntfy: { ativo: !!opts.avisos }, whatsapp: { ativo: false } }) },
     lerConfig: () => (opts.aberto ? { empresa: 'Clínica X', aberturaEm: 'x' } : {}),
@@ -57,7 +60,7 @@ test('escritório frágil: agente fora do ar, plataforma vazia, sem Claude e sem
     assert.equal(leo.cor, 'vermelho'); assert.match(leo.motivos.join(), /fora do ar/);
     assert.equal(A.agentes.agentes.length, 2, 'robô sem trilha fica de fora');
     assert.equal(A.plataformas.cor, 'vermelho');
-    assert.equal(A.plataformas.plataformas.find(p => p.id === 'ophir').teste, 'variável vazia');
+    assert.match(A.plataformas.plataformas.find(p => p.id === 'ophir').teste, /falta preencher OPHIR_TOKEN/); assert.equal(A.plataformas.plataformas.find(p => p.id === 'ophir').estado, 'sem-chave');
     assert.deepEqual(A.plataformas.plataformas.find(p => p.id === 'ophir').vazias, ['OPHIR_TOKEN']);
     assert.equal(A.plataformas.plataformas.find(p => p.id === 'drive').cor, 'verde');
     assert.equal(A.fluxo.cor, 'vermelho'); assert.match(A.fluxo.motivos.join(), /só amostras/);
@@ -69,7 +72,7 @@ test('escritório frágil: agente fora do ar, plataforma vazia, sem Claude e sem
     assert.ok(!txt.includes(c.DADOS.replace(/\\/g, '\\\\')) || true);
     assert.ok(!/"valor"|segredo|OPHIR_TOKEN":\s*"[^"]/.test(txt), 'as medidas levam só nomes de variáveis');
     const laudo = c.C.laudoTexto(m);
-    assert.match(laudo, /## Semáforo/); assert.match(laudo, /## O que fazer antes/); assert.match(laudo, /Léo: fora do ar/); assert.match(laudo, /Ophir: variável vazia \(OPHIR_TOKEN\)/); assert.match(laudo, /claude auth login/);
+    assert.match(laudo, /## Semáforo/); assert.match(laudo, /## O que fazer antes/); assert.match(laudo, /Léo: fora do ar/); assert.match(laudo, /Conexão Ophir: falta preencher OPHIR_TOKEN/); assert.match(laudo, /🔌 Conexões/); assert.match(laudo, /claude auth login/);
   } finally { c.limpar(); }
 });
 
@@ -104,6 +107,6 @@ test('a plataforma crm do escritório: token por agente não conta como vazio e 
     const m = await c.C.medir();
     const crm = m.areas.plataformas.plataformas.find(p => p.id === 'crm');
     assert.deepEqual(crm.vazias, [], 'CRM_TOKEN preenchido por agente não é vazio');
-    assert.equal(crm.cor, 'amarelo'); assert.match(crm.teste, /ligue-o pelo escritório/);
+    assert.equal(crm.estado, 'parada'); assert.equal(crm.cor, 'amarelo'); assert.match(crm.teste, /ligue-o pelo escritório/);
   } finally { c.limpar(); }
 });
