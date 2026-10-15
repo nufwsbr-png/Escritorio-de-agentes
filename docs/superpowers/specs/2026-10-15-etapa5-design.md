@@ -88,6 +88,14 @@ Achado extra: no molde do agente, o primeiro `POST /acao` (`tarefa/server.js:168
 - O **2D entra por último**, como opção de estilo; até lá o Estúdio mostra o 2D como prévia estática.
 - Depois do exemplo aprovado, começar por **5c** (leve + estado real do agente).
 
+## Decididas pelo dono (15/10/2026, tarde)
+
+- **O sistema do agente aparece sempre, para leigo.** Hoje o monitor embute o painel que o próprio agente serve (`http://localhost:<porta>/painel`): desligado, some. Passa a ser o escritório que desenha a tela do agente a partir da pasta dele (`memoria/entidades/*.json`, `saidas/`, `progresso-do-agente.md`, `log.txt`, `memoria/licoes*.md`), com `/entidades` só para o "agora" quando está no ar. Ligar, responder pergunta, aprovar, devolver e rodar passam por rotas do escritório, que liga o agente se precisar. Linguagem de leigo: "esperando você", "fez hoje", "deu problema", nunca "entidade", "rodada", "gatilho" na tela.
+- **Sala de descanso obrigatória**: toda planta tem uma; é a sala dos agentes desligados (sofás, sem arcade). Desligar = o boneco anda até o descanso e senta; ligar = volta à mesa. O "offline no elevador" sai.
+- **Na mesa do dono**: quando a esteira avança para uma etapa cujo agente está desligado, a entidade recebe o estado `na mesa do dono`, aparece como pasta sobre a mesa da diretoria (clique abre: ligar o agente, passar para outro, resolver), e sai um aviso. Nada fica preso em silêncio.
+- **Acabamento de produto**: um sistema de componentes em `css/` (tokens de cor, tipografia, espaçamento, botões, cartões, listas, estados vazio/carregando/erro, modais) usado por todas as telas (escritório, monitor, painéis, CRM, Estúdio). Textos no tom da tela. Toda tela nova nasce nele; as antigas migram na sub-etapa em que são tocadas.
+- **"Plataformas" vira "Conexões"** em toda tela, skill e documentação. Internamente (`plataformas.js`, `data/plataformas.json`, rotas `/api/plataformas`, bloco `# >>> plataformas do escritório` no `.env`) o nome fica, para não quebrar escritórios já entregues.
+
 ## Ordem e custo
 
 5a exemplo (meio dia; primeiro entregável, para o dono aprovar o formato) → 5c (2 dias) → 5e (1 dia) → 5b (1 a 2 dias) → 5a completo na skill (1 dia) → 5d (1 dia) → 5f (1 dia) → 2D (3 dias). Entre cada uma: `npm test`, verificação real, relato em `verificacoes/`, linha no plano mestre, ok do dono. Tudo registrado no plano mestre como etapa 5 no primeiro commit.
