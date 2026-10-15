@@ -120,8 +120,8 @@ const CONVERSA = (() => {
     pintar(e);
   }
 
-  /** o botão que abre o painel 🔌 Plataformas deste agente sem sair do monitor: marcar uma pasta ou um sistema vale na próxima mensagem */
-  const botaoPlataformas = (texto) => `<button class="mini act cv-plat">${esc(texto || '🔌 Plataformas deste agente')}</button>`;
+  /** o botão que abre o painel 🔌 Conexões deste agente sem sair do monitor: marcar uma pasta ou um sistema vale na próxima mensagem */
+  const botaoPlataformas = (texto) => `<button class="mini act cv-plat">${esc(texto || '🔌 Conexões deste agente')}</button>`;
 
   function introEnsino(e) {
     const skills = (ensino && ensino.skills) || [];
@@ -158,7 +158,7 @@ const CONVERSA = (() => {
       const tag = m.modo === 'resolver' ? ' · modo resolver' : m.modo === 'construir' ? ' · construindo' : m.modo === 'ensinar' ? ' · ensinando' : m.modo === 'destilar' ? ' · destilando a skill' : '';
       const notas = (m.notas || []).length ? `<div class="cv-notas">${m.notas.map(esc).join(' · ')}</div>` : '';
       // o Claude Code disse que falta pasta ou sistema: o botão de marcar aparece embaixo da fala
-      const falta = m.quem === 'agente' && m.modo === 'ensinar' && /FALTA:|🔌 Plataformas/.test(m.texto) ? `<div class="cv-notas">${botaoPlataformas('🔌 marcar em Plataformas deste agente')}</div>` : '';
+      const falta = m.quem === 'agente' && m.modo === 'ensinar' && /FALTA:|🔌 (Plataformas|Conexões)/.test(m.texto) ? `<div class="cv-notas">${botaoPlataformas('🔌 marcar em Plataformas deste agente')}</div>` : '';
       return `<div class="cv-msg ${m.quem}${m.modo === 'destilar' ? ' destilar' : ''}"><span class="qm">${quem}${esc(tag)}</span>${formata(m.texto)}${notas}${falta}</div>`;
     }).join('');
 

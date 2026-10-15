@@ -9,7 +9,7 @@ const CUKI = (() => {
   const $ = s => document.querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const api = async (r, m = 'GET') => (await fetch(r, { method: m, headers: { 'Content-Type': 'application/json' } })).json();
-  const NOME = { agentes: 'Agentes', plataformas: 'Plataformas', fluxo: 'Fluxo', base: 'Base', aptidao: 'Aptidão para o CRM' };
+  const NOME = { agentes: 'Agentes', plataformas: 'Conexões', fluxo: 'Fluxo', base: 'Base', aptidao: 'Aptidão para o CRM' };
   let timer = null;
 
   /** markdown pequeno: títulos, tabela, listas, negrito, código */

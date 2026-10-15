@@ -27,6 +27,7 @@ const EXTRAS = (() => {
     clearInterval(timer);
     pintar();
     if (qual === 'testes' || qual === 'recados' || qual === 'propostas') timer = setInterval(pintar, 4000);
+    if (qual === 'trabalho') timer = setInterval(() => { if (!document.hidden && !el().querySelector('.tr-acao input:focus')) pintar(); }, 6000);
   }
   function fechar() { el().classList.add('hidden'); clearInterval(timer); tipo = null; }
 
@@ -43,6 +44,7 @@ const EXTRAS = (() => {
       else if (tipo === 'testes') await pintarTestes();
       else if (tipo === 'ficha') await pintarFicha();
       else if (tipo === 'plataformas') await PLATAFORMAS_UI.painelDoAgente(id, el(), cabeca, fechaBotao);
+      else if (tipo === 'trabalho') await TRABALHO.pintar(id, el(), cabeca, fechaBotao);
     } catch (e) { el().innerHTML = cabeca('Não consegui carregar', esc(e.message)); fechaBotao(); }
   }
 

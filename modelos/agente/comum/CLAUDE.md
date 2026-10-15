@@ -37,6 +37,7 @@ precisam existir sempre:
 | `GET /painel` | o painel do dono, página inteira | o monitor do agente embute aqui |
 | `GET /log` | texto com as últimas linhas de `log.txt` | o botão Log do monitor |
 | `GET /entidades` (agente de tarefa) | id, status e rodadas de cada entidade, sem dado de cliente; exige o cabeçalho `x-chave` = `GATILHO_CHAVE` | o escritório, para as esteiras |
+| `POST /agir` (agente de tarefa) | o escritório opera o agente pela aba Trabalho: `{ tipo, entidade, texto }` (rodar, rodar-proposta, aprovar, rejeitar, responder, corrigir, assumir, devolver, licao-aprovar, licao-rejeitar); mesma chave | o escritório |
 | `POST /gatilho` (agente de tarefa) | acorda uma rodada para `{ entidade }`; mesma chave | o escritório (esteiras) e webhooks |
 | `POST /acao` e `GET /ferramentas` (agente de tarefa) | ação direta: roda UMA ferramenta de `tools/` na hora, por código, sem o modelo, nas mesmas cercas (real só com `MODO_REAL`); mesma chave | o escritório, a pedido do CRM |
 

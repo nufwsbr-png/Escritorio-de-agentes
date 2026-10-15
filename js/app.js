@@ -8,7 +8,9 @@ const ctx = cv.getContext('2d');
 const $   = s => document.querySelector(s);
 const $$  = s => Array.from(document.querySelectorAll(s));
 
-const opts = { rgb: true, names: true, status: true, paths: false };
+const opts = { rgb: false, names: true, status: true, paths: false, movimento: 'parado' };
+// o movimento vem do estilo escolhido (Estúdio) ou do que a pessoa marcou aqui; 'parado' é o padrão e o mais leve
+try { const m = localStorage.getItem('esc-movimento') || (window.ESCRITORIO && ESCRITORIO.estilo && ESCRITORIO.estilo.movimento); if (/^(parado|calmo|vivo)$/.test(m || '')) opts.movimento = m; } catch (e) {}
 
 /* ===========================================================
    CÂMERA
@@ -38,12 +40,14 @@ function fit() {
   const z = Math.min(cw / BOUNDS.w, ch / BOUNDS.h) * 0.95;
   cam.tz = cam.z = Math.max(0.2, Math.min(1.6, z));
   cam.x = -BOUNDS.cx; cam.y = -BOUNDS.cy;
+  pedirQuadro();
 }
 
 function focusTile(x, y, zoom) {
   const p = ISO.toScreen(x, y, 30);
   cam.x = -p.x; cam.y = -p.y;
   if (zoom) cam.tz = Math.max(cam.tz, zoom);
+  pedirQuadro();
 }
 
 const worldToScreen = (wx, wy) => ({
@@ -89,6 +93,12 @@ class Actor {
   treino() {
     const s = this.a.sistema && typeof SISTEMAS !== 'undefined' ? SISTEMAS.porId(this.a.sistema) : null;
     return s && s.construcao && s.construcao.emTreinamento ? s.construcao : null;
+  }
+
+  /** o trabalho real do sistema dele (lido da pasta do agente pelo escritório), ou null */
+  trabalho() {
+    const s = this.a.sistema && typeof SISTEMAS !== 'undefined' ? SISTEMAS.porId(this.a.sistema) : null;
+    return s && s.trabalho ? s.trabalho : null;
   }
 
   /** vai até a mesa de outro boneco entregar um recado e volta sozinho */
@@ -138,7 +148,12 @@ class Actor {
       if (this.slot && FURN.restSlots.includes(this.slot) && this.wait > 0) return this.slot;
       return this.freeFrom(FURN.restSlots);
     }
-    return null;   // offline -> elevador
+    if (st === 'offline') {
+      // desligado fica na sala de descanso, à vista de todos (sem sala de descanso, vai para o elevador)
+      if (this.slot && FURN.restSlots.includes(this.slot)) return this.slot;
+      return this.freeFrom(FURN.restSlots);
+    }
+    return null;
   }
 
   /* ---------- ciclo ---------- */
@@ -147,8 +162,8 @@ class Actor {
     this.blinkT -= dt;
     if (this.blinkT <= 0) { this.blink = !this.blink; this.blinkT = this.blink ? 0.12 : 2.5 + Math.random() * 4; }
 
-    if (this.a.status === 'offline') {
-      this.act = 'fora do expediente';
+    if (this.a.status === 'offline' && !FURN.restSlots.length) {
+      this.act = 'desligado';
       if (!this.hidden) {
         if (!this.path.length && !this.fine) {
           const d = Math.hypot(this.x - WORLD.SPAWN.x, this.y - WORLD.SPAWN.y);
@@ -170,7 +185,7 @@ class Actor {
     // na volta ele pegava outra. Descanso agora só na mão ou por agenda.
 
     // rodízio de atividade no lounge
-    if (this.a.status === 'descanso') {
+    if (this.a.status === 'descanso' && opts.movimento === 'vivo') {
       this.wait -= dt;
       if (this.wait <= 0 && this.seated) {
         this.wait = 11 + Math.random() * 16;
@@ -195,7 +210,7 @@ class Actor {
         if (this.takeSlot(want)) this.goTo(want.x, want.y);
       } else if (want && want === this.slot && !this.seated) {
         this.goTo(want.x, want.y);
-      } else if (!want && !this.seated &&
+      } else if (!want && !this.seated && opts.movimento === 'vivo' &&
                  (this.a.status === 'descanso' || this.a.status === 'reuniao')) {
         // só perambula no lounge e na sala de reunião; trabalhando, fica parado
         this.wander();
@@ -280,15 +295,15 @@ class Actor {
 
   describe() {
     const st = this.a.status;
-    if (st === 'offline')      { this.act = 'fora do expediente'; return; }
+    if (st === 'offline')      { this.act = this.slot && FURN.restSlots.includes(this.slot) ? 'desligado · na sala de descanso' : 'desligado'; return; }
     if (this.visita)           { this.act = (this.moving ? 'levando um recado para ' : 'entregando um recado a ') + this.visita.nome; return; }
     if (this.microBreak > 0)   { this.act = 'pegando um café'; return; }
     if (this.moving)           { this.act = 'indo para ' + (this.slot ? (this.slot.label || 'a estação') : 'algum lugar'); return; }
     const tr = st === 'trabalhando' ? this.treino() : null;
     if (tr)                    { this.act = 'em treinamento · componente ' + tr.passo + ' de ' + (tr.total || '?'); return; }
-    if (st === 'trabalhando')  { this.act = this.slot ? ('produzindo na ' + this.slot.label) : 'procurando mesa livre'; return; }
+    if (st === 'trabalhando')  { const w = this.trabalho(); this.act = w ? textoTrabalho(w) : (this.slot ? ('na ' + this.slot.label) : 'procurando mesa livre'); return; }
     if (st === 'reuniao')      { this.act = 'em reunião'; return; }
-    if (st === 'descanso')     { this.act = this.slot ? this.slot.act : 'circulando no lounge'; return; }
+    if (st === 'descanso')     { this.act = this.slot ? this.slot.act : 'na sala de descanso'; return; }
     this.act = '';
   }
 
@@ -312,7 +327,8 @@ class Actor {
       moving: this.moving,
       phase: this.phase,
       sitting,
-      working,
+      working: working && opts.movimento === 'vivo',
+      quieto: opts.movimento === 'parado' && !this.moving,
       headset: working,
       blink: this.blink,
       scale: SCALE
@@ -339,14 +355,18 @@ class Actor {
                               this.a.cuki ? 'ANALISTA' : this.a.boss ? 'DONO' : null) + 4;
     }
     if (opts.status && (!this.moving || this.visita)) {
+      const w = this.a.status === 'trabalhando' && !tr ? this.trabalho() : null;
+      const esperando = !!(w && w.esperandoVoce > 0);
       const ic = this.visita ? '✉️'
                : tr ? '🎓'
+               : esperando ? '🙋'
                : this.a.status === 'trabalhando' ? '💻'
-               : this.a.status === 'descanso' ? '🎮'
+               : this.a.status === 'descanso' ? '☕'
                : this.a.status === 'reuniao' ? '🗣️' : '💤';
       AVATAR.bubble(ctx, p.x, stack, ic,
                     this.visita ? 'recado' : tr ? tr.passo + '/' + (tr.total || '?')
-                    : this.microBreak > 0 ? 'pausa' : SHORT_ACT[this.a.status], col);
+                    : esperando ? 'esperando você' : w ? (w.agora ? 'fazendo' : w.fila ? w.fila + ' na fila' : 'livre')
+                    : this.microBreak > 0 ? 'pausa' : SHORT_ACT[this.a.status], esperando ? STATUS_COLOR.descanso : col);
     }
     void t;
   }
@@ -364,8 +384,17 @@ const STATUS_COLOR = {
   trabalhando: '#23e08a', descanso: '#ffb020', reuniao: '#38bdf8', offline: '#5a6280', treinamento: '#c084fc'
 };
 const SHORT_ACT = {
-  trabalhando: 'trabalhando', descanso: 'descanso', reuniao: 'reunião', offline: 'offline'
+  trabalhando: 'trabalhando', descanso: 'descanso', reuniao: 'reunião', offline: 'desligado'
 };
+/** o trabalho real em uma frase curta, para o balão, a ficha e a lista */
+function textoTrabalho(w) {
+  if (!w) return '';
+  if (w.agora) return 'fazendo ' + w.agora.entidade;
+  if (w.esperandoVoce) return w.esperandoVoce + ' esperando você';
+  if (w.comErro) return w.comErro + ' com problema';
+  if (w.fila) return w.fila + ' na fila';
+  return w.feitasHoje ? 'livre · ' + w.feitasHoje + ' feita(s) hoje' : 'livre';
+}
 
 /* ===========================================================
    MUNDO VIVO
@@ -393,6 +422,7 @@ function garanteEstacao() {
 }
 
 function syncActors() {
+  pedirQuadro();
   garanteEstacao();
   const ids = new Set();
   for (const ag of ROSTER.all()) {
@@ -445,11 +475,26 @@ staticDraw.sort((a, b) => a.k - b.k);
    RENDER
    =========================================================== */
 let T0 = performance.now(), t = 0;
+/* O desenho é sob demanda: a tela só redesenha quando algo muda (câmera, boneco andando, estado) ou quando o
+   movimento escolhido anima por si (calmo 12 fps, vivo 24 fps). Parada, a tela não gasta nada; a aba escondida
+   também não. Qualquer coisa que mude o que se vê chama pedirQuadro(). */
+let loopAtivo = false, quadroPedido = false, ultimoQuadro = 0;
+function pedirQuadro() { quadroPedido = true; if (!loopAtivo) { loopAtivo = true; requestAnimationFrame(frame); } }
+function precisaAnimar() {
+  if (document.hidden) return false;
+  if (opts.movimento !== 'parado' || opts.rgb) return true;
+  if (Math.abs(cam.tz - cam.z) > 0.002) return true;
+  for (const ac of actors.values()) if (!ac.hidden && (ac.path.length || ac.fine || ac.visita || (!ac.seated && ac.desiredSlot()))) return true;
+  return false;
+}
+const FPS_ALVO = { parado: 24, calmo: 12, vivo: 24 };
 let bgCache = null;
 const elFps = document.getElementById("fps");
 let fpsN = 0, fpsT = 0, msDesenho = 0;
 
 function frame(now) {
+  if (now - ultimoQuadro < 1000 / FPS_ALVO[opts.movimento] - 1) { requestAnimationFrame(frame); return; }
+  ultimoQuadro = now;
   const dt = Math.min(0.05, (now - T0) / 1000);
   T0 = now; t += dt;
 
@@ -526,7 +571,8 @@ function frame(now) {
     fpsN = 0; fpsT = 0; msDesenho = 0;
   }
 
-  requestAnimationFrame(frame);
+  if (precisaAnimar() || quadroPedido) { quadroPedido = false; requestAnimationFrame(frame); }
+  else { loopAtivo = false; elFps.innerHTML = '<b>parado</b> · a tela só redesenha quando algo muda'; elFps.classList.remove('ruim'); }
 }
 
 /* ===========================================================
@@ -543,6 +589,7 @@ cv.addEventListener('pointermove', e => {
     if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
     cam.x = drag.cx + dx / cam.z;
     cam.y = drag.cy + dy / cam.z;
+    pedirQuadro();
   }
   hover(e);
 });
@@ -565,6 +612,7 @@ cv.addEventListener('pointerleave', () => { $('#tooltip').classList.add('hidden'
 cv.addEventListener('wheel', e => {
   e.preventDefault();
   cam.tz = Math.max(0.22, Math.min(2.8, cam.tz * (e.deltaY < 0 ? 1.13 : 0.885)));
+  pedirQuadro();
 }, { passive: false });
 
 function pick(e) {
@@ -816,14 +864,7 @@ function openAgent(id) {
     <div class="frow"><label>Nome exibido</label><input id="f-name" value="${esc(a.name)}"></div>
     <div class="frow"><label>Função</label><input id="f-role" value="${esc(a.role)}"></div>
 
-    <div class="frow"><label>Situação</label>
-      <div class="seg" id="f-status">
-        <button data-s="trabalhando" class="${a.status === 'trabalhando' ? 'on' : ''}">💻 Trabalhando</button>
-        <button data-s="descanso"    class="${a.status === 'descanso' ? 'on' : ''}">🎮 Descanso</button>
-        <button data-s="reuniao"     class="${a.status === 'reuniao' ? 'on' : ''}">🗣️ Reunião</button>
-        <button data-s="offline"     class="${a.status === 'offline' ? 'on' : ''}">💤 Offline</button>
-      </div>
-    </div>
+    ${blocoAgora(a)}
 
     ${a.boss ? '' : `
     <div class="frow"><label>Estação</label>
@@ -845,7 +886,7 @@ function openAgent(id) {
         }).join('')}
       </div>
     </div>
-    <p class="hint" style="margin:-6px 0 14px">${esc(textoHorario(a))}. Fora do horário ele vai para o lounge sozinho; dentro, volta para a estação.</p>
+    <p class="hint" style="margin:-6px 0 14px">${esc(textoHorario(a))}. Fora do horário ele vai para a sala de descanso sozinho; dentro, volta para a estação.</p>
     `}
 
     <div class="frow"><label>Visual</label>
@@ -859,17 +900,17 @@ function openAgent(id) {
     <div class="mactions">
       <button class="btn primary" id="f-save">Salvar</button>
       <button class="btn" id="f-find">📍 Localizar</button>
-      ${a.locked ? '' : '<button class="btn danger" id="f-fire">Desligar</button>'}
+      ${a.locked ? '' : '<button class="btn danger" id="f-fire">Demitir</button>'}
     </div>`;
 
   const cvp = $('#m-av');
   const paint = () => AVATAR.portrait(cvp, a.look, 1.6);
   paint();
 
-  $$('#f-status button').forEach(b => b.addEventListener('click', () => {
-    $$('#f-status button').forEach(x => x.classList.remove('on'));
-    b.classList.add('on');
-  }));
+  const ag = $('#ag-ligar');
+  if (ag) ag.addEventListener('click', async () => { ag.disabled = true; ag.textContent = 'ligando…'; await SISTEMAS.ligar(a.sistema); await SISTEMAS.esperarSubir(a.sistema, 40); closeModal(); abrirMonitor(a); });
+  const agd = $('#ag-desligar');
+  if (agd) agd.addEventListener('click', async () => { agd.disabled = true; await SISTEMAS.desligar(a.sistema); await SISTEMAS.atualizar(); closeModal(); toast(a.name + ' foi para a sala de descanso.'); });
 
   $$('#f-dias button').forEach(b => b.addEventListener('click', () => b.classList.toggle('on')));
   const hoff = $('#f-hoff');
@@ -888,9 +929,7 @@ function openAgent(id) {
   $('#f-save').addEventListener('click', () => {
     a.name = ($('#f-name').value || a.name).slice(0, 22);
     a.role = ($('#f-role').value || a.role).slice(0, 48);
-    const ns = $('#f-status button.on').dataset.s;
-    const trocouStatus = ns !== a.status;
-    if (trocouStatus) setStatus(a, ns);
+    const trocouStatus = false;   // a situação vem do sistema (aplicarEstadoReal); aqui só o horário
     if (!a.boss) {
       const i = $('#f-h1').value, f = $('#f-h2').value;
       const dias = $$('#f-dias button.on').map(b => +b.dataset.d);
@@ -907,14 +946,35 @@ function openAgent(id) {
   const fb = $('#f-fire');
   if (fb) fb.addEventListener('click', async () => {
     if (!ADMIN.exigir('Demitir um agente')) return;
-    if (!await confirmar('Desligar ' + a.name + '?',
+    if (!await confirmar('Demitir ' + a.name + '?',
         'Ele sai do quadro e a estação fica livre. Dá para contratar de novo depois.',
-        'Desligar')) return;
+        'Demitir')) return;
     ROSTER.fire(a.id); syncActors(); renderAll(); closeModal();
     toast(`${a.name} saiu do quadro.`);
   });
 
   modal.classList.remove('hidden');
+}
+
+/** o bloco "Agora" da ficha do boneco: o trabalho real do sistema dele, em palavras de gente */
+function blocoAgora(a) {
+  const s = a.sistema ? SISTEMAS.porId(a.sistema) : null;
+  if (!s) return '<div class="frow"><label>Agora</label><div class="hint" style="padding:6px 0">' + (a.boss ? 'o dono do escritório' : a.cuki ? 'a analista do escritório' : 'sem sistema ligado a este boneco') + '</div></div>';
+  const w = s.trabalho, tr = s.construcao && s.construcao.emTreinamento ? s.construcao : null;
+  const vivo = s.tipo === 'web' || s.estado === 'no ar';
+  const quando = (iso) => { if (!iso) return ''; const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? 'agora' : m < 60 ? 'há ' + m + ' min' : m < 1440 ? 'há ' + Math.round(m / 60) + ' h' : 'há ' + Math.round(m / 1440) + ' dia(s)'; };
+  const num = (n, rot, cor) => '<span class="ag-num' + (cor ? ' ' + cor : '') + '"><b>' + n + '</b>' + rot + '</span>';
+  let linhas = '';
+  if (tr) linhas = '<p class="ag-agora">🎓 em construção: componente ' + tr.passo + ' de ' + (tr.total || '?') + '</p>';
+  else if (!vivo) linhas = '<p class="ag-agora">💤 desligado' + (s.estado === 'caiu' ? ' (o sistema caiu)' : '') + ' · na sala de descanso</p>';
+  else if (w && w.agora) linhas = '<p class="ag-agora">💻 fazendo <b>' + esc(w.agora.entidade) + '</b> ' + quando(w.agora.desde) + '</p>';
+  else if (w && w.esperandoVoce) linhas = '<p class="ag-agora warn">🙋 esperando você: ' + w.esperandoVoce + ' trabalho(s) precisam de uma resposta ou aprovação sua</p>';
+  else if (w) linhas = '<p class="ag-agora">💻 livre' + (w.fila ? ' · ' + w.fila + ' na fila' : '') + (w.ultima ? ' · última: ' + esc(w.ultima.entidade) + ' ' + quando(w.ultima.quando) + ' (' + esc(w.ultima.status) + ')' : ' · nada feito ainda') + '</p>';
+  else linhas = '<p class="ag-agora">💻 no ar</p>';
+  const nums = w ? '<div class="ag-nums">' + num(w.esperandoVoce, 'esperando você', w.esperandoVoce ? 'warn' : '') + num(w.fila, 'na fila') + num(w.comErro, 'com problema', w.comErro ? 'bad' : '') + num(w.feitasHoje, 'feitas hoje', w.feitasHoje ? 'ok' : '') + '</div>' : '';
+  const nota = w && w.nota ? '<p class="hint ag-nota"><i class="sem ' + w.nota.cor + '"></i> ' + (w.nota.motivos.length ? esc(w.nota.motivos.join(' · ')) : 'tudo em ordem') + '</p>' : '';
+  const botoes = s.tipo === 'local' ? (vivo ? '<button class="btn small ghost" id="ag-desligar">■ Desligar</button>' : '<button class="btn small" id="ag-ligar">▶ Ligar</button>') : '';
+  return '<div class="frow"><label>Agora</label><div class="ag-bloco">' + linhas + nums + nota + botoes + '</div></div>';
 }
 
 function openNew() {
@@ -1008,7 +1068,25 @@ function setStatus(a, s) {
   const ac = actors.get(a.id);
   if (ac) { ac.releaseSlot(); ac.path = []; ac.fine = null; ac.seated = false; ac.microBreak = 0; ac._break = null; }
   ROSTER.save();
+  pedirQuadro();
 }
+
+/** a situação do boneco vem do sistema de verdade: no ar = trabalhando (ou descanso fora do horário);
+    desligado = sentado na sala de descanso. A reunião em curso não é interrompida. */
+function aplicarEstadoReal() {
+  let mudou = false;
+  for (const a of ROSTER.all()) {
+    if (a.boss || a.cuki || !a.sistema || a.status === 'reuniao') continue;
+    const s = SISTEMAS.porId(a.sistema);
+    if (!s) continue;
+    const vivo = s.tipo === 'web' || s.estado === 'no ar' || s.estado === 'subindo';
+    const alvo = !vivo ? 'offline' : dentroDoHorario(a.horario) === false ? 'descanso' : 'trabalhando';
+    if (a.status !== alvo) { setStatus(a, alvo); mudou = true; }
+  }
+  if (mudou) renderAll();
+  pedirQuadro();
+}
+SISTEMAS.onChange(aplicarEstadoReal);
 
 function setAll(s) {
   for (const a of ROSTER.all()) { if (!a.boss) setStatus(a, s); }
@@ -1232,6 +1310,8 @@ async function abrirMonitor(agente) {
 
   await SISTEMAS.atualizar();
   pintarMonitor();
+  const s0 = mon.id ? SISTEMAS.porId(mon.id) : null;
+  if (s0 && s0.pasta && s0.trilha === 'tarefa') EXTRAS.abrir(mon.id, 'trabalho');
   clearInterval(mon.timer);
   mon.timer = setInterval(async () => {
     if (mon.el.classList.contains('hidden')) return;
@@ -1258,7 +1338,7 @@ function pintarMonitor(soEstado) {
     luz.style.background = 'var(--off)'; txt.textContent = 'sem sistema';
     $('#mon-ligar').disabled = $('#mon-desligar').disabled = $('#mon-log').disabled = true;
     $('#mon-aba').disabled = $('#mon-chat').disabled = true;
-    for (const b of ['ficha', 'memoria', 'recados', 'propostas', 'testar']) $('#mon-' + b).disabled = true;
+    for (const b of ['ficha', 'memoria', 'recados', 'propostas', 'testar', 'trabalho']) $('#mon-' + b).disabled = true;
     mon.frame.style.display = 'none';
     mon.vazio.classList.add('on');
     mon.vazio.innerHTML = '<div><b>Esse agente ainda não tem sistema ligado a ele</b>' +
@@ -1276,8 +1356,10 @@ function pintarMonitor(soEstado) {
 
   // os painéis extras precisam da pasta; os crachás mostram o que espera por você
   for (const b of ['ficha', 'memoria', 'recados', 'propostas', 'testar']) $('#mon-' + b).disabled = !s.pasta;
+  $('#mon-trabalho').disabled = !(s.pasta && s.trilha === 'tarefa');
   const crach = (id, n) => { const e = $('#' + id); e.textContent = n || ''; e.classList.toggle('hidden', !n); };
   crach('bd-recados', s.recadosNovos);
+  crach('bd-trabalho', s.trabalho ? s.trabalho.esperandoVoce : 0);
   crach('bd-propostas', s.propostasPendentes);
 
   const local = s.tipo === 'local';
@@ -1345,7 +1427,7 @@ $('#mon-chat').addEventListener('click', () => {
   CONVERSA.abrir(mon.id);
 });
 // os painéis extras: um por vez, por cima do quadro do sistema
-for (const [botao, tipo] of [['ficha', 'ficha'], ['memoria', 'memoria'], ['recados', 'recados'], ['propostas', 'propostas'], ['plataformas', 'plataformas'], ['testar', 'testes']]) {
+for (const [botao, tipo] of [['trabalho', 'trabalho'], ['ficha', 'ficha'], ['memoria', 'memoria'], ['recados', 'recados'], ['propostas', 'propostas'], ['plataformas', 'plataformas'], ['testar', 'testes']]) {
   $('#mon-' + botao).addEventListener('click', () => {
     if (EXTRAS.aberto() && EXTRAS.tipo === tipo) { EXTRAS.fechar(); return; }
     if (!mon.id) return;
@@ -1570,14 +1652,16 @@ $('#btn-voice').addEventListener('click', toggleVoice);
 $('#btn-speak').addEventListener('click', () => speak(buildReport().fala));
 $('#btn-panel').addEventListener('click', () => $('#panel').classList.toggle('open'));
 
-$('#z-in').addEventListener('click',  () => cam.tz = Math.min(2.8, cam.tz * 1.2));
-$('#z-out').addEventListener('click', () => cam.tz = Math.max(0.22, cam.tz / 1.2));
+$('#z-in').addEventListener('click',  () => { cam.tz = Math.min(2.8, cam.tz * 1.2); pedirQuadro(); });
+$('#z-out').addEventListener('click', () => { cam.tz = Math.max(0.22, cam.tz / 1.2); pedirQuadro(); });
 $('#z-fit').addEventListener('click', fit);
 
-$('#opt-rgb').addEventListener('change',    e => opts.rgb = e.target.checked);
-$('#opt-names').addEventListener('change',  e => opts.names = e.target.checked);
-$('#opt-status').addEventListener('change', e => opts.status = e.target.checked);
-$('#opt-paths').addEventListener('change',  e => opts.paths = e.target.checked);
+$('#opt-rgb').addEventListener('change',    e => { opts.rgb = e.target.checked; pedirQuadro(); });
+$('#opt-names').addEventListener('change',  e => { opts.names = e.target.checked; pedirQuadro(); });
+$('#opt-status').addEventListener('change', e => { opts.status = e.target.checked; pedirQuadro(); });
+$('#opt-paths').addEventListener('change',  e => { opts.paths = e.target.checked; pedirQuadro(); });
+$('#opt-mov').value = opts.movimento;
+$('#opt-mov').addEventListener('change', e => { opts.movimento = e.target.value; try { localStorage.setItem('esc-movimento', opts.movimento); } catch (x) {} pedirQuadro(); });
 
 $('#btn-export').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify({ team: ROSTER.all(), v: 1 }, null, 2)], { type: 'application/json' });
@@ -1670,11 +1754,14 @@ REUNIAO.ligarEventos();
 setInterval(sincronizaReuniao, 4000);
 setInterval(() => { renderStats(); if ($('#pane-equipe').classList.contains('active')) renderTeam(); }, 2500);
 setInterval(renderRooms, 4000);
-requestAnimationFrame(frame);
+pedirQuadro();
+setInterval(() => { if (!document.hidden) pedirQuadro(); }, 2000);   // um quadro a cada 2 s de segurança (balões, treino)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pedirQuadro(); });
 
 // atalho de depuração: __escritorio.olhar('Tati', 2.4) leva a câmera até alguém
 window.__escritorio = {
-  cam, actors, fit, focusTile, abrirMonitor, fecharMonitor,
+  cam, actors, fit, focusTile, abrirMonitor, fecharMonitor, opts, pedirQuadro, ficha: openAgent,
+  get loopAtivo() { return loopAtivo; },
   /** __escritorio.sistema("Tati") abre o monitor do sistema daquele agente */
   sistema(nome) {
     const a = ROSTER.all().find(a => a.name.toLowerCase().includes(String(nome).toLowerCase()));

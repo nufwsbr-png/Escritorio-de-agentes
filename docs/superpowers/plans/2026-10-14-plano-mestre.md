@@ -74,6 +74,7 @@ Mais quatro, do mesmo dia:
 - **O sistema do agente é para leigo e aparece sempre**, mesmo com o agente desligado: o escritório desenha a tela do agente lendo a pasta dele (estado, rodadas, saídas, perguntas), e não o painel que o agente serve; ligar, responder e aprovar passam pelo escritório.
 - **Sala de descanso é obrigatória**: é onde ficam os agentes **desligados**. Sem arcade nem neon; sofás. Agente ligado trabalha na mesa; desligado senta no descanso, visível.
 - **Dependência com agente desligado**: quando a esteira vai entregar a um agente que está desligado, a entidade **fica na mesa do dono** (estado "na mesa do dono", visível na diretoria, com aviso), até o dono ligar o agente, passar para outro ou resolver.
+- Termos técnicos ("agente de IA", "rodada") podem aparecer na tela quando ajudam a entender (15/10/2026, "Pode aparecer").
 - **Telas caprichadas**: acabamento de produto, não de protótipo; um sistema de componentes (tokens, tipografia, espaçamento, estados vazios, carregando, erro) aplicado a todas as telas; boa experiência para leigo. **"Plataformas" passa a se chamar "Conexões"** em toda a tela, skills e documentação; os nomes internos (arquivos, rotas, bloco do `.env`) continuam, para não quebrar escritórios entregues.
 
 ## Ordem das etapas

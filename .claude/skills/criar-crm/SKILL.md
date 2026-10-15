@@ -88,7 +88,7 @@ Os ajustes (todos têm padrão; "depois" vale):
 12. **Onde ficam as fichas.** "As fichas podem ficar aqui neste computador
     (simples, para 'só aqui' e 'rede') ou no Supabase, na nuvem (melhor
     para acesso de fora). Proposta: *{local ou supabase}*." Se Supabase:
-    "Cadastre o Supabase em 🔌 Plataformas, tipo *banco* (endereço e chave
+    "Cadastre o Supabase em 🔌 Conexões, tipo *banco* (endereço e chave
     de serviço; a chave não passa por aqui), e me diga o nome." →
     `fichas` ({ onde: local } ou { onde: supabase, plataforma: id }). Os
     bancos já cadastrados vêm em `propostas.bancos`.
@@ -130,7 +130,7 @@ abertura da tela."
 ## Regras
 
 - Nenhuma senha, token ou chave no chat. A senha do chefe é mostrada pela
-  tela do CRM, não por você. A chave do Supabase vai por 🔌 Plataformas.
+  tela do CRM, não por você. A chave do Supabase vai por 🔌 Conexões.
 - Nunca edite `crm/config.json`, `data/*.json` nem o código do projeto à
   mão.
 - Lacuna fica com o padrão; não invente pessoa, etapa ou campo que a pessoa

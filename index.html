@@ -38,7 +38,7 @@
     <div class="topactions">
       <button id="btn-admin" class="btn ghost" title="Administrador">🔐 Admin</button>
       <button id="btn-quadro" class="btn primary" title="Ideias e agenda da Diretoria">📌 Quadro</button>
-      <button id="btn-plataformas" class="btn" title="As plataformas do negócio: CRM, planilha, agenda, pasta…">🔌 Plataformas</button>
+      <button id="btn-plataformas" class="btn" title="As conexões do negócio: CRM, planilha, agenda, pasta…">🔌 Conexões</button>
       <button id="btn-esteiras" class="btn" title="O trabalho passando de agente em agente, com aprovação pela tela">🧵 Esteiras</button>
       <button id="btn-crm" class="btn hidden" title="O CRM do escritório: a ficha de cada cliente, pessoas e agentes como funcionários">🗂️ CRM</button>
       <button id="btn-cuki" class="btn" title="Cuki BOT, a IA analista: saúde dos agentes, das plataformas e do fluxo; aptidão para o CRM">🩺 Cuki BOT</button>
@@ -109,7 +109,9 @@
       <div id="rooms-list" class="list"></div>
       <div class="panehead"><h2>Ambiente</h2></div>
       <div class="opts">
-        <label class="opt"><input type="checkbox" id="opt-rgb" checked> Paredes RGB animadas</label>
+        <label class="opt">Movimento dos bonecos
+          <select id="opt-mov" style="margin-left:8px"><option value="parado">parado (mais leve)</option><option value="calmo">calmo</option><option value="vivo">vivo</option></select></label>
+        <label class="opt"><input type="checkbox" id="opt-rgb"> Paredes RGB animadas</label>
         <label class="opt"><input type="checkbox" id="opt-names" checked> Mostrar nomes</label>
         <label class="opt"><input type="checkbox" id="opt-status" checked> Mostrar balões de status</label>
         <label class="opt"><input type="checkbox" id="opt-paths"> Desenhar trajeto de caminhada</label>
@@ -139,12 +141,13 @@
     <div class="mon-acoes">
       <button class="btn" id="mon-ligar">▶ Ligar</button>
       <button class="btn ghost" id="mon-desligar">■ Desligar</button>
+      <button class="btn ghost" id="mon-trabalho" title="O que ele está fazendo, o que espera por você e o que já fez">🗂️ Trabalho<span class="badge hidden" id="bd-trabalho"></span></button>
       <button class="btn ghost" id="mon-chat">💬 Conversar</button>
       <button class="btn ghost" id="mon-ficha" title="A constituição do agente, seção por seção">📋 Ficha</button>
       <button class="btn ghost" id="mon-memoria" title="O que ele aprendeu">🧠 Memória</button>
       <button class="btn ghost" id="mon-recados" title="Recados entre agentes">✉️ Recados<span class="badge hidden" id="bd-recados"></span></button>
       <button class="btn ghost" id="mon-propostas" title="Mudanças que ele propôs, para você aprovar">📝 Propostas<span class="badge hidden" id="bd-propostas"></span></button>
-      <button class="btn ghost" id="mon-plataformas" title="As plataformas que este agente pode usar">🔌 Plataformas</button>
+      <button class="btn ghost" id="mon-plataformas" title="As conexões que este agente pode usar">🔌 Conexões</button>
       <button class="btn ghost" id="mon-testar" title="O testador: duas réguas">🧪 Testar</button>
       <button class="btn ghost" id="mon-log">📜 Log</button>
       <button class="btn ghost" id="mon-aba">↗ Nova aba</button>
@@ -221,6 +224,7 @@
 <script src="js/cuki.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/contratar.js"></script>
+<script src="js/trabalho.js"></script>
 <script src="js/extras.js"></script>
 <script src="js/app.js"></script>
 </body>

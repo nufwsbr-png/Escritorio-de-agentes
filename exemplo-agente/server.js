@@ -165,11 +165,19 @@ http.createServer(async (req, res) => {
     if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: true, ferramentas: ferramentas() }));
   }
-  if (rota === '/acao' && req.method === 'POST') {
+  if (rota === '/acao' && req.method === 'POST' && req.headers['x-chave']) {   // com a chave: ação direta; sem ela, é o formulário do painel (abaixo)
     if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
     const b = await base.lerCorpo(req);
     const r = await acaoDireta(String(b.ferramenta || ''), Array.isArray(b.args) ? b.args.map(String) : [], String(b.entidade || ''));
     res.writeHead(r.ok ? 200 : 400, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify(r));
+  }
+  // o escritório opera o agente (responder, aprovar, rodar, devolver…) com a chave do gatilho: é o que a aba Trabalho usa
+  if (rota === '/agir' && req.method === 'POST') {
+    if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }
+    const b = await base.lerCorpo(req);
+    let texto; try { texto = await agir(b); } catch (e) { texto = 'erro: ' + e.message; }
+    base.log('ação pelo escritório: ' + (b.tipo || '?') + (b.entidade ? ' ' + b.entidade : '') + ' -> ' + texto);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: !/^(erro|ação desconhecida|diga |escreva |não salvei)/.test(texto), texto }));
   }
   if (rota === '/gatilho' && req.method === 'POST') {
     if (!base.gatilhoAutorizado(req)) { res.writeHead(401); return res.end('chave do gatilho inválida'); }

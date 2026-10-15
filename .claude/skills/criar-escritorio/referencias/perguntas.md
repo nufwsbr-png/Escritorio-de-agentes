@@ -45,7 +45,7 @@ disse (`api` para CRM e sistemas com integração; `planilha`; `agenda`;
 usa pela tela; `link` para site ou referência). As variáveis nascem vazias.
 
 **Diga depois:** "Cadastrei <n> plataformas. As chaves e caminhos entram pela
-tela, como administrador: botão 🔌 Plataformas. Nunca me mande chave aqui."
+tela, como administrador: botão 🔌 Conexões. Nunca me mande chave aqui."
 Se a pessoa colar uma chave no chat, não a use: peça para colar na tela e
 diga que a conversa não guarda segredo.
 

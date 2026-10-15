@@ -74,4 +74,33 @@ test('etapa 0: id e GATILHO_CHAVE no contratar, /entidades do agente com a chave
   const vazio = await api('/api/agentes/tati/mensagens?entregar=1');
   assert.equal(vazio.json.entregues, 0);
   assert.equal((await api('/api/agentes/tati/mensagens')).json.mensagens.length, 2, 'a caixa completa continua mostrando os dois');
+
+  // 5c: o trabalho é lido da PASTA do agente (aparece mesmo desligado) e o escritório age pela rota /agir dele
+  const ents = path.join(pasta, 'memoria', 'entidades'); fs.mkdirSync(ents, { recursive: true });
+  const agoraIso = new Date().toISOString(), ontem = new Date(Date.now() - 2 * 86400000).toISOString();
+  fs.writeFileSync(path.join(ents, 'caso-a.json'), JSON.stringify({ id: 'caso-a', slug: 'caso-a', status: 'aguardando pergunta', pergunta: { texto: 'o CPF da pasta está ilegível: qual é?' }, rodadas: [{ quando: agoraIso, modo: 'proposta', status: 'aguardando pergunta' }], correcoes: [], rejeicoes: [], feitoPeloDono: [], perguntas: 1, criado: agoraIso, atualizado: ontem }));
+  fs.writeFileSync(path.join(ents, 'caso-b.json'), JSON.stringify({ id: 'caso-b', slug: 'caso-b', status: 'pronta', rodadas: [{ quando: agoraIso, modo: 'real', status: 'pronta', feitos: ['saidas/caso-b/resumo.md'] }], correcoes: [], rejeicoes: [], feitoPeloDono: [], perguntas: 0, criado: agoraIso, atualizado: agoraIso }));
+  fs.writeFileSync(path.join(ents, 'caso-c.json'), JSON.stringify({ id: 'caso-c', slug: 'caso-c', status: 'nova', rodadas: [], correcoes: [], rejeicoes: [], feitoPeloDono: [], perguntas: 0, criado: agoraIso, atualizado: agoraIso }));
+  const sis = (await api('/api/sistemas')).json.find(s => s.id === 'tati');
+  assert.ok(sis.trabalho, '/api/sistemas leva o bloco trabalho');
+  assert.equal(sis.trabalho.esperandoVoce, 1); assert.equal(sis.trabalho.fila, 1); assert.equal(sis.trabalho.feitasHoje, 1); assert.equal(sis.trabalho.total, 3);
+  assert.equal(sis.trabalho.perguntas[0].texto, 'o CPF da pasta está ilegível: qual é?');
+  assert.equal(sis.trabalho.nota.cor, 'cinza', 'em construção, a nota é cinza');
+  const tr = (await api('/api/agentes/tati/trabalho')).json;
+  assert.equal(tr.ok, true); assert.equal(tr.estado, 'no ar'); assert.equal(tr.trabalho.entidades.length, 3); assert.equal(tr.trabalho.recentes[0].feitos[0], 'saidas/caso-b/resumo.md');
+  assert.equal((await api('/api/agentes/tati/trabalho/acao', 'POST', { tipo: 'apagar', entidade: 'caso-c' })).status, 400, 'ação desconhecida é recusada');
+  const as = await api('/api/agentes/tati/trabalho/acao', 'POST', { tipo: 'assumir', entidade: 'caso-c' });
+  assert.equal(as.json.ok, true, JSON.stringify(as.json));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(ents, 'caso-c.json'), 'utf8')).status, 'com o dono', 'o escritório agiu no agente pela rota /agir');
+  const dv = await api('/api/agentes/tati/trabalho/acao', 'POST', { tipo: 'devolver', entidade: 'caso-c', texto: 'nada' });
+  assert.equal(dv.json.ok, true); assert.equal(JSON.parse(fs.readFileSync(path.join(ents, 'caso-c.json'), 'utf8')).status, 'nova');
+  // o formulário do painel do dono (sem a chave) continua chegando ao /acao de sessão, não ao da ação direta
+  const semSessao = await fetch('http://127.0.0.1:' + PORTA_AGENTE + '/acao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"tipo":"assumir","entidade":"caso-c"}' });
+  assert.equal(semSessao.status, 200, 'o painel (sem senha neste teste) recebe o formulário'); assert.match(await semSessao.text(), /painel/i);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(ents, 'caso-c.json'), 'utf8')).status, 'com o dono', 'o formulário do painel chegou ao agir, não ao /acao da ação direta');
+  assert.equal((await api('/api/agentes/tati/trabalho/acao', 'POST', { tipo: 'devolver', entidade: 'caso-c' })).json.ok, true);
+  // desligado, o trabalho continua visível
+  procAgente.kill(); await new Promise(r => setTimeout(r, 800));
+  const trOff = (await api('/api/agentes/tati/trabalho')).json;
+  assert.equal(trOff.estado, 'desligado'); assert.equal(trOff.trabalho.total, 3, 'desligado, a pasta continua sendo lida');
 });

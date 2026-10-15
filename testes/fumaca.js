@@ -93,9 +93,22 @@ async function cenarioPadrao(b) {
   ok(await b.ev('!document.getElementById("sem-abertura").classList.contains("hidden")'), 'aviso "não foi aberto" visível sem config.json');
   ok(await b.ev('document.querySelectorAll("#team-list .card").length') >= 1, 'equipe tem pelo menos um card');
   ok(await b.ev('document.querySelectorAll("#rooms-list .roomcard").length') === 5, 'painel Salas mostra as 5 salas padrão');
+  ok(await b.ev('document.getElementById("opt-mov").value') === 'parado' && await b.ev('__escritorio.opts.movimento') === 'parado', 'o movimento nasce parado (leve)');
+  // os bonecos entram pelo elevador e andam até a mesa (uns 20 s); depois disso a tela aquieta
+  let aquietou = false; for (let i = 0; i < 45 && !aquietou; i++) { await espera(1000); aquietou = String(await b.ev('document.getElementById("fps").textContent')).includes('parado'); }
+  ok(aquietou, 'parada, a tela para de redesenhar');
+  await b.ev('__escritorio.olhar("Exemplo")'); await espera(300);
+  ok(await b.ev('__escritorio.loopAtivo') === true, 'mexer a câmera acorda o desenho');
   await b.ev('__escritorio.sistema("EXEMPLO")'); await espera(1200);
   ok(await b.ev('!document.getElementById("monitor").classList.contains("hidden")'), 'monitor do exemplo abre');
-  for (const [botao, titulo] of [['ficha', 'Ficha'], ['memoria', 'Memória'], ['recados', 'Recados'], ['propostas', 'Propostas'], ['plataformas', 'Plataformas'], ['testar', 'Testar']]) {
+  ok(await b.ev('!document.getElementById("mon-extra").classList.contains("hidden") && document.querySelector("#mon-extra .tr-corpo") !== null'), 'o monitor abre na aba Trabalho (desenhada pelo escritório)');
+  ok(await b.ev('document.getElementById("mon-extra").textContent.includes("Esperando você") && document.getElementById("mon-extra").textContent.includes("Na fila")'), 'a aba Trabalho tem os blocos em palavras de gente');
+  await b.ev('document.getElementById("mon-x").click()'); await espera(300);
+  await b.ev('__escritorio.ficha(ROSTER.all().find(a => a.sistema === "exemplo").id)'); await espera(400);
+  ok(await b.ev('!!document.querySelector("#modal-body .ag-bloco") && !document.querySelector("#f-status")'), 'a ficha do boneco mostra o bloco Agora, sem situação à mão');
+  await b.ev('document.getElementById("modal-x").click()'); await espera(200);
+  await b.ev('__escritorio.sistema("EXEMPLO")'); await espera(1000);
+  for (const [botao, titulo] of [['ficha', 'Ficha'], ['memoria', 'Memória'], ['recados', 'Recados'], ['propostas', 'Propostas'], ['plataformas', 'Conexões'], ['testar', 'Testar']]) {
     await b.ev('document.getElementById("mon-' + botao + '").click()'); await espera(900);
     ok(String(await b.ev('document.querySelector("#mon-extra .ex-top b")?.textContent')).includes(titulo), 'painel ' + titulo + ' abre');
     if (botao === 'plataformas') ok(await b.ev('document.querySelectorAll("#mon-extra .pl-caixa").length') === 2, 'painel Plataformas lista as 2 cadastradas');

@@ -487,6 +487,80 @@ function looksDaEquipe() {
   return out;
 }
 
+/* ---------------- o trabalho de cada agente de tarefa, lido da PASTA dele ----------------
+   memoria/entidades/<slug>.json é a verdade do lançador; aqui só se lê, e por isso aparece mesmo com o agente desligado.
+   Nada de dado de cliente: id da entidade, status, pergunta, erro e as rodadas. A nota junta o que pesa para o chefe. */
+const trabalhoCache = new Map();
+const linhasDeLista = (arq) => { try { return fs.readFileSync(arq, 'utf8').split(/\r?\n/).map(l => l.trim()).filter(l => l.startsWith('- ')); } catch (e) { return []; } };
+function trabalhoDe(id, s, detalhe) {
+  if (!s || !s.pasta || s.trilha !== 'tarefa') return null;
+  const c = trabalhoCache.get(id);
+  if (c && !detalhe && Date.now() - c.em < 3000) return c.v;
+  const dir = path.join(s.pasta, 'memoria', 'entidades');
+  let arqs = []; try { arqs = fs.readdirSync(dir).filter(f => f.endsWith('.json')); } catch (e) { return null; }
+  const ents = arqs.map(f => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (e) { return null; } }).filter(Boolean)
+    .sort((x, y) => String(y.atualizado || '').localeCompare(String(x.atualizado || '')));
+  const hoje = new Date().toISOString().slice(0, 10), agoraMs = Date.now(), DIA = 86400000;
+  const por = (st) => ents.filter(e => e.status === st);
+  const rodadas = ents.flatMap(e => (e.rodadas || []).map(r => ({ ...r, entidade: e.id }))).sort((a, b) => String(b.quando || '').localeCompare(String(a.quando || '')));
+  const feitasHoje = rodadas.filter(r => String(r.quando || '').startsWith(hoje) && r.status === 'pronta').length;
+  const errosSemana = rodadas.filter(r => r.status === 'com erro' && agoraMs - new Date(r.quando).getTime() < 7 * DIA).length;
+  const devolvidas = ents.reduce((n, e) => n + (e.rejeicoes || []).filter(x => agoraMs - new Date(x.quando || 0).getTime() < 7 * DIA).length, 0);
+  const perguntas = por('aguardando pergunta').map(e => ({ id: e.id, texto: e.pergunta ? String(e.pergunta.texto || '').slice(0, 400) : '', desde: e.atualizado }));
+  const paradas = perguntas.filter(p => agoraMs - new Date(p.desde).getTime() > DIA).length;
+  const fazendo = por('em andamento')[0] || null;
+  const testes = TESTADOR.historico(id); const teste = testes.length ? testes[testes.length - 1] : null;
+  const motivos = []; let cor = 'verde';
+  if (s.construcao && s.construcao.emTreinamento) { cor = 'cinza'; motivos.push('ainda em construção'); }
+  else {
+    if (errosSemana) { cor = 'amarelo'; motivos.push(errosSemana + ' trabalho(s) com problema em 7 dias'); }
+    if (paradas) { cor = 'amarelo'; motivos.push(paradas + ' pergunta(s) esperando você há mais de um dia'); }
+    if (devolvidas) { cor = 'amarelo'; motivos.push(devolvidas + ' trabalho(s) devolvido(s) em 7 dias'); }
+    if (!teste) { cor = cor === 'verde' ? 'amarelo' : cor; motivos.push('nunca passou pelo testador'); }
+    else if (teste.resumo && teste.resumo.graves) { cor = 'vermelho'; motivos.push('último teste com ' + teste.resumo.graves + ' erro(s) grave(s)'); }
+    if (errosSemana >= 3) cor = 'vermelho';
+  }
+  const v = { agora: fazendo ? { entidade: fazendo.id, desde: fazendo.atualizado } : null,
+    fila: por('nova').length, fazendo: por('em andamento').length, esperandoVoce: perguntas.length + por('aguardando aprovação').length, comVoce: por('com o dono').length,
+    comErro: por('com erro').length, feitas: por('pronta').length, feitasHoje, total: ents.length,
+    perguntas, aprovacoes: por('aguardando aprovação').map(e => ({ id: e.id, desde: e.atualizado, modo: e.ultimoModo || null })),
+    erros: por('com erro').map(e => ({ id: e.id, erro: String(e.erro || '').slice(0, 300), desde: e.atualizado })),
+    ultima: rodadas[0] ? { entidade: rodadas[0].entidade, quando: rodadas[0].quando, status: rodadas[0].status, modo: rodadas[0].modo } : null,
+    nota: { cor, motivos }, teste: teste ? { quando: teste.quando, resumo: teste.resumo } : null,
+    licoesPropostas: linhasDeLista(path.join(s.pasta, 'memoria', 'licoes-propostas.md')).length };
+  if (detalhe) {
+    v.entidades = ents.map(e => ({ id: e.id, slug: e.slug, status: e.status, atualizado: e.atualizado, rodadas: (e.rodadas || []).length, ultimoModo: e.ultimoModo || null,
+      pergunta: e.status === 'aguardando pergunta' && e.pergunta ? String(e.pergunta.texto || '').slice(0, 600) : undefined, erro: e.status === 'com erro' ? String(e.erro || '').slice(0, 400) : undefined,
+      ultima: (e.rodadas || []).slice(-1)[0] || null }));
+    v.recentes = rodadas.slice(0, 12).map(r => ({ entidade: r.entidade, quando: r.quando, status: r.status, modo: r.modo, feitos: (r.feitos || []).slice(0, 6), pasta: r.pasta || null }));
+    v.licoes = linhasDeLista(path.join(s.pasta, 'memoria', 'licoes-propostas.md')).map(l => l.replace(/^- /, ''));
+    v.licoesAprovadas = linhasDeLista(path.join(s.pasta, 'memoria', 'licoes.md')).length;
+    v.testes = testes.slice(-5).map(t => ({ quando: t.quando, resumo: t.resumo, arquivo: t.arquivo }));
+  }
+  trabalhoCache.set(id, { em: Date.now(), v: detalhe ? { ...v, entidades: undefined, recentes: undefined, licoes: undefined, testes: undefined } : v });
+  return v;
+}
+/** o escritório opera o agente pela rota /agir do sistema dele (chave do gatilho); liga antes, se preciso */
+async function agirNoAgente(id, s, corpo) {
+  if (!s || s.tipo !== 'local' || !s.pasta) return { ok: false, motivo: 'este agente não tem sistema local' };
+  const chave = UTIL.lerEnvArquivo(path.join(s.pasta, '.env')).get('GATILHO_CHAVE') || '';
+  if (!chave) return { ok: false, motivo: 'o agente não tem GATILHO_CHAVE no .env' };
+  let viva = await portaViva(s.porta);
+  if (!viva) {
+    await ligar(id);
+    for (let i = 0; i < 80 && !viva; i++) { await new Promise(r => setTimeout(r, 500)); viva = await portaViva(s.porta); }
+    if (!viva) return { ok: false, motivo: 'liguei o sistema dele, mas ele não respondeu em 40 s: veja o log' };
+  }
+  try {
+    const r = await fetch('http://127.0.0.1:' + s.porta + '/agir', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-chave': chave }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(15000) });
+    if (r.status === 404) return { ok: false, motivo: 'o sistema deste agente é de antes da aba Trabalho: abra Conversar › Resolver e peça para trazer a rota /agir do molde (modelos/agente/tarefa/server.js)' };
+    if (r.status === 401) return { ok: false, motivo: 'a chave do gatilho não bate' };
+    const j = await r.json().catch(() => ({ ok: false, motivo: 'resposta inválida' }));
+    trabalhoCache.delete(id);
+    return j;
+  } catch (e) { return { ok: false, motivo: 'não consegui falar com o sistema dele: ' + e.message }; }
+}
+
 async function estado() {
   const reg = lerRegistro();
   const looks = looksDaEquipe();
@@ -500,6 +574,7 @@ async function estado() {
       // agente construído pelo escritório: setor, trilha e onde a construção está
       setor: s.setor || null, setorId: s.setorId || null, trilha: s.trilha || null, negocio: s.negocio || null, aprendizado: s.aprendizado || null,
       construcao: AGENTES.progressoDe(s.pasta, s.trilha),
+      trabalho: null,   // preenchido abaixo, depois da construção (a nota precisa dela)
       plataformas: Array.isArray(s.plataformas) ? s.plataformas : [],
       propostasPendentes: MEMORIA.propostas(id).filter(p => p.estado === 'pendente').length,
       recadosNovos: MEMORIA.pendentesPara(id, false).length,
@@ -508,6 +583,7 @@ async function estado() {
       embutir: s.embutir === undefined ? true : s.embutir,
       pasta: s.pasta || null, porta: s.porta || null
     };
+    item.trabalho = trabalhoDe(id, { ...s, construcao: item.construcao });
     if (s.tipo === 'web') {
       item.url = s.url;
       item.estado = 'web';
@@ -655,7 +731,7 @@ const REUNIAO = require('./reuniao').init({ ROOT, DADOS, lerRegistro, CLAUDE_BIN
   avisar: (t, x, p) => AVISOS.avisar(t, x, p).catch(() => {}),
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 REUNIAO.agendar(equipeDoDisco);
-const TESTADOR = require('./testador').init({ ROOT, DADOS, CLAUDE_BIN, lerRegistro, FERRAMENTAS,
+const TESTADOR = require('./testador').init({ ROOT, DADOS, CLAUDE_BIN, lerRegistro, FERRAMENTAS, config: lerConfig,
   contextoDe: (id) => MEMORIA.contextoDe(id), processarBlocos: (id, t) => MEMORIA.processarBlocos(id, t) });
 
 const PAPEL =
@@ -1098,10 +1174,32 @@ const servidor = http.createServer(async (req, res) => {
   if (rota === '/api/propostas' && req.method === 'GET') {
     return json(res, 200, { propostas: MEMORIA.propostas(url.searchParams.get('agente') || null) });
   }
+  /* ---- a aba Trabalho: o sistema do agente desenhado pelo escritório (lê a pasta; age pela rota /agir dele) ---- */
+  const mt = rota.match(/^\/api\/agentes\/([a-z0-9_-]+)\/trabalho(\/acao)?$/i);
+  if (mt && !mt[2] && req.method === 'GET') {
+    const s = lerRegistro()[mt[1]];
+    if (!s) return json(res, 404, { ok: false, motivo: 'agente não existe' });
+    const viva = s.tipo === 'local' ? await portaViva(s.porta) : false;
+    return json(res, 200, { ok: true, estado: s.tipo === 'web' ? 'web' : viva ? 'no ar' : 'desligado', trabalho: trabalhoDe(mt[1], { ...s, construcao: AGENTES.progressoDe(s.pasta, s.trilha) }, true) });
+  }
+  if (mt && mt[2] && req.method === 'POST') {
+    const s = lerRegistro()[mt[1]];
+    if (!s) return json(res, 404, { ok: false, motivo: 'agente não existe' });
+    const b = await corpoJson(req, 1e4);
+    const tipo = String(b.tipo || '');
+    if (!/^(rodar|rodar-proposta|aprovar|rejeitar|responder|corrigir|assumir|devolver|licao-aprovar|licao-rejeitar)$/.test(tipo)) return json(res, 400, { ok: false, motivo: 'ação desconhecida' });
+    const r = await agirNoAgente(mt[1], s, { tipo, entidade: String(b.entidade || '').slice(0, 200), texto: String(b.texto || '').slice(0, 4000) });
+    if (r.ok && /^(licao-aprovar)$/.test(tipo)) TESTADOR.agendar(mt[1], 'lição aprovada');
+    return json(res, r.ok ? 200 : 400, r);
+  }
+
   const mp = rota.match(/^\/api\/propostas\/([a-f0-9]+)\/(aprovar|recusar)$/i);
   if (mp && req.method === 'POST') {
     if (!admin) return soAdmin();
-    return json(res, 200, MEMORIA.decidir(mp[1], mp[2] === 'aprovar' ? 'aprovada' : 'recusada'));
+    const dec = MEMORIA.decidir(mp[1], mp[2] === 'aprovar' ? 'aprovada' : 'recusada');
+    // o agente mudou (prompt ou constituição): o testador roda de novo sozinho, para a nota não ficar velha
+    if (dec && dec.ok && mp[2] === 'aprovar' && dec.proposta && dec.proposta.agente) TESTADOR.agendar(dec.proposta.agente, 'proposta aprovada');
+    return json(res, 200, dec);
   }
 
   /* ---- API ---- */

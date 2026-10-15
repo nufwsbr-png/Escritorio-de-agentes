@@ -1,7 +1,7 @@
 /* ===========================================================
    plataformas.js (navegador) — o cadastro único das plataformas
 
-   🔌 Plataformas no topo: lista, cadastra, edita e remove (administrador).
+   🔌 Conexões no topo: lista, cadastra, edita e remove (administrador).
    Cliente sem senha vê nome, tipo, endereço e os NOMES das variáveis; nunca
    valores. Também fornece as caixas de marcação do assistente de contratação
    e o painel "Plataformas" do monitor de cada agente.
@@ -41,7 +41,7 @@ const PLATAFORMAS_UI = (() => {
         ${admin ? `<button class="btn ghost pl-edit" data-id="${esc(p.id)}">Editar</button>` : ''}
       </div>`).join('');
     corpo.innerHTML = `
-      <h3 style="font-family:var(--f-display);margin:0 0 6px">🔌 Plataformas do negócio</h3>
+      <h3 style="font-family:var(--f-display);margin:0 0 6px">🔌 Conexões do negócio</h3><p class="hint" style="margin:0 0 10px">Os sistemas que a empresa já usa e os agentes podem acessar. Antes a tela chamava isto de "plataformas".</p>
       <p class="hint" style="margin-bottom:14px;line-height:1.6">Cadastre aqui, uma vez, cada sistema que a empresa usa: CRM, planilha, agenda, pasta, WhatsApp, e-mail.
         Ao contratar um agente você marca quais ele pode usar, e só essas entram no <code>.env</code> dele, num bloco que o escritório mantém.
         ${admin ? 'Chaves ficam só aqui e no <code>.env</code> dos agentes permitidos: nunca no chat.' : 'Só o administrador vê e edita os valores.'}</p>
@@ -134,8 +134,8 @@ const PLATAFORMAS_UI = (() => {
 
   /* ---------------- as caixas do assistente de contratação ---------------- */
   function caixas(selecionadas = []) {
-    if (!cache.plataformas.length) return `<p class="hint" style="margin-top:8px">Nenhuma plataforma cadastrada. Cadastre em <b>🔌 Plataformas</b>, no topo, para os agentes já nascerem conectados.</p>`;
-    return `<div class="frow" style="margin-top:8px"><label>Plataformas que este agente pode usar</label>
+    if (!cache.plataformas.length) return `<p class="hint" style="margin-top:8px">Nenhuma conexão cadastrada. Cadastre em <b>🔌 Conexões</b>, no topo, para os agentes já nascerem conectados.</p>`;
+    return `<div class="frow" style="margin-top:8px"><label>Conexões que este agente pode usar</label>
       <div class="opts pl-caixas">${cache.plataformas.map(p => `<label class="opt"><input type="checkbox" class="pl-caixa" value="${esc(p.id)}" ${selecionadas.includes(p.id) ? 'checked' : ''}> ${emoji(p.tipo)} ${esc(p.nome)} <small class="hint">${esc(nomeTipo(p.tipo))}</small></label>`).join('')}</div>
       <span class="hint">Só as marcadas entram no <code>.env</code> dele. Dá para mudar depois, no monitor.</span></div>`;
   }
@@ -149,11 +149,11 @@ const PLATAFORMAS_UI = (() => {
     const atuais = Array.isArray(s.plataformas) ? s.plataformas : [];
     const admin = ADMIN.ehAdmin();
     const semTrilha = !s.trilha;
-    el.innerHTML = cabeca('🔌 Plataformas', semTrilha ? 'sistema cadastrado à mão: o escritório mostra, mas não escreve no .env dele' : 'as plataformas que este agente pode usar; só elas entram no .env dele, no bloco mantido pelo escritório') +
+    el.innerHTML = cabeca('🔌 Conexões', semTrilha ? 'sistema cadastrado à mão: o escritório mostra, mas não escreve no .env dele' : 'as plataformas que este agente pode usar; só elas entram no .env dele, no bloco mantido pelo escritório') +
       `<div class="ex-lista">
         ${cache.plataformas.length ? cache.plataformas.map(p => `<label class="opt pl-linha"><input type="checkbox" class="pl-caixa" value="${esc(p.id)}" ${atuais.includes(p.id) ? 'checked' : ''} ${admin ? '' : 'disabled'}>
           <span class="pl-emo">${emoji(p.tipo)}</span><span><b>${esc(p.nome)}</b> <small class="hint">${esc(nomeTipo(p.tipo))}</small>${p.url ? `<br><small class="hint">${esc(p.url)}</small>` : ''}<br><small class="hint">${p.variaveis.map(esc).join(', ')}</small></span></label>`).join('')
-          : '<p class="hint">Nenhuma plataforma cadastrada. Cadastre em 🔌 Plataformas, no topo.</p>'}
+          : '<p class="hint">Nenhuma conexão cadastrada. Cadastre em 🔌 Conexões, no topo.</p>'}
       </div>
       <div class="ex-baixo">
         <span class="hint" id="pl-painel-msg">${admin ? 'Marque e salve: o escritório regrava o bloco no .env na hora. Depois, religue o agente.' : 'Só o administrador muda as permissões.'}</span>

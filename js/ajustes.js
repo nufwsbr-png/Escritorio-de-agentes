@@ -44,7 +44,7 @@ const AJUSTES = (() => {
           <div class="hint">dono: ${esc(a.dono || '—')} · escritório: ${esc(a.nome || '—')} · porta ${esc(a.porta)}</div></div>
         <div class="aj-bloco"><b>Setores para agentes de tarefa</b>
           <div class="hint">${a.setores.length ? a.setores.map(s => esc((s.emoji ? s.emoji + ' ' : '') + s.nome)).join(' · ') : 'os padrões do escritório (Prospecção, Conteúdo, Copy, Financeiro, Dados, QA)'}</div></div>
-        <div class="aj-bloco"><b>Plataformas</b>
+        <div class="aj-bloco"><b>Conexões</b>
           <div class="hint">${a.plataformas.length ? a.plataformas.map(p => esc(p.nome)).join(' · ') : 'nenhuma cadastrada'} · <a href="#" id="aj-plat">abrir 🔌 Plataformas</a></div></div>
         <div class="aj-bloco"><b>Conta do Claude Code</b><div>${statusClaude(c)}</div></div>
         <div class="aj-bloco"><b>Tranca</b>

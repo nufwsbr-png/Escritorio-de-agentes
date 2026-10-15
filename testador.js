@@ -110,4 +110,14 @@ function parar(id) {
   return { ok: true };
 }
 
-module.exports = { init(d) { dep = d; return module.exports; }, rodar, estado, parar, historico };
+/* O testador automático: depois de uma lição ou proposta aprovada, o agente roda o testador sozinho, com 10 minutos
+   de folga para juntar várias mudanças numa só rodada. Desliga em data/config.json: { "testes": { "automatico": false } }. */
+const agendados = new Map();
+function agendar(id, motivo, folgaMs = 10 * 60 * 1000) {
+  try { const c = dep.config ? dep.config() : {}; if (c.testes && c.testes.automatico === false) return { ok: false, motivo: 'testador automático desligado' }; } catch (e) {}
+  if (agendados.has(id)) clearTimeout(agendados.get(id));
+  agendados.set(id, setTimeout(() => { agendados.delete(id); if (rodando.has(id)) return; const r = rodar(id); if (r && r.ok) console.log('  testador: ' + id + ' rodando sozinho (' + motivo + ')'); }, folgaMs));
+  return { ok: true, em: folgaMs };
+}
+const agendado = (id) => agendados.has(id);
+module.exports = { init(d) { dep = d; return module.exports; }, rodar, estado, parar, historico, agendar, agendado };

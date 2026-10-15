@@ -63,7 +63,7 @@ uma vez no fim de cada bloco; mas **pergunte** uma coisa por mensagem.
   em fonte; ela só grava em `data/`.
 - **Chave é segredo.** Nenhuma chave de API, token ou chave do CallMeBot entra
   no chat. Para plataformas: crie as entradas com valores vazios e diga onde
-  colar (botão 🔌 Plataformas do escritório, como administrador). Para o
+  colar (botão 🔌 Conexões do escritório, como administrador). Para o
   WhatsApp dos avisos: o número entra; a chave é colada em 🔔 Avisos.
 - **Só pelos scripts.** `abertura.js`, `plataformas.js`, `planta.js`. Eles
   validam, gravam em `data/` e registram em `data/abertura.log`.

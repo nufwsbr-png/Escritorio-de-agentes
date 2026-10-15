@@ -43,7 +43,7 @@ pessoa responde "sim", escolhe ou corrige em uma frase.
    aprovação na etapa que fala com o cliente ou envolve dinheiro)
 4. **A pasta.** "Onde ficam os arquivos de cada processo? Uso a pasta *Drive
    de clientes*, que os três já têm." Se algum agente da esteira não tem a
-   pasta marcada, diga: "Marque a pasta para o Léo em 🔌 Plataformas, senão
+   pasta marcada, diga: "Marque a pasta para o Léo em 🔌 Conexões, senão
    ele não enxerga os arquivos." (a plataforma do tipo pasta)
 5. **Como entra.** "Um processo novo entra pelo botão na tela 🧵 Esteiras.
    Quer que entre sozinho também quando aparecer uma pasta nova lá dentro?"

@@ -72,12 +72,12 @@ const AVATAR = (() => {
     const mirror  = (facing === 'e' || facing === 'n') ? 1 : -1;
 
     // respiração e balanço — o boneco nunca fica totalmente parado
-    const breath = Math.sin(phase * 1.5) * 0.7;
+    const breath = st.quieto ? 0 : Math.sin(phase * 1.5) * 0.7;
     const bob    = moving ? -Math.abs(Math.sin(phase * Math.PI)) * 2.4 : 0;
     const swing  = moving ? Math.sin(phase * Math.PI * 2) * 3.4 : 0;
     const typeL  = working ? Math.sin(phase * 9) * 1.7 : 0;
     const typeR  = working ? Math.sin(phase * 9 + 2.1) * 1.7 : 0;
-    const sway   = (sitting && !working) ? Math.sin(phase * 0.8) * 1.1 : 0;
+    const sway   = (sitting && !working && !st.quieto) ? Math.sin(phase * 0.8) * 1.1 : 0;
 
     ctx.save();
     ctx.translate(sx, sy + bob);

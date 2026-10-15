@@ -71,7 +71,7 @@ para a seção que o explica.
    [Abrir um escritório novo](#abrir-um-escritório-novo-criar-escritorio).
 5. Guarde a senha do administrador que ela mostra **uma única vez**.
 6. De volta à tela, entre como administrador (🔐 Admin) e cole as chaves em
-   **🔌 Plataformas** e, se quiser avisos no celular, em **🔔 Avisos**. Chave
+   **🔌 Conexões** e, se quiser avisos no celular, em **🔔 Avisos**. Chave
    nunca passa pelo chat. Veja [Plataformas](#plataformas-um-cadastro-permissão-por-agente)
    e [Avisos no celular](#avisos-no-celular).
 
@@ -264,13 +264,13 @@ Um robô que você já construiu fora daqui entra por **＋ cadastrar sistema**:
 pasta, comando e porta, ou um endereço publicado. O escritório só o liga,
 vigia e embute.
 
-## Plataformas: um cadastro, permissão por agente
+## Conexões: um cadastro, permissão por agente
 
-**🔌 Plataformas**, no topo, é o cadastro único dos sistemas do negócio: CRM,
+**🔌 Conexões** (até a etapa 5, "Plataformas"), no topo, é o cadastro único dos sistemas do negócio: CRM,
 planilha, agenda, pasta, WhatsApp, e-mail, banco, sistema pelo navegador,
 link. Cada plataforma tem endereço e variáveis de conexão (com valor, só para
 o administrador). Ao contratar, você marca quais plataformas o agente pode
-usar; no monitor, o painel **🔌 Plataformas** muda isso depois.
+usar; no monitor, o painel **🔌 Conexões** muda isso depois.
 
 A garantia é por credencial, não por instrução: o escritório grava no `.env`
 de cada agente um bloco delimitado só com as variáveis das plataformas
@@ -365,7 +365,7 @@ ficha com histórico de autor, propostas dos agentes (uma pessoa aprova ou
 rejeita), tarefas, equipe, painel e importação de planilha. Uma ficha, um
 responsável por vez: quando uma pessoa está com a ficha, o agente não escreve
 nela; ao devolver, o que a pessoa fez é decisão final. Fichas ficam em
-arquivos locais ou no Supabase (cadastrado em 🔌 Plataformas), à escolha na
+arquivos locais ou no Supabase (cadastrado em 🔌 Conexões), à escolha na
 criação; a senha do chefe aparece uma vez na primeira abertura da tela. Na
 aba **Equipe**, cada agente aparece com o mesmo boneco do escritório, o
 cargo, o estado lido do escritório (no ar, desligado, em treinamento), as
@@ -394,12 +394,13 @@ ficha, o escritório repassa e o sistema do agente roda a ferramenta na hora
 | Botão | O que faz |
 |---|---|
 | **▶ Ligar / ■ Desligar** | sobe e derruba o sistema (processo solto: reiniciar o escritório não derruba ninguém) |
+| **🗂️ Trabalho** | o sistema do agente desenhado pelo escritório, para quem não é técnico: como ele está (semáforo e motivos, último teste), o que faz agora, o que **espera você** (perguntas para responder, propostas para aprovar ou devolver), o que deu problema, a fila, o que já fez e as lições que ele quer guardar. Lê a pasta do agente, então **aparece mesmo com ele desligado**; responder, aprovar e rodar passam pelo escritório, que liga o agente se precisar (rota `/agir` do molde). É a aba que abre primeiro |
 | **💬 Conversar** | uma sessão do Claude Code dentro da pasta do agente. **Investigar** só lê; **Resolver** altera; **Construir** segue a anatomia; **👀 Ensinar** (só agente de tarefa) é você fazendo a tarefa e, em **✅ Tarefa concluída**, ela virando a skill dele. A sessão sobrevive a reinício; o Ensinar tem sessão própria |
 | **📋 Ficha** | a constituição seção por seção, para o dono do negócio preencher sem abrir arquivo |
 | **🧠 Memória** | `memoria/escritorio.md`: o que ele anotou nas conversas e reuniões. Entra em toda chamada do escritório; o administrador pode corrigir |
 | **✉️ Recados** | o que outros agentes e o dono deixaram para ele. Quem deixa recado anda até a mesa do outro |
 | **📝 Propostas** | lições e mudanças no prompt ou na constituição que ele sugeriu. Nada entra sem **aprovar** |
-| **🔌 Plataformas** | as plataformas que ele pode usar; marcar e salvar regrava o bloco no `.env` |
+| **🔌 Conexões** | as conexões (sistemas) que ele pode usar; marcar e salvar regrava o bloco no `.env` |
 | **🧪 Testar** | o testador: casos difíceis, inclusive com instrução plantada, duas réguas (constituição e fato), relatório com triagem e comparação com a rodada anterior |
 | **📜 Log** | as últimas linhas do log |
 
@@ -510,7 +511,7 @@ Na máquina do cliente, nesta ordem:
    senha do administrador, avisos, reunião, conta do Claude, primeiro agente
    e o exemplo. Guarde a senha que ela mostra uma vez.
 4. **Chaves.** Na tela, como administrador: cole as chaves das plataformas em
-   **🔌 Plataformas** e a do CallMeBot em **🔔 Avisos**.
+   **🔌 Conexões** e a do CallMeBot em **🔔 Avisos**.
 5. **Atalho e boot.** Rode `CRIAR ATALHO.ps1`. Para subir junto com o Windows,
    crie uma tarefa no Agendador de Tarefas que execute
    `INICIAR ESCRITORIO.cmd` no logon.

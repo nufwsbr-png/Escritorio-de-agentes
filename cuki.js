@@ -182,7 +182,7 @@ function laudoTexto(m) {
     '## Semáforo', '',
     '| Área | Estado | Resumo |', '|---|---|---|',
     '| Agentes | ' + BOLA[A.agentes.cor] + ' | ' + (A.agentes.motivo || A.agentes.agentes.map(a => a.nome + ' ' + BOLA[a.cor]).join(', ')) + ' |',
-    '| Plataformas | ' + BOLA[A.plataformas.cor] + ' | ' + (A.plataformas.motivo || A.plataformas.plataformas.map(p => p.nome + ' ' + BOLA[p.cor]).join(', ')) + ' |',
+    '| Conexões | ' + BOLA[A.plataformas.cor] + ' | ' + (A.plataformas.motivo || A.plataformas.plataformas.map(p => p.nome + ' ' + BOLA[p.cor]).join(', ')) + ' |',
     '| Fluxo | ' + BOLA[A.fluxo.cor] + ' | ' + A.fluxo.motivos.join('; ') + ' |',
     '| Base | ' + BOLA[A.base.cor] + ' | ' + A.base.motivos.join('; ') + ' |',
     '| Aptidão para o CRM | ' + BOLA[A.aptidao.cor] + ' | ' + A.aptidao.motivos.join('; ') + ' |',
@@ -518,7 +518,7 @@ function textoAjuda(quem) {
 function textoLaudoCurto() {
   const u = ultimo();
   if (!u) return 'Ainda não há laudo. O administrador roda a primeira análise em 🩺 Cuki BOT.';
-  const N = { agentes: 'Agentes', plataformas: 'Plataformas', fluxo: 'Fluxo', base: 'Base', aptidao: 'Aptidão para o CRM' };
+  const N = { agentes: 'Agentes', plataformas: 'Conexões', fluxo: 'Fluxo', base: 'Base', aptidao: 'Aptidão para o CRM' };
   return '*Laudo de ' + new Date(u.quando).toLocaleString('pt-BR') + '* · geral ' + BOLA[u.geral] + '\n' + Object.entries(u.areas).map(([k, a]) => BOLA[a.cor] + ' ' + N[k] + ': ' + (a.motivos || []).slice(0, 2).join('; ')).join('\n');
 }
 
