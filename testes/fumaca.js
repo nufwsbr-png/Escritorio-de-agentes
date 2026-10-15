@@ -228,6 +228,23 @@ async function cenarioCrm(b, CRM) {
   if (process.env.FUMACA_FOTO_CRM) { const shot = await b.foto(); fs.writeFileSync(process.env.FUMACA_FOTO_CRM, Buffer.from(shot, 'base64')); }
 }
 
+/* ---------------- o Estúdio (etapa 5a, exemplo): a trilha de escolhas antes de montar ---------------- */
+async function cenarioEstudio(b) {
+  console.log('\nCenário 4: o Estúdio');
+  await b.ir('http://localhost:' + PORT + '/estudio');
+  ok(String(await b.ev('document.title')) === 'Estúdio', '/estudio abre');
+  ok(await b.ev('document.querySelectorAll("#pontos i").length') === 10, 'a trilha tem 10 passos');
+  ok(await b.ev('document.querySelectorAll(".cartao").length') === 2 && await b.ev('document.querySelectorAll(".cartao canvas").length') === 2, 'passo 1 (estilo) tem 2 cartões com prévia');
+  ok(await b.ev('document.getElementById("previa").width') > 0, 'a prévia grande foi desenhada');
+  await b.ev('ESTUDIO.ir(1)'); await espera(400);
+  ok(await b.ev('document.querySelectorAll(".cartao").length') === 3, 'passo 2 (planta) tem 3 cartões');
+  await b.ev('document.querySelectorAll(".cartao")[2].click()'); await espera(400);
+  ok(await b.ev('ESTUDIO.cfg.planta') === 'ampla' && await b.ev('document.querySelectorAll(".cartao.escolhido").length') === 1, 'clicar num cartão escolhe e marca');
+  await b.ev('ESTUDIO.cfg.motor = "2d"; ESTUDIO.cfg.tema = "claro"; ESTUDIO.ir(9)'); await espera(400);
+  ok(await b.ev('document.documentElement.dataset.tema') === 'claro', 'o tema claro vale na página');
+  ok(await b.ev('document.getElementById("resumo").textContent.includes("ampla") && document.getElementById("avancar").disabled'), 'o resumo lista as escolhas e Montar fica desligado (exemplo)');
+}
+
 (async () => {
   if (typeof WebSocket === 'undefined') { console.log('fumaça pulada: precisa do Node 22 ou mais novo (WebSocket nativo); o resto do npm test vale'); process.exit(0); }
   if (!CHROME) { console.log('fumaça pulada: Chrome não encontrado (defina CHROME=caminho)'); process.exit(0); }
@@ -243,6 +260,7 @@ async function cenarioCrm(b, CRM) {
     await cenarioPlanta(b);
     crm = await subirCrm(DADOS2);
     await cenarioCrm(b, crm.CRM);
+    await cenarioEstudio(b);
     ok(b.erros.length === 0, 'nenhum erro de JavaScript' + (b.erros.length ? ': ' + b.erros.join(' | ') : ''));
   } catch (e) {
     falhas++; console.log('  ✖ a fumaça quebrou: ' + e.message);

@@ -1275,9 +1275,10 @@ const servidor = http.createServer(async (req, res) => {
   if (rota.startsWith('/api/')) return json(res, 404, { ok: false, motivo: 'rota não existe' });
 
   /* ---- estáticos ---- */
-  const rel = rota === '/' ? '/index.html' : rota;
+  // /estudio é a página onde a pessoa escolhe o escritório antes de montar (estudio/)
+  const rel = rota === '/' ? '/index.html' : (rota === '/estudio' || rota === '/estudio/') ? '/estudio/index.html' : rota;
   // /marca/ serve o logo e as imagens da marca do cliente, que ficam em data/marca/
-  if (!/^\/(index\.html|favicon\.svg|css\/|js\/|marca\/)/.test(rel)) {
+  if (!/^\/(index\.html|favicon\.svg|css\/|js\/|marca\/|estudio\/)/.test(rel)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('404'); return;
   }
   const limpo = path.normalize(rel).replace(/^(\.\.[/\\])+/, '');

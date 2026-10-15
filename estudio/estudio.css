@@ -1,0 +1,44 @@
+/* O Estúdio: a pessoa escolhe o escritório antes de montar. Mesmos tons da tela; o tema claro troca as bases. */
+:root{--bg:#06070b;--bg-2:#0c0e16;--panel:#0f1220;--panel-2:#151a2c;--line:#222941;--txt:#e8ecf7;--txt-dim:#8b93ad;--acc:#7c6cff;--acc-3:#c4b8ff;--ok:#23e08a}
+:root[data-tema="claro"]{--bg:#eef0f5;--bg-2:#ffffff;--panel:#ffffff;--panel-2:#f3f5f9;--line:#d6dbe6;--txt:#1b1f2b;--txt-dim:#5b6478;--acc:#2563eb;--acc-3:#1d4ed8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+.hidden{display:none!important}
+.hint{font-size:12.5px;color:var(--txt-dim);margin:0}
+.topo{display:flex;align-items:center;gap:16px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--bg-2);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:8px;font-size:16px}
+.marca .ico{font-size:18px}
+.passos{display:flex;gap:6px;flex:1;justify-content:center}
+.passos i{width:10px;height:10px;border-radius:50%;background:var(--line);display:inline-block;transition:background .2s,transform .2s}
+.passos i.feito{background:var(--acc)}
+.passos i.atual{background:var(--acc);transform:scale(1.35);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 25%,transparent)}
+main{max-width:1100px;margin:0 auto;padding:16px 18px 90px}
+.previa{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px 12px;margin-bottom:18px}
+.previa-topo{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:10px;flex-wrap:wrap}
+#previa{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg-2)}
+.passo h2{margin:4px 0 2px;font-size:22px}
+.cartoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
+.cartao{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;color:inherit;font:inherit}
+.cartao:hover{border-color:var(--acc-3);transform:translateY(-2px)}
+.cartao.escolhido{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.cartao canvas{width:100%;height:auto;display:block;border-radius:9px;background:var(--bg-2)}
+.cartao .nome{display:flex;justify-content:space-between;align-items:center;margin:10px 2px 2px;font-weight:700;font-size:15px}
+.cartao .nome .sel{font-size:11px;color:var(--acc);text-transform:uppercase;letter-spacing:.6px}
+.cartao .desc{margin:0 2px;font-size:12.5px;color:var(--txt-dim)}
+.cartao .lista{margin:6px 2px 0;padding:0;list-style:none;font-size:12px;color:var(--txt-dim)}
+.cartao .lista li::before{content:"· "}
+.rodape{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 18px;background:var(--bg-2);border-top:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--panel-2);color:var(--txt);padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:default}
+.resumo{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.resumo{grid-template-columns:1fr}}
+.resumo .caixa{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.resumo table{border-collapse:collapse;width:100%;font-size:13px}
+.resumo td{padding:5px 4px;border-bottom:1px solid var(--line)}
+.resumo td:first-child{color:var(--txt-dim);width:40%}
+.resumo tr:last-child td{border-bottom:0}
+.resumo pre{margin:8px 0 0;font-size:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto}
+.aviso{padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#c98a1a;font-size:13px;margin-top:10px}
+:root[data-tema="escuro"] .aviso{color:#ffd98a}

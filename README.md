@@ -138,6 +138,12 @@ No Windows:
 
 Os dois scripts leem a porta de `data/config.json`; sem o arquivo, usam 4321.
 
+Em construção (etapa 5): antes de montar, a pessoa vai escolher o
+escritório no **Estúdio** (`http://localhost:4321/estudio`): estilo
+(isométrico ou 2D de cima), planta pelo ramo, tamanho das salas, paleta,
+bonecos, mobília, movimento, claro ou escuro e placas. Hoje a página é o
+exemplo do formato, com dados fictícios; nada é gravado.
+
 ## Segurança
 
 O escritório escuta só em `127.0.0.1`: ninguém de fora da máquina o alcança.

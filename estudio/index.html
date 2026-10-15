@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estúdio</title>
+<link rel="stylesheet" href="/estudio/estudio.css">
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><span class="ico">🎨</span><b>Estúdio</b><span class="hint" id="quem"></span></div>
+  <div class="passos" id="pontos"></div>
+  <div class="hint" id="contador"></div>
+</header>
+
+<main>
+  <section class="previa">
+    <div class="previa-topo"><b>Como vai ficar</b><span class="hint" id="previa-nota">a prévia junta tudo que você já escolheu</span></div>
+    <canvas id="previa" width="1000" height="300"></canvas>
+  </section>
+
+  <section class="passo">
+    <h2 id="titulo"></h2>
+    <p class="hint" id="pergunta"></p>
+    <div class="cartoes" id="cartoes"></div>
+    <div id="resumo" class="resumo hidden"></div>
+  </section>
+
+  <nav class="rodape">
+    <button class="btn ghost" id="voltar">◀ Voltar</button>
+    <span class="hint" id="dica">clique num cartão, ou use ← → e Enter</span>
+    <button class="btn primary" id="avancar">Avançar ▶</button>
+  </nav>
+</main>
+
+<script src="/js/iso.js"></script>
+<script src="/js/avatar.js"></script>
+<script src="/estudio/estudio.js"></script>
+</body>
+</html>
