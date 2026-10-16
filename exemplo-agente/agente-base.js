@@ -258,7 +258,22 @@ const ESTILO = `
   button{background:linear-gradient(135deg,#7c6cff,#9d8cff);border:0;border-radius:8px;color:#fff;padding:6px 12px;font-weight:700;cursor:pointer;font-size:12.5px} button.ok{background:linear-gradient(135deg,#1aa868,#23e08a)} button.bad{background:linear-gradient(135deg,#b94040,#ff6b6b)} button.fraco{background:#1a1f33;color:var(--txt)}
   .msg{padding:10px 13px;border-radius:10px;margin:0 22px 0;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#ffd98a;font-size:12.5px}
   .login{max-width:360px;margin:12vh auto;padding:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;gap:10px}
-  .dimtxt{color:var(--dim);font-size:12.5px}`;
+  .dimtxt{color:var(--dim);font-size:12.5px}
+  /* o painel em abas */
+  .topo .estado{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim)} .topo .estado i{width:8px;height:8px;border-radius:50%;background:#5a6280} .topo .estado i.on{background:var(--ok)}
+  .abas{display:flex;gap:2px;padding:0 22px;background:#0d1019;border-bottom:1px solid var(--line);overflow-x:auto}
+  .aba{padding:11px 13px;font-size:13px;font-weight:600;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .aba.on{color:var(--txt);border-bottom-color:var(--acc)} .aba .n{font-size:10.5px;font-weight:700;background:#1a1f33;color:#c4b8ff;padding:1px 7px;border-radius:99px} .aba .n.warn{background:rgba(255,176,32,.18);color:var(--warn)}
+  .corpo{display:grid;grid-template-columns:1fr 300px} @media (max-width:860px){.corpo{grid-template-columns:1fr}.lateral{border-left:0;border-top:1px solid var(--line)}}
+  .principal{padding:18px 22px;min-width:0} .pane{display:none} .pane.on{display:block}
+  .pane h3{margin:0 0 2px;font-size:16px} .pane h4{margin:14px 0 6px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim)} .pane .expl{color:var(--dim);font-size:12.5px;margin-bottom:12px}
+  .cartao{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start} .cartao .q{flex:1;min-width:0} .cartao .q b{font-size:14px}
+  .cartao .q small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px} .cartao .q small.erro{color:var(--bad)} .cartao .acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px} .cartao .acoes:empty{display:none}
+  .cartao.vazio{color:var(--dim);justify-content:center;border-style:dashed}
+  .lateral{border-left:1px solid var(--line);padding:18px;background:#0d1019;display:flex;flex-direction:column;gap:12px}
+  .caixa{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px} .caixa h4{margin:0 0 8px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim)}
+  .caixa form.col{display:flex;flex-direction:column;gap:6px;margin-bottom:8px} .caixa form.col input{width:100%}
+  .caixa .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid #161a2c} .caixa .kv b{text-align:right;color:var(--txt)}`;
 
 function paginaLogin(erro) {
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(AGENTE.nome)} · entrar</title><style>${ESTILO}</style></head><body>

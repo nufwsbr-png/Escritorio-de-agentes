@@ -113,6 +113,16 @@ testes automáticos inteiros.
 - **As páginas de escolha** fotografadas quadro a quadro, sem erro de JS:
   três painéis do agente e quatro famílias de boneco na cena.
 
+## 5g-9: o painel do agente em abas
+
+- O exemplo do repositório subiu numa porta livre (4477; o 4401 é o exemplo
+  do escritório real do dono e não foi tocado) e o painel novo foi
+  fotografado: abre em "Agora" quando não há pendência, as sete abas com os
+  números, a coluna da direita com "Rodar um caso", Confiança e A ficha; o
+  clique troca a aba e grava o `#` na URL; recarregando em `#regras` volta
+  em Regras, com a constituição no editor. Nenhum erro de JS. O exemplo
+  continua espelhando o molde (`diff` vazio).
+
 ## O que fica
 
 - A interpretação por palavras-chave pega o "o que faz" da primeira frase;

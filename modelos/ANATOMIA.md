@@ -137,8 +137,11 @@ hora, por código, sem o modelo, nas mesmas cercas; é o caminho rápido do
 mecânico (evento, linha de planilha, mensagem-modelo).
 
 ### 11. Painel do dono, trancado — `server.js`
-Só leitura, mais as poucas ações acima. Telas do agente de tarefa: fila,
-entidades por status, rodadas, perguntas pendentes, lições, conhecimento.
+Só leitura, mais as poucas ações acima. Telas do agente de tarefa, em abas
+para quem não é técnico (escolha do dono, 16/10/2026): Agora, Esperando você
+(perguntas, aprovações, casos com o dono; abre sozinha quando há pendência),
+Feito hoje, Todos os casos, O que aprendeu (lições), Regras (constituição),
+Rodadas e log; ao lado, "Rodar um caso", a confiança e a ficha curta.
 Telas do atendente: conversas, agenda, funil, templates. `GET /saude` aberto,
 sem dado. Senha única em `PAINEL_SENHA`, sessão de alguns dias, verificação
 **no servidor, rota a rota**. Gatilho externo (webhook) exige `GATILHO_CHAVE`.
