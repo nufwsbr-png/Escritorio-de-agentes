@@ -66,8 +66,8 @@
 
 <header class="capa"><div class="glow g1"></div><div class="glow g2"></div><div class="wrap">
   <div class="eyebrow">Escritório de Agentes · passo "os bonecos"</div>
-  <h1>Seis famílias novas.<br><strong>Qual vira o padrão?</strong></h1>
-  <p class="lead">Nenhuma parece com o boneco de hoje. Cada cartão mostra três agentes da família, em pé, e um sentado à mesa, como ficam no escritório. Escolha uma; a que você escolher entra no motor da tela e no Estúdio.</p>
+  <h1>Doze famílias novas.<br><strong>Qual vira o padrão?</strong></h1>
+  <p class="lead">Nenhuma parece com o boneco de hoje. Cada cartão mostra três agentes da família, em pé, e um sentado à mesa, como ficam no escritório. Seis são gente desenhada de jeitos diferentes; seis são outra coisa: peça, cápsula, holograma, madeira, capacete, crachá. Escolha uma; a que você escolher entra no motor da tela e no Estúdio.</p>
 </div></header>
 
 <section><div class="wrap">
@@ -87,6 +87,8 @@ const PELE = ['#f2c9a6', '#c98a5b', '#6b4327'];
 const CABELO = ['#1a120c', '#d9b56a', '#3d2a1a'];
 const ESCURO = '#232c42', ESCURO2 = '#1b2130';
 const esc = s => String(s);
+/* clareia (k > 0) ou escurece (k < 0) uma cor #rrggbb */
+function tom(hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)))); return '#' + [16, 8, 0].map(sh => f((n >> sh) & 255).toString(16).padStart(2, '0')).join(''); }
 
 const chao = (pose) => pose === 'pe' ? '<ellipse cx="60" cy="152" rx="22" ry="5" fill="rgba(0,0,0,.4)"/>' : '';
 /* a cadeira atrás e a mesa na frente: iguais para todas as famílias */
@@ -189,6 +191,100 @@ const FAMILIAS = {
         <path d="M60 51 l0 9"/><path d="M40 62 c8 -8 32 -8 40 0 l4 46 c-14 6 -34 6 -48 0 z"/><path d="M41 64 c10 -7 28 -7 38 0" opacity=".4"/>
         <path d="M42 70 l10 -6 M42 80 l12 -7 M43 90 l13 -8 M44 100 l13 -8" opacity=".35"/>
         <path d="M42 66 c-6 12 -10 24 -14 34 M78 66 c6 12 10 24 14 34"/><path d="M27 101 c0 3 2 4 4 3 M93 101 c0 3 -2 4 -4 3"/>${pernas}</g>`;
+    }
+  },
+  papel: {
+    nome: 'Papel', desc: 'Recorte facetado, como origami: três tons da mesma cor por face. Geométrico e moderno.',
+    svg(i, pose) {
+      const c = ACC[i], c1 = tom(c, 0.25), c2 = tom(c, -0.3), p = PELE[i];
+      const pernas = pose === 'pe' ? `<polygon points="46,108 57,108 55,150 44,150" fill="${ESCURO2}"/><polygon points="63,108 74,108 76,150 65,150" fill="#141a2b"/><polygon points="40,150 56,150 56,154 38,154" fill="#0b0f18"/><polygon points="64,150 82,150 82,154 64,154" fill="#0b0f18"/>`
+                                     : `<polygon points="46,108 57,108 56,124 45,124" fill="${ESCURO2}"/><polygon points="63,108 74,108 75,124 64,124" fill="#141a2b"/>`;
+      const cabelo = i === 0 ? `<polygon points="44,32 48,20 60,15 72,20 76,32 60,27" fill="${CABELO[0]}"/>` : i === 1 ? `<polygon points="44,34 46,18 60,14 74,18 76,34 68,22 52,22" fill="${CABELO[1]}"/>` : `<polygon points="42,36 46,16 60,12 74,16 78,36 70,26 60,30 50,26" fill="${CABELO[2]}"/>`;
+      return `${pernas}
+        <polygon points="36,64 46,60 42,104 30,106" fill="${c2}"/><polygon points="84,64 74,60 78,104 90,106" fill="${c1}"/>
+        <polygon points="30,106 42,104 38,112" fill="${p}"/><polygon points="90,106 78,104 82,112" fill="${p}"/>
+        <polygon points="46,60 60,56 60,112 40,110" fill="${c1}"/><polygon points="60,56 74,60 80,110 60,112" fill="${c2}"/><polygon points="52,60 60,56 68,60 60,76" fill="${c}"/>
+        <polygon points="54,48 66,48 66,58 54,58" fill="${tom(p, -0.2)}"/>
+        <polygon points="44,36 48,22 60,18 72,22 76,36 70,52 60,56 50,52" fill="${p}"/><polygon points="60,18 72,22 76,36 70,52 60,56" fill="${tom(p, -0.14)}"/>
+        ${cabelo}<polygon points="52,38 56,37 56,41 52,41" fill="#0b0f18"/><polygon points="64,37 68,38 68,41 64,41" fill="#0b0f18"/>`;
+    }
+  },
+  terno: {
+    nome: 'Terno', desc: 'Ilustração corporativa de site: figura alta e magra, terno escuro, braços de macarrão. A cor do agente na gravata e no detalhe.',
+    svg(i, pose) {
+      const c = ACC[i], p = PELE[i], h = CABELO[i];
+      const pernas = pose === 'pe' ? `<path d="M52 110 L50 150 M68 110 L70 150" stroke="${ESCURO2}" stroke-width="9" stroke-linecap="round"/><path d="M42 151 h14 M64 151 h14" stroke="#0b0f18" stroke-width="5" stroke-linecap="round"/>`
+                                     : `<path d="M52 110 L52 124 M68 110 L68 124" stroke="${ESCURO2}" stroke-width="9" stroke-linecap="round"/>`;
+      const cabelo = i === 0 ? `<path d="M48 26 Q60 12 72 26 L72 30 Q60 24 48 30 Z" fill="${h}"/>` : i === 1 ? `<path d="M47 30 Q48 10 60 12 Q72 10 73 30 Q66 20 60 24 Q54 20 47 30 Z" fill="${h}"/><circle cx="73" cy="24" r="5" fill="${h}"/>` : `<path d="M46 32 Q46 8 60 10 Q74 8 74 32 Q60 26 46 32 Z" fill="${h}"/>`;
+      return `${pernas}
+        <path d="M44 66 Q30 84 34 108" fill="none" stroke="${p}" stroke-width="7" stroke-linecap="round"/><path d="M76 66 Q90 84 86 108" fill="none" stroke="${p}" stroke-width="7" stroke-linecap="round"/>
+        <path d="M44 62 Q60 54 76 62 L80 112 L40 112 Z" fill="${ESCURO}"/><path d="M54 62 L60 80 L66 62 Z" fill="#e9edf8"/><path d="M60 68 l-3 5 3 22 3-22 z" fill="${c}"/>
+        <path d="M44 62 L52 64 L50 90 Z" fill="#141a2b"/><path d="M76 62 L68 64 L70 90 Z" fill="#141a2b"/><circle cx="72" cy="74" r="2" fill="${c}"/>
+        <rect x="56" y="46" width="8" height="16" fill="${tom(p, -0.1)}"/>
+        <ellipse cx="60" cy="34" rx="12" ry="14" fill="${p}"/>${cabelo}
+        <circle cx="56" cy="36" r="1.4" fill="#0b0f18"/><circle cx="64" cy="36" r="1.4" fill="#0b0f18"/><path d="M57 42 q3 2 6 0" fill="none" stroke="#0b0f18" stroke-width="1.2" stroke-linecap="round"/>`;
+    }
+  },
+  xadrez: {
+    nome: 'Xadrez', desc: 'Cada agente é uma peça: peão, torre, bispo. Escuro, com a cor do agente num anel e a inicial. Sóbrio, para escritório de advocacia.',
+    svg(i, pose, nome) {
+      const c = ACC[i], ini = (nome || 'A')[0].toUpperCase();
+      const base = pose === 'pe' ? `<ellipse cx="60" cy="146" rx="26" ry="7" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/><rect x="36" y="134" width="48" height="12" rx="4" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/>` : '';
+      const topo = i === 0 ? `<circle cx="60" cy="40" r="16" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/><ellipse cx="60" cy="60" rx="18" ry="5" fill="${c}"/>`
+                 : i === 1 ? `<path d="M40 56 V30 h8 v8 h8 v-8 h8 v8 h8 v-8 h8 V56 Z" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/><rect x="40" y="56" width="40" height="6" fill="${c}"/>`
+                 : `<path d="M60 20 Q78 40 70 58 L50 58 Q42 40 60 20 Z" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/><circle cx="60" cy="22" r="4" fill="${c}"/><ellipse cx="60" cy="60" rx="16" ry="5" fill="${c}"/>`;
+      const corpo = pose === 'pe' ? 'M46 62 Q44 100 38 134 L82 134 Q76 100 74 62 Z' : 'M46 62 Q44 96 42 124 L78 124 Q76 96 74 62 Z';
+      return `${base}<path d="${corpo}" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/>${topo}
+        <circle cx="60" cy="96" r="12" fill="#05080E" stroke="${c}" stroke-width="2.5"/>
+        <text x="60" y="101" text-anchor="middle" font-family="Outfit,system-ui,sans-serif" font-weight="600" font-size="14" fill="${c}">${ini}</text>`;
+    }
+  },
+  holograma: {
+    nome: 'Holograma', desc: 'Figura translúcida projetada de um disco no chão, com linhas de varredura. Diz "IA" sem ser robô.',
+    svg(i, pose) {
+      const c = ACC[i], id = 'hl' + i + pose;
+      const pernas = pose === 'pe' ? `<rect x="46" y="106" width="11" height="42" rx="5"/><rect x="63" y="106" width="11" height="42" rx="5"/>` : `<rect x="46" y="106" width="11" height="18" rx="5"/><rect x="63" y="106" width="11" height="18" rx="5"/>`;
+      const var_ = i === 1 ? '<rect x="48" y="33" width="10" height="7" rx="2" fill="none" stroke="#fff" stroke-width="1.5" opacity=".8"/><rect x="62" y="33" width="10" height="7" rx="2" fill="none" stroke="#fff" stroke-width="1.5" opacity=".8"/>' : i === 2 ? `<path d="M42 34 Q44 14 60 14 Q76 14 78 34" fill="none" stroke="${c}" stroke-width="4" opacity=".9"/>` : '';
+      return `<defs><pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#fff" opacity=".18"/></pattern></defs>
+        ${pose === 'pe' ? `<ellipse cx="60" cy="151" rx="24" ry="6" fill="${c}" opacity=".35"/><ellipse cx="60" cy="151" rx="12" ry="3" fill="#fff" opacity=".6"/><polygon points="36,151 84,151 80,100 40,100" fill="${c}" opacity=".08"/>` : ''}
+        <g fill="${c}" opacity=".55" stroke="${c}" stroke-width="1.5" style="filter:drop-shadow(0 0 8px ${c}99)">
+        ${pernas}<rect x="24" y="66" width="12" height="40" rx="6"/><rect x="84" y="66" width="12" height="40" rx="6"/>
+        <rect x="38" y="60" width="44" height="52" rx="16"/><rect x="54" y="48" width="12" height="14"/><circle cx="60" cy="36" r="18"/></g>
+        <g fill="url(#${id})">${pernas}<rect x="38" y="60" width="44" height="52" rx="16"/><circle cx="60" cy="36" r="18"/></g>
+        <circle cx="54" cy="38" r="2" fill="#fff"/><circle cx="66" cy="38" r="2" fill="#fff"/>${var_}`;
+    }
+  },
+  madeira: {
+    nome: 'Madeira', desc: 'Boneco de madeira torneada, tipo kokeshi: corpo cilíndrico, rosto pintado, faixa na cor do agente. Artesanal e quente.',
+    svg(i, pose) {
+      const c = ACC[i], id = 'md' + i + pose;
+      const madeira = ['#d2a46f', '#b98a55', '#8f6b3f'][i], mad2 = tom(madeira, -0.25);
+      const corpo = pose === 'pe' ? `<rect x="40" y="60" width="40" height="88" rx="14" fill="url(#${id})"/><ellipse cx="60" cy="148" rx="20" ry="5" fill="${mad2}"/>` : `<rect x="40" y="60" width="40" height="64" rx="14" fill="url(#${id})"/>`;
+      const cabelo = i === 0 ? '<path d="M38 40 Q38 14 60 14 Q82 14 82 40 Q74 30 60 30 Q46 30 38 40 Z" fill="#1a120c"/>' : i === 1 ? '<path d="M38 36 Q40 14 60 14 Q80 14 82 36 Q70 26 60 28 Q50 26 38 36 Z" fill="#1a120c"/><circle cx="60" cy="16" r="6" fill="#1a120c"/>' : '<path d="M38 44 Q36 12 60 12 Q84 12 82 44 Q76 34 60 34 Q44 34 38 44 Z" fill="#3d2a1a"/>';
+      return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${tom(madeira, 0.12)}"/><stop offset=".55" stop-color="${madeira}"/><stop offset="1" stop-color="${mad2}"/></linearGradient></defs>
+        ${corpo}<path d="M46 70 q6 8 0 16 M70 90 q6 8 0 16 M50 110 q6 6 0 12" fill="none" stroke="${mad2}" stroke-width="1" opacity=".6"/>
+        <rect x="40" y="74" width="40" height="10" fill="${c}"/><rect x="40" y="86" width="40" height="3" fill="${tom(c, -0.3)}"/>
+        <circle cx="60" cy="38" r="22" fill="${tom(madeira, 0.18)}"/>${cabelo}
+        <circle cx="53" cy="42" r="2" fill="#1a120c"/><circle cx="67" cy="42" r="2" fill="#1a120c"/><path d="M56 50 q4 3 8 0" fill="none" stroke="#8b2d2d" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="48" cy="48" r="3" fill="#e0607a" opacity=".45"/><circle cx="72" cy="48" r="3" fill="#e0607a" opacity=".45"/>`;
+    }
+  },
+  capacete: {
+    nome: 'Capacete', desc: 'Traje claro com capacete e viseira espelhada na cor do agente. O rosto fica na viseira: uma luz. Limpo e futurista.',
+    svg(i, pose) {
+      const c = ACC[i], id = 'cp' + i + pose, claro = '#e9edf8', claro2 = '#c9d0e0';
+      const pernas = pose === 'pe' ? `<rect x="45" y="106" width="13" height="40" rx="6" fill="${claro2}"/><rect x="62" y="106" width="13" height="40" rx="6" fill="${claro2}"/><rect x="42" y="143" width="18" height="9" rx="4" fill="${ESCURO}"/><rect x="60" y="143" width="18" height="9" rx="4" fill="${ESCURO}"/>`
+                                     : `<rect x="45" y="106" width="13" height="18" rx="6" fill="${claro2}"/><rect x="62" y="106" width="13" height="18" rx="6" fill="${claro2}"/>`;
+      const olhos = i === 0 ? '<circle cx="53" cy="38" r="3" fill="#fff"/><circle cx="67" cy="38" r="3" fill="#fff"/>' : i === 1 ? '<path d="M48 38 q5 -5 10 0 M62 38 q5 -5 10 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>' : '<rect x="48" y="35" width="24" height="5" rx="2.5" fill="#fff" opacity=".95"/>';
+      return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${tom(c, 0.25)}"/><stop offset="1" stop-color="${tom(c, -0.45)}"/></linearGradient></defs>
+        ${pernas}
+        <rect x="24" y="66" width="13" height="40" rx="6" fill="${claro2}"/><rect x="83" y="66" width="13" height="40" rx="6" fill="${claro2}"/>
+        <circle cx="30" cy="108" r="6" fill="${ESCURO}"/><circle cx="90" cy="108" r="6" fill="${ESCURO}"/>
+        <rect x="38" y="60" width="44" height="52" rx="16" fill="${claro}"/><rect x="42" y="66" width="36" height="6" rx="3" fill="${c}"/><circle cx="48" cy="86" r="3" fill="${c}"/>
+        <rect x="50" y="52" width="20" height="10" rx="4" fill="${ESCURO}"/>
+        <circle cx="60" cy="34" r="21" fill="${claro}"/><circle cx="60" cy="34" r="21" fill="none" stroke="${claro2}" stroke-width="2"/>
+        <path d="M42 36 Q42 20 60 20 Q78 20 78 36 Q78 50 60 50 Q42 50 42 36 Z" fill="url(#${id})"/><path d="M46 28 Q54 22 64 24" fill="none" stroke="#fff" stroke-width="2" opacity=".5" stroke-linecap="round"/>
+        ${olhos}<circle cx="79" cy="20" r="3" fill="${c}"/>`;
     }
   }
 };
