@@ -225,35 +225,30 @@ const FURN = (() => {
         if (fundoY < r.y1) add({ t: 'tvWall', x: cx - 2, y: r.y1 + 0.15, w: Math.min(4.6, largura - 2), d: 0.5, meeting: true });
         add({ t: 'plant', x: r.x1 + 0.4, y: r.y2 - 0.6, k: 0 }); block(r.x1 + 0.4, r.y2 - 0.6, 1, 1);
       } else if (r.tipo === 'descanso') {
+        // a sala de descanso é onde ficam os agentes desligados: sofás, copa e plantas; sem arcade, sinuca nem neon (decisão do dono, 15/10/2026)
         const sw = Math.min(4.6, largura - 3);
-        const sofaL = add({ t: 'sofa', x: r.x1 + 1, y: r.y1 + 3.4, w: sw, d: 1.6, dir: 'n', c: '#241c3c' });
+        const sofaL = add({ t: 'sofa', x: r.x1 + 1, y: r.y1 + 3.4, w: sw, d: 1.6, dir: 'n', c: '#2a2f3d' });
         block(r.x1 + 1, r.y1 + 3.4, sw, 1.6);
         for (let i = 0; i < Math.min(3, Math.floor(sw / 1.4)); i++)
-          restSlots.push({ id: 'SOF' + r.id + i, label: 'sofá', x: r.x1 + 2.1 + i * 1.4, y: r.y1 + 4.3, facing: 'n', sit: true, act: 'vendo TV', obj: sofaL });
-        if (fundoY < r.y1) add({ t: 'tvWall', x: r.x1 + 1, y: r.y1 + 0.15, w: sw, d: 0.5 });
+          restSlots.push({ id: 'SOF' + r.id + i, label: 'sofá', x: r.x1 + 2.1 + i * 1.4, y: r.y1 + 4.3, facing: 'n', sit: true, act: 'na sala de descanso', obj: sofaL });
         add({ t: 'rug', x: r.x1 + 0.6, y: r.y1 + 1.4, w: sw + 0.8, d: 2, c: '#1b2440' });
-        const bx = r.x1 + sw + 2.2;
         if (largura >= 10) {
-          [[bx, r.y1 + 1.6, 24], [bx + 1.6, r.y1 + 3.4, 300], [bx + 0.4, r.y1 + 5.2, 160]].forEach((b, i) => {
-            if (b[0] + 1.2 > r.x2 + 1 || b[1] + 1.2 > r.y2 + 1) return;
-            const o = add({ t: 'beanbag', x: b[0], y: b[1], hue: b[2] });
-            block(b[0], b[1], 1.2, 1.2);
-            restSlots.push({ id: 'BAG' + r.id + i, label: 'puff', x: b[0] + 0.6, y: b[1] + 0.55, facing: 's', sit: true, act: 'jogando no celular', obj: o });
-          });
-        }
-        if (largura >= 14 && altura >= 8) {
-          const pool = add({ t: 'poolTable', x: bx + 3.2, y: r.y1 + 1.6, w: 4.6, d: 2.6 });
-          block(bx + 3.2, r.y1 + 1.6, 4.6, 2.6);
-          restSlots.push({ id: 'POOL' + r.id + 0, label: 'sinuca', x: bx + 2.2, y: r.y1 + 2.9, facing: 'e', act: 'na sinuca', obj: pool });
-          restSlots.push({ id: 'POOL' + r.id + 1, label: 'sinuca', x: bx + 8.6, y: r.y1 + 2.9, facing: 'w', act: 'na sinuca', obj: pool });
+          const bx = r.x1 + sw + 2.2, sw2 = Math.min(4.6, r.x2 - bx);
+          if (sw2 >= 2.4) {
+            const sofaR = add({ t: 'sofa', x: bx, y: r.y1 + 3.4, w: sw2, d: 1.6, dir: 'n', c: '#2a2f3d' });
+            block(bx, r.y1 + 3.4, sw2, 1.6);
+            for (let i = 0; i < Math.min(3, Math.floor(sw2 / 1.4)); i++)
+              restSlots.push({ id: 'SOF' + r.id + 'b' + i, label: 'sofá', x: bx + 1.1 + i * 1.4, y: r.y1 + 4.3, facing: 'n', sit: true, act: 'na sala de descanso', obj: sofaR });
+            add({ t: 'rug', x: bx - 0.4, y: r.y1 + 1.4, w: sw2 + 0.8, d: 2, c: '#1b2440' });
+          }
         }
         if (altura >= 8) {
-          const bar = add({ t: 'bar', x: r.x1 + 1, y: r.y2 - 1.6, w: Math.min(5.4, largura - 2), d: 1.4 });
+          const copa = add({ t: 'bar', x: r.x1 + 1, y: r.y2 - 1.6, w: Math.min(5.4, largura - 2), d: 1.4 });
           block(r.x1 + 1, r.y2 - 1.6, Math.min(5.4, largura - 2), 1.4);
-          restSlots.push({ id: 'BAR' + r.id + 0, label: 'bar', x: r.x1 + 2, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: bar });
-          restSlots.push({ id: 'BAR' + r.id + 1, label: 'bar', x: r.x1 + 4.4, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: bar });
+          restSlots.push({ id: 'BAR' + r.id + 0, label: 'copa', x: r.x1 + 2, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: copa });
+          restSlots.push({ id: 'BAR' + r.id + 1, label: 'copa', x: r.x1 + 4.4, y: r.y2 - 2.6, facing: 's', act: 'tomando um café', obj: copa });
         }
-        add({ t: 'neonSign', x: r.x1 + 0.4, y: r.y1 + 0.2, txt: 'GAME ZONE', hue: 300 });
+        add({ t: 'plant', x: r.x1 + 0.4, y: r.y1 + 0.4, k: 1 }); block(r.x1 + 0.4, r.y1 + 0.4, 1, 1);
         add({ t: 'plant', x: r.x2 - 0.5, y: r.y2 - 0.6, k: 0 }); block(r.x2 - 0.5, r.y2 - 0.6, 1, 1);
       } else if (r.tipo === 'recepcao') {
         const rw = Math.min(2.6, largura - 2);

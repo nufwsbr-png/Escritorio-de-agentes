@@ -405,15 +405,26 @@ const actors = new Map();
     volta para a primeira mesa livre depois de qualquer saída e acaba no
     computador de outro. Mesa que sumiu do mapa ou que já é de alguém é
     trocada por outra livre. */
+const slugSetor = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+/** a sala tem o setor do agente? (a planta diz quais setores moram em cada sala) */
+function salaDoSetor(roomId, setor) {
+  const r = WORLD.ROOMS[roomId];
+  if (!r || !setor || !Array.isArray(r.setores) || !r.setores.length) return false;
+  const s = slugSetor(setor);
+  return r.setores.some(n => { const k = slugSetor(n); return k === s || k.includes(s) || s.includes(k); });
+}
 function garanteEstacao() {
   const mesas = FURN.workSlots.filter(s => !s.vip).sort((a, b) => a.id < b.id ? -1 : 1);
   const tomadas = new Set();
   let mudou = false;
+  const temSetores = Object.values(WORLD.ROOMS).some(r => Array.isArray(r.setores) && r.setores.length);
   for (const ag of ROSTER.all()) {
     if (ag.boss) { if (ag.slotId) tomadas.add(ag.slotId); continue; }
-    const valida = ag.slotId && mesas.some(m => m.id === ag.slotId) && !tomadas.has(ag.slotId);
-    if (valida) { tomadas.add(ag.slotId); continue; }
-    const livre = mesas.find(m => !tomadas.has(m.id));
+    // a mesa vale se existe, está livre e, quando a planta tem setores por sala, fica na sala do setor dele (ou em sala sem setor definido)
+    const atual = ag.slotId ? mesas.find(m => m.id === ag.slotId) : null;
+    const naSalaCerta = !atual || !temSetores || !ag.setor || salaDoSetor(atual.room, ag.setor) || !mesas.some(m => !tomadas.has(m.id) && salaDoSetor(m.room, ag.setor));
+    if (atual && !tomadas.has(atual.id) && naSalaCerta) { tomadas.add(atual.id); continue; }
+    const livre = (temSetores && ag.setor ? mesas.find(m => !tomadas.has(m.id) && salaDoSetor(m.room, ag.setor)) : null) || mesas.find(m => !tomadas.has(m.id));
     ag.slotId = livre ? livre.id : null;
     if (livre) tomadas.add(livre.id);
     mudou = true;

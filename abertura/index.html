@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Abrir o escritório</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/abertura/abertura.css">
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FE0FB"/><stop offset=".5" stop-color="#7C4DF7"/><stop offset="1" stop-color="#F76BE8"/></linearGradient></defs><polyline points="34,60 74,100 34,140" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="66,56 110,100 66,144" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><polyline points="104,50 154,100 104,150" fill="none" stroke="url(#gs)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="wordmark">NuFws<small>Escritório de Agentes</small></span>
+  <ol class="etapas" id="etapas">
+    <li data-e="0">Boas-vindas</li><li data-e="1">Seu negócio</li><li data-e="2">Entendi assim</li><li data-e="3">O escritório</li><li data-e="4">A chave</li>
+  </ol>
+</div></div>
+
+<main class="wrap">
+
+  <!-- 0 · boas-vindas -->
+  <section class="etapa" id="e-0">
+    <div class="capa">
+      <div class="glow g1"></div><div class="glow g2"></div>
+      <div class="eyebrow">Abertura do escritório</div>
+      <h1>Vamos abrir o seu<br><strong>escritório de agentes.</strong></h1>
+      <p class="lead">Em poucos minutos: você conta do seu negócio numa caixa de texto, confere o que eu entendi, escolhe como o escritório vai ficar e recebe a chave de administrador. Nada de chave de sistema aqui: isso entra depois, pela tela, em lugar seguro.</p>
+      <div class="linha-estado" id="estado-claude"><i class="sem cinza"></i><span>conferindo o Claude Code nesta máquina…</span></div>
+      <div class="linha-estado hidden" id="estado-aberto"></div>
+      <div class="acoes"><button class="btn" id="b-comecar">Começar</button><a class="btn ghost" href="/?tela=1" id="b-ver-tela">Ver a tela do escritório</a></div>
+    </div>
+  </section>
+
+  <!-- 1 · a pergunta -->
+  <section class="etapa hidden" id="e-1">
+    <div class="eyebrow">1 de 4 · uma pergunta só</div>
+    <h2>Me conte do seu negócio.</h2>
+    <p class="lead">O nome, o que ele faz, quem é a pessoa dona, e os sistemas que vocês usam no dia a dia: CRM, planilha, agenda, WhatsApp, pasta, e-mail. Do seu jeito, em texto corrido.</p>
+    <div class="duas">
+      <div>
+        <textarea id="txt" rows="9" placeholder="Ex.: Somos a Furtado Advocacia, um escritório de advocacia em Cuiabá. O dono é o Dr. Anderson. Atendemos pelo WhatsApp, usamos o PJe, uma planilha no Google Sheets, a Google Agenda e uma pasta no OneDrive. Os setores são atendimento, fechamento de pasta, petições, audiências, financeiro e captação."></textarea>
+        <p class="hint">Sem chaves, senhas ou tokens aqui. Se você colar uma, eu recuso e peço para tirar.</p>
+        <div class="erro hidden" id="erro-1"></div>
+      </div>
+      <aside class="card">
+        <span class="mini">Opcional · a sua marca</span>
+        <label class="campo">Logo <input type="file" id="f-logo" accept=".png,.jpg,.jpeg,.svg,.webp"><span class="hint" id="n-logo">png, jpg, svg ou webp</span></label>
+        <label class="campo">Cor principal <span class="cor"><input type="color" id="f-cor" value="#5FE0FB"><code id="t-cor">#5FE0FB</code></span><span class="hint">entra na paleta "da marca" e nos detalhes da tela</span></label>
+        <label class="campo">Planta do escritório <input type="file" id="f-planta" accept=".png,.jpg,.jpeg,.pdf,.webp"><span class="hint" id="n-planta">imagem ou PDF; fica guardada para o Claude Code redesenhar as salas depois (/criar-escritorio)</span></label>
+        <div class="previa-logo hidden" id="p-logo"><img alt="" id="img-logo"></div>
+      </aside>
+    </div>
+    <div class="acoes"><button class="btn ghost" data-ir="0">Voltar</button><button class="btn" id="b-interpretar">Continuar</button><span class="hint" id="lendo"></span></div>
+  </section>
+
+  <!-- 2 · entendi assim -->
+  <section class="etapa hidden" id="e-2">
+    <div class="eyebrow">2 de 4 · confira</div>
+    <h2>Entendi assim.</h2>
+    <p class="lead">Corrija o que estiver errado direto nos campos. Nada é gravado ainda.</p>
+    <div class="aviso hidden" id="aviso-2"></div>
+    <div class="grade-campos">
+      <label class="campo">Empresa <input id="c-empresa" maxlength="80"></label>
+      <label class="campo">Pessoa dona <input id="c-dono" maxlength="60"></label>
+      <label class="campo larga">O que o negócio faz, em uma frase <input id="c-faz" maxlength="120"></label>
+      <label class="campo">Ramo <select id="c-ramo"></select><span class="hint">decide as plantas e a roupa sugerida dos agentes</span></label>
+    </div>
+    <div class="bloco">
+      <div class="bloco-topo"><b>Os setores</b><span class="hint">cada setor vira uma opção na aba Contratar e uma sala na planta</span></div>
+      <div class="chips" id="c-setores"></div>
+      <div class="linha-add"><input id="novo-setor" placeholder="outro setor" maxlength="40"><button class="btn mini-btn" id="b-setor">＋ setor</button><button class="btn mini-btn ghost" id="b-setores-ramo">usar os sugeridos do ramo</button></div>
+    </div>
+    <div class="bloco">
+      <div class="bloco-topo"><b>As conexões</b><span class="hint">os sistemas que vocês usam; a chave de cada um você cola depois em 🔌 Conexões</span></div>
+      <div class="conexoes" id="c-conexoes"></div>
+      <div class="linha-add"><input id="nova-conexao" placeholder="outro sistema" maxlength="60"><select id="novo-tipo"></select><button class="btn mini-btn" id="b-conexao">＋ conexão</button></div>
+    </div>
+    <div class="erro hidden" id="erro-2"></div>
+    <div class="acoes"><button class="btn ghost" data-ir="1">Voltar</button><button class="btn" id="b-estudio">Está certo: escolher o visual</button></div>
+  </section>
+
+  <!-- 3 · o Estúdio -->
+  <section class="etapa hidden" id="e-3">
+    <div class="eyebrow">3 de 4 · o seu escritório</div>
+    <div class="estudio-topo"><h2 id="titulo"></h2><div class="passos" id="pontos"></div><span class="hint" id="contador"></span></div>
+    <p class="lead" id="pergunta"></p>
+    <span class="hidden" id="quem"></span>
+    <section class="previa">
+      <div class="previa-topo"><b>Como vai ficar</b><span class="hint">a prévia junta tudo que você já escolheu</span></div>
+      <canvas id="previa" width="1000" height="300"></canvas>
+    </section>
+    <div class="cartoes" id="cartoes"></div>
+    <div id="resumo" class="resumo hidden"></div>
+    <div class="erro hidden" id="erro-3"></div>
+    <div class="acoes"><button class="btn ghost" id="voltar">◀ Voltar</button><span class="hint">clique num cartão, ou use ← → e Enter</span><button class="btn" id="avancar">Avançar ▶</button><span class="hint" id="montando"></span></div>
+  </section>
+
+  <!-- 4 · a chave -->
+  <section class="etapa hidden" id="e-4">
+    <div class="eyebrow">4 de 4 · a chave</div>
+    <h2 id="t-pronto">Escritório montado.</h2>
+    <p class="lead" id="p-pronto"></p>
+    <div class="card senha" id="caixa-senha">
+      <span class="mini">Senha do administrador · aparece uma única vez</span>
+      <div class="senha-linha"><code id="senha"></code><button class="btn mini-btn" id="b-copiar">Copiar</button></div>
+      <p class="hint">Com ela você contrata agentes, aprova propostas e cola as chaves das conexões. Sem ela, a tela só opera (ligar, desligar, ler). Para trocar depois: 🔐 Admin na tela.</p>
+      <label class="guardei"><input type="checkbox" id="guardei"> Guardei a senha em lugar seguro</label>
+    </div>
+    <div class="card" id="caixa-conexoes"></div>
+    <div class="acoes"><button class="btn" id="b-abrir" disabled>Abrir o escritório</button></div>
+  </section>
+
+</main>
+
+<script src="/js/iso.js"></script>
+<script src="/js/boneco-pixel.js"></script>
+<script src="/estudio/estudio.js"></script>
+<script src="/abertura/abertura.js"></script>
+</body>
+</html>

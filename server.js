@@ -66,6 +66,7 @@ const nomeDoAgente = (idSistema) => {
 };
 const MEMORIA = require('./memoria').init({ ROOT, DADOS, lerRegistro, nomeDe: nomeDoAgente });
 const PLATAFORMAS = require('./plataformas').init({ ROOT, DADOS, lerRegistro, lerRegistroBruto, gravarRegistro });
+const RAMOS = require('./ramos');   // a biblioteca de plantas por ramo (plantas/<ramo>.json), que a abertura na tela usa
 const AGENTES = require('./agentes').init({ ROOT, PORT, lerRegistro, lerRegistroBruto, gravarRegistro, config: lerConfig, plataformas: PLATAFORMAS });
 const ENSINO = require('./ensino').init({ lerRegistro });   // o agente que aprende vendo: pastas de ensino, skills aprendidas, prompts
 let ABERTURA = null;   // precisa de AVISOS, que nasce mais abaixo; ver depois de AVISOS
@@ -1278,7 +1279,32 @@ const servidor = http.createServer(async (req, res) => {
     return json(res, 200, REUNIAO.parar());
   }
 
-  /* ---- ajustes: o que está configurado, sem segredos (a abertura em si é /criar-escritorio no Claude Code) ---- */
+  /* ---- a abertura na tela (/abertura): livre enquanto não há config.json; depois, só o administrador refaz ---- */
+  if (rota.startsWith('/api/abertura/')) {
+    const aberto = fs.existsSync(CONFIG_ARQ);
+    // o estado não tem segredo (ramos, tipos, opções, o que está configurado): livre, o Estúdio de exemplo também lê
+    if (rota === '/api/abertura/estado' && req.method === 'GET') {
+      const claude = { ...(await estadoClaude()) }; if (!admin) delete claude.conta;
+      return json(res, 200, { ok: true, aberto, admin: !!admin, claude, ramos: RAMOS.lista(), tipos: Object.fromEntries(Object.entries(PLATAFORMAS.TIPOS).map(([k, v]) => [k, { nome: v.nome, emoji: v.emoji }])), estilo: { padrao: ABERTURA.ESTILO_PADRAO, opcoes: ABERTURA.ESTILO_OPCOES }, atual: ABERTURA.atual(), porta: PORT });
+    }
+    if (aberto && !admin) return soAdmin();
+    if (rota === '/api/abertura/interpretar' && req.method === 'POST') {
+      return corpoJson(req, 2e4).then(async b => { const r = await ABERTURA.interpretar(b.texto); json(res, r.ok ? 200 : 400, r); }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    if (rota === '/api/abertura/marca' && req.method === 'POST') {
+      return corpoJson(req, 6e6).then(b => { const r = ABERTURA.salvarMarca(b); json(res, r.ok ? 200 : 400, r); }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    if (rota === '/api/abertura/montar' && req.method === 'POST') {
+      return corpoJson(req, 2e5).then(b => {
+        const r = ABERTURA.montar(b);
+        // quem montou já entra como administrador: a senha mostrada uma vez serve para as próximas vezes
+        if (r.ok && r.senha) res.setHeader('Set-Cookie', ADMIN.cookie(ADMIN.criarSessao()));
+        json(res, r.ok ? 200 : 400, r);
+      }).catch(e => json(res, 400, { ok: false, motivo: e.message }));
+    }
+    return json(res, 404, { ok: false, motivo: 'rota não existe' });
+  }
+  /* ---- ajustes: o que está configurado, sem segredos ---- */
   if (rota === '/api/ajustes' && req.method === 'GET') return json(res, 200, ABERTURA.atual());
   if (rota === '/api/planta' && req.method === 'GET') { const p = lerPlanta(); return json(res, 200, p || { padrao: true }); }
   if (rota === '/api/claude' && req.method === 'GET') {
@@ -1390,10 +1416,12 @@ const servidor = http.createServer(async (req, res) => {
   if (rota.startsWith('/api/')) return json(res, 404, { ok: false, motivo: 'rota não existe' });
 
   /* ---- estáticos ---- */
-  // /estudio é a página onde a pessoa escolhe o escritório antes de montar (estudio/)
-  const rel = rota === '/' ? '/index.html' : (rota === '/estudio' || rota === '/estudio/') ? '/estudio/index.html' : rota;
+  // sem config.json o escritório ainda não foi aberto: a porta de entrada é a abertura na tela (/abertura); ?tela=1 abre a tela mesmo assim
+  if (rota === '/' && !fs.existsSync(CONFIG_ARQ) && !url.searchParams.has('tela')) { res.writeHead(302, { Location: '/abertura' }); res.end(); return; }
+  // /estudio é a página onde a pessoa escolhe o escritório antes de montar (estudio/); /abertura é a abertura na tela (abertura/)
+  const rel = rota === '/' ? '/index.html' : (rota === '/estudio' || rota === '/estudio/') ? '/estudio/index.html' : (rota === '/abertura' || rota === '/abertura/') ? '/abertura/index.html' : rota;
   // /marca/ serve o logo e as imagens da marca do cliente, que ficam em data/marca/
-  if (!/^\/(index\.html|favicon\.svg|css\/|js\/|marca\/|estudio\/)/.test(rel)) {
+  if (!/^\/(index\.html|favicon\.svg|css\/|js\/|marca\/|estudio\/|abertura\/)/.test(rel)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('404'); return;
   }
   const limpo = path.normalize(rel).replace(/^(\.\.[/\\])+/, '');

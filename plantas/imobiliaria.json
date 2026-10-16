@@ -1,0 +1,294 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "imobiliaria",
+  "nome": "Imobiliária",
+  "roupa": "social",
+  "palavras": [
+    "imobiliári",
+    "imobiliari",
+    "imóve",
+    "imove",
+    "corretor",
+    "aluguel",
+    "locaç",
+    "locac",
+    "apartamento",
+    "terreno",
+    "condomínio",
+    "condominio"
+  ],
+  "setores": [
+    {
+      "nome": "Atendimento e visitas",
+      "emoji": "🔑",
+      "desc": "Responde interessados, qualifica e agenda visitas.",
+      "papeis": [
+        "atendimento",
+        "visita",
+        "interessad",
+        "lead",
+        "whatsapp",
+        "agend"
+      ]
+    },
+    {
+      "nome": "Captação de imóveis",
+      "emoji": "🏠",
+      "desc": "Busca imóveis, fala com proprietários e cadastra.",
+      "papeis": [
+        "captaç",
+        "captac",
+        "proprietár",
+        "proprietari",
+        "cadastro",
+        "imóve",
+        "imove",
+        "parceria"
+      ]
+    },
+    {
+      "nome": "Documentação e contratos",
+      "emoji": "📄",
+      "desc": "Contratos, vistorias, documentos e assinaturas.",
+      "papeis": [
+        "document",
+        "contrato",
+        "vistoria",
+        "assinatura",
+        "jurídic",
+        "juridic",
+        "locaç",
+        "locac"
+      ]
+    },
+    {
+      "nome": "Marketing e anúncios",
+      "emoji": "📣",
+      "desc": "Anúncios nos portais, fotos e redes.",
+      "papeis": [
+        "marketing",
+        "anúncio",
+        "anuncio",
+        "portal",
+        "foto",
+        "rede",
+        "conteúdo",
+        "conteudo"
+      ]
+    },
+    {
+      "nome": "Financeiro",
+      "emoji": "💰",
+      "desc": "Comissões, repasses e cobranças.",
+      "papeis": [
+        "financ",
+        "comiss",
+        "repasse",
+        "cobran",
+        "boleto"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "8 salas: atendimento e visitas, captação, documentação e financeiro, marketing, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Atendimento e visitas",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "visita",
+            "interessad",
+            "lead",
+            "whatsapp",
+            "agend"
+          ]
+        },
+        {
+          "nome": "Captação de imóveis",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "captaç",
+            "captac",
+            "proprietár",
+            "proprietari",
+            "cadastro",
+            "imóve",
+            "imove"
+          ]
+        },
+        {
+          "nome": "Documentação e financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "document",
+            "contrato",
+            "vistoria",
+            "assinatura",
+            "financ",
+            "comiss",
+            "repasse",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Marketing e anúncios",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "marketing",
+            "anúncio",
+            "anuncio",
+            "portal",
+            "foto",
+            "rede",
+            "conteúdo",
+            "conteudo"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: cada frente na sua sala; o financeiro mora com a documentação",
+      "salas": [
+        {
+          "nome": "Atendimento e visitas",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "visita",
+            "interessad",
+            "lead",
+            "whatsapp",
+            "agend"
+          ]
+        },
+        {
+          "nome": "Captação de imóveis",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "captaç",
+            "captac",
+            "proprietár",
+            "proprietari",
+            "cadastro",
+            "imóve",
+            "imove"
+          ]
+        },
+        {
+          "nome": "Documentação e financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "document",
+            "contrato",
+            "vistoria",
+            "assinatura",
+            "financ",
+            "comiss",
+            "repasse",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Marketing e anúncios",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "marketing",
+            "anúncio",
+            "anuncio",
+            "portal",
+            "foto",
+            "rede",
+            "conteúdo",
+            "conteudo"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

@@ -7,7 +7,8 @@
    partir desse arquivo; sem ele, desenha o escritório padrão.
 
    Entrada (salas.json):
-     [{ id?, nome, tipo, tamanho: 'pequena'|'media'|'grande', vizinhos?: [ids] }]
+     [{ id?, nome, tipo, tamanho: 'pequena'|'media'|'grande', vizinhos?: [ids], setores?: [nomes] }]
+     setores: os setores que moram na sala (a mesa de um agente fica na sala do setor dele)
      tipos: diretoria | operacao | reuniao | recepcao | descanso | sala
    Saída (planta.json):
      { versao: 1, grade: { w: 48, h: 34 }, corredor: { x1, y1, x2, y2 },
@@ -61,7 +62,8 @@ function normalizar(salas) {
     let id = slug(s.id || s.nome) || 'sala'; let n = 2; const base = id;
     while (ids.has(id)) id = base + '-' + n++;
     ids.add(id);
-    out.push({ id, nome: String(s.nome).trim().slice(0, 40), tipo, tamanho, vizinhos: Array.isArray(s.vizinhos) ? s.vizinhos.map(v => slug(v)) : [] });
+    const setores = Array.isArray(s.setores) ? s.setores.map(x => String(x == null ? '' : x).trim().slice(0, 40)).filter(Boolean).slice(0, 8) : [];
+    out.push({ id, nome: String(s.nome).trim().slice(0, 40), tipo, tamanho, vizinhos: Array.isArray(s.vizinhos) ? s.vizinhos.map(v => slug(v)) : [], setores });
   }
   if (out.length < 2) return { erro: 'são precisas pelo menos 2 salas (uma de operação e uma de reunião, por exemplo)' };
   if (out.length > 12) return { erro: 'no máximo 12 salas cabem na grade; junte as menores (ex.: consultórios iguais viram uma sala de operação)' };

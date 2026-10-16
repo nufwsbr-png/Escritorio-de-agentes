@@ -1,0 +1,286 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "clinica",
+  "nome": "Clínica ou consultório",
+  "roupa": "jaleco",
+  "palavras": [
+    "clínica",
+    "clinica",
+    "consultório",
+    "consultorio",
+    "paciente",
+    "médic",
+    "medic",
+    "dentist",
+    "odonto",
+    "estética",
+    "estetica",
+    "fisioterap",
+    "psicolog",
+    "nutri",
+    "saúde",
+    "saude"
+  ],
+  "setores": [
+    {
+      "nome": "Agendamento e confirmação",
+      "emoji": "📅",
+      "desc": "Marca, confirma e remarca consultas; lembra o paciente.",
+      "papeis": [
+        "agend",
+        "confirma",
+        "marcaç",
+        "marcac",
+        "horário",
+        "horario",
+        "consulta"
+      ]
+    },
+    {
+      "nome": "Recepção e atendimento",
+      "emoji": "🩺",
+      "desc": "Responde o paciente, tira dúvidas, orienta o primeiro contato.",
+      "papeis": [
+        "recep",
+        "atendimento",
+        "dúvida",
+        "duvida",
+        "whatsapp",
+        "triagem"
+      ]
+    },
+    {
+      "nome": "Faturamento e convênios",
+      "emoji": "💳",
+      "desc": "Guias, convênios, cobranças e recibos.",
+      "papeis": [
+        "fatur",
+        "convên",
+        "conven",
+        "cobran",
+        "financ",
+        "guia",
+        "recibo"
+      ]
+    },
+    {
+      "nome": "Marketing",
+      "emoji": "📣",
+      "desc": "Conteúdo, redes e campanhas para trazer pacientes.",
+      "papeis": [
+        "marketing",
+        "conteúdo",
+        "conteudo",
+        "rede",
+        "campanha",
+        "captaç",
+        "captac"
+      ]
+    },
+    {
+      "nome": "Pós-consulta",
+      "emoji": "💬",
+      "desc": "Retorno, acompanhamento e pesquisa de satisfação.",
+      "papeis": [
+        "pós",
+        "pos-",
+        "retorno",
+        "acompanh",
+        "satisfaç",
+        "satisfac",
+        "fidel"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "7 salas: agendamento e recepção, faturamento, marketing, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Agendamento e recepção",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "agend",
+            "confirma",
+            "marcaç",
+            "marcac",
+            "recep",
+            "atendimento",
+            "whatsapp",
+            "consulta",
+            "triagem"
+          ]
+        },
+        {
+          "nome": "Faturamento",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "fatur",
+            "convên",
+            "conven",
+            "cobran",
+            "financ",
+            "guia"
+          ]
+        },
+        {
+          "nome": "Marketing e pós-consulta",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "campanha",
+            "pós",
+            "pos-",
+            "retorno",
+            "acompanh",
+            "satisf"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: um setor por sala, recepção maior e sala de reunião média",
+      "salas": [
+        {
+          "nome": "Agendamento",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "agend",
+            "confirma",
+            "marcaç",
+            "marcac",
+            "horário",
+            "horario",
+            "consulta"
+          ]
+        },
+        {
+          "nome": "Recepção e atendimento",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "recep",
+            "atendimento",
+            "dúvida",
+            "duvida",
+            "whatsapp",
+            "triagem"
+          ]
+        },
+        {
+          "nome": "Faturamento",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "fatur",
+            "convên",
+            "conven",
+            "cobran",
+            "financ",
+            "guia"
+          ]
+        },
+        {
+          "nome": "Marketing e pós-consulta",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "campanha",
+            "pós",
+            "pos-",
+            "retorno",
+            "acompanh",
+            "satisf"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "media"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "media"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

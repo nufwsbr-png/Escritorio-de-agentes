@@ -1,0 +1,282 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "generico",
+  "nome": "Outro negócio",
+  "roupa": "social",
+  "palavras": [],
+  "setores": [
+    {
+      "nome": "Atendimento",
+      "emoji": "💬",
+      "desc": "Responde clientes, tira dúvidas e encaminha.",
+      "papeis": [
+        "atendimento",
+        "suporte",
+        "dúvida",
+        "duvida",
+        "whatsapp",
+        "cliente"
+      ]
+    },
+    {
+      "nome": "Vendas",
+      "emoji": "🛒",
+      "desc": "Propostas, orçamentos e fechamento.",
+      "papeis": [
+        "venda",
+        "proposta",
+        "orçamento",
+        "orcamento",
+        "comercial",
+        "prospec"
+      ]
+    },
+    {
+      "nome": "Operações",
+      "emoji": "⚙️",
+      "desc": "O trabalho do dia a dia: cadastros, pedidos, entregas.",
+      "papeis": [
+        "operaç",
+        "operac",
+        "cadastro",
+        "pedido",
+        "entrega",
+        "produç",
+        "produc",
+        "projeto"
+      ]
+    },
+    {
+      "nome": "Financeiro",
+      "emoji": "💰",
+      "desc": "Contas a pagar e receber, cobranças, relatórios.",
+      "papeis": [
+        "financ",
+        "cobran",
+        "conta",
+        "pagamento",
+        "relatório",
+        "relatorio"
+      ]
+    },
+    {
+      "nome": "Marketing",
+      "emoji": "📣",
+      "desc": "Conteúdo, redes e campanhas.",
+      "papeis": [
+        "marketing",
+        "conteúdo",
+        "conteudo",
+        "rede",
+        "campanha",
+        "anúncio",
+        "anuncio"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "8 salas: atendimento e vendas, operações, financeiro, marketing, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Atendimento e vendas",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "suporte",
+            "dúvida",
+            "duvida",
+            "whatsapp",
+            "venda",
+            "proposta",
+            "orçamento",
+            "orcamento",
+            "comercial"
+          ]
+        },
+        {
+          "nome": "Operações",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "operaç",
+            "operac",
+            "cadastro",
+            "pedido",
+            "entrega",
+            "produç",
+            "produc",
+            "projeto"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "cobran",
+            "conta",
+            "pagamento",
+            "relatório",
+            "relatorio"
+          ]
+        },
+        {
+          "nome": "Marketing",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "campanha",
+            "anúncio",
+            "anuncio"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: atendimento, vendas, operações e financeiro separados; o marketing mora com vendas",
+      "salas": [
+        {
+          "nome": "Atendimento",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "suporte",
+            "dúvida",
+            "duvida",
+            "whatsapp",
+            "cliente"
+          ]
+        },
+        {
+          "nome": "Vendas e marketing",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "venda",
+            "proposta",
+            "orçamento",
+            "orcamento",
+            "comercial",
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "campanha"
+          ]
+        },
+        {
+          "nome": "Operações",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "operaç",
+            "operac",
+            "cadastro",
+            "pedido",
+            "entrega",
+            "produç",
+            "produc",
+            "projeto"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "cobran",
+            "conta",
+            "pagamento",
+            "relatório",
+            "relatorio"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

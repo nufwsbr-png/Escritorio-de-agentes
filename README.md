@@ -63,13 +63,14 @@ para a seção que o explica.
 
 **Criar o escritório**
 
-4. Abra a pasta no Claude Code e digite `/criar-escritorio`. A skill faz dez
-   perguntas, uma por mensagem (negócio, setores, plataformas, marca e
-   planta, senha do administrador, avisos, reunião, conta do Claude, primeiro
-   agente, o que fazer com o exemplo) e grava tudo pelos scripts do projeto.
-   Você não edita arquivo nenhum. Detalhes em
-   [Abrir um escritório novo](#abrir-um-escritório-novo-criar-escritorio).
-5. Guarde a senha do administrador que ela mostra **uma única vez**.
+4. Abra http://localhost:4321. Sem configuração, ele leva para a **abertura
+   na tela**: você conta do seu negócio numa caixa de texto (nome, o que faz,
+   dono, sistemas que usa), confere o "Entendi assim", escolhe o escritório
+   no Estúdio (planta pelo ramo, cores, roupa dos agentes) e clica em
+   Montar. Detalhes em [A abertura na tela](#a-abertura-na-tela-abertura).
+   Prefere o chat? Abra a pasta no Claude Code e digite `/criar-escritorio`:
+   a skill sobe o escritório e abre o mesmo link.
+5. Guarde a senha do administrador que a tela mostra **uma única vez**.
 6. De volta à tela, entre como administrador (🔐 Admin) e cole as chaves em
    **🔌 Conexões** e, se quiser avisos no celular, em **🔔 Avisos**. Chave
    nunca passa pelo chat. Veja [Plataformas](#plataformas-um-cadastro-permissão-por-agente)
@@ -101,33 +102,49 @@ para a seção que o explica.
     crie uma tarefa no Agendador que execute `INICIAR ESCRITORIO.cmd` no
     logon. Veja [Roteiro de instalação](#roteiro-de-instalação).
 
-## Abrir um escritório novo: `/criar-escritorio`
+## A abertura na tela: `/abertura`
 
-A abertura acontece no Claude Code, não na tela. Abra esta pasta no Claude
-Code e digite:
+Sem `data/config.json`, http://localhost:4321 leva para
+http://localhost:4321/abertura. São quatro passos, com a marca de quem faz o
+produto:
 
-```
-/criar-escritorio
-```
+1. **Me conte do seu negócio.** Uma caixa de texto: o nome, o que faz, quem
+   é a pessoa dona e os sistemas que vocês usam (CRM, planilha, agenda,
+   WhatsApp, pasta, e-mail). Ao lado, opcionais: logo, cor principal e a
+   planta do escritório. Chave ou senha no texto é recusada.
+2. **Entendi assim.** O Claude Code desta máquina lê o texto sem ferramentas
+   e devolve empresa, o que faz, dono, ramo, setores sugeridos e as conexões
+   citadas, com o tipo. Sem o Claude conectado, o escritório entende por
+   palavras-chave e avisa. Tudo é editável ali: setores em fichas, conexões
+   com tipo. Nada é gravado ainda.
+3. **O Estúdio.** Uma trilha de escolhas com prévia desenhada pelo motor da
+   tela: isométrico ou 2D, três plantas do seu ramo (com os seus setores nas
+   salas e a sala de descanso, onde ficam os agentes desligados), tamanho
+   das salas, paleta (a da marca usa a sua cor), a roupa dos agentes
+   (sugerida pelo ramo), mobília, movimento, claro ou escuro, placas.
+   "Montar o escritório" grava config, planta, conexões (sem chave) e as
+   escolhas.
+4. **A chave.** A senha do administrador aparece uma única vez; "Abrir o
+   escritório" só libera depois de "guardei". Quem montou já entra como
+   administrador.
 
-A skill (versionada em `.claude/skills/criar-escritorio/`, vem com o projeto)
-faz dez perguntas, uma por mensagem, e grava tudo pelos scripts do projeto:
+Os ramos que o escritório conhece ficam em `plantas/<ramo>.json`:
+advocacia, clínica, loja, agência, imobiliária, contabilidade e genérico.
+Cada um traz os setores sugeridos, a roupa sugerida e três variações de
+salas; a mesa de cada agente fica na sala do setor dele.
 
-1. O negócio: empresa, o que faz, quem é o dono.
-2. Os setores, sugeridos pelo ramo; viram as opções da aba Contratar.
-3. As plataformas que a empresa usa (CRM, planilha, agenda, pasta, WhatsApp,
-   e-mail). As chaves nunca passam pelo chat: entram pela tela depois.
-4. A marca e a planta: logo, cor e a planta do escritório ou da clínica.
-   **A planta redesenha as salas** do escritório isométrico.
-5. A tranca: a senha do administrador, gerada e mostrada uma vez.
-6. Os avisos: celular do dono e do administrador.
-7. A reunião: automática ou não, dias, hora e a meta que ela cobra.
-8. A conta do Claude Code: conferência de que está conectada.
-9. O primeiro agente: "qual trabalho dói mais hoje?"
-10. O exemplo: manter ou demitir.
+Refazer a abertura num escritório já aberto pede o administrador: troca
+empresa, dono, setores, planta e visual; agentes, conexões e senha ficam.
+O exemplo do Estúdio, sem gravar nada, continua em http://localhost:4321/estudio.
 
-No fim ela sobe o escritório com o nome da empresa. Rodar `/criar-escritorio`
-de novo num escritório já aberto mostra o que existe e muda só o que você
+### Pelo chat: `/criar-escritorio`
+
+Abra esta pasta no Claude Code e digite `/criar-escritorio`: a skill sobe o
+escritório, abre o link da abertura e acompanha. É também o caminho para
+mandar a planta do escritório (imagem ou PDF) e ter as salas redesenhadas, e
+para quem prefere responder no chat (`node abertura.js interpretar` e
+`node abertura.js montar`). Rodar de novo num escritório já aberto mostra o
+que existe e muda só o que você
 pedir. **⚙️ Ajustes**, no topo da tela, resume a configuração, mostra se a
 conta do Claude Code está conectada e lembra o comando.
 

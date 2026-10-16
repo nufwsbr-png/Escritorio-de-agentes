@@ -1,0 +1,296 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "loja",
+  "nome": "Loja ou comércio",
+  "roupa": "casual",
+  "palavras": [
+    "loja",
+    "comércio",
+    "comercio",
+    "varejo",
+    "e-commerce",
+    "ecommerce",
+    "produto",
+    "estoque",
+    "vendas",
+    "shopify",
+    "mercado livre",
+    "marketplace"
+  ],
+  "setores": [
+    {
+      "nome": "Vendas",
+      "emoji": "🛒",
+      "desc": "Responde quem quer comprar, fecha pedidos e cobra.",
+      "papeis": [
+        "venda",
+        "pedido",
+        "orçamento",
+        "orcamento",
+        "comercial",
+        "whatsapp"
+      ]
+    },
+    {
+      "nome": "Atendimento e pós-venda",
+      "emoji": "💬",
+      "desc": "Dúvidas, trocas, entregas e satisfação.",
+      "papeis": [
+        "atendimento",
+        "pós",
+        "pos-",
+        "troca",
+        "entrega",
+        "suporte",
+        "reclama"
+      ]
+    },
+    {
+      "nome": "Estoque e logística",
+      "emoji": "📦",
+      "desc": "Controle de estoque, reposição e envio.",
+      "papeis": [
+        "estoque",
+        "logíst",
+        "logist",
+        "envio",
+        "expediç",
+        "expedic",
+        "reposiç",
+        "reposic"
+      ]
+    },
+    {
+      "nome": "Conteúdo e redes",
+      "emoji": "📣",
+      "desc": "Fotos, posts, anúncios e campanhas.",
+      "papeis": [
+        "conteúdo",
+        "conteudo",
+        "rede",
+        "marketing",
+        "anúncio",
+        "anuncio",
+        "campanha",
+        "instagram"
+      ]
+    },
+    {
+      "nome": "Financeiro",
+      "emoji": "💰",
+      "desc": "Contas, conciliação e relatórios de venda.",
+      "papeis": [
+        "financ",
+        "conta",
+        "concilia",
+        "caixa",
+        "relatório",
+        "relatorio"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "8 salas: vendas e atendimento, estoque, conteúdo, financeiro, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Vendas e atendimento",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "venda",
+            "pedido",
+            "orçamento",
+            "orcamento",
+            "atendimento",
+            "pós",
+            "pos-",
+            "troca",
+            "suporte",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Estoque e logística",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "estoque",
+            "logíst",
+            "logist",
+            "envio",
+            "expediç",
+            "expedic",
+            "entrega"
+          ]
+        },
+        {
+          "nome": "Conteúdo e redes",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "marketing",
+            "anúncio",
+            "anuncio",
+            "campanha"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "conta",
+            "concilia",
+            "caixa",
+            "relatório",
+            "relatorio"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: vendas, atendimento, estoque e financeiro separados; conteúdo mora com vendas",
+      "salas": [
+        {
+          "nome": "Vendas e conteúdo",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "venda",
+            "pedido",
+            "orçamento",
+            "orcamento",
+            "conteúdo",
+            "conteudo",
+            "rede",
+            "marketing",
+            "anúncio",
+            "anuncio",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Atendimento e pós-venda",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "atendimento",
+            "pós",
+            "pos-",
+            "troca",
+            "suporte",
+            "reclama"
+          ]
+        },
+        {
+          "nome": "Estoque e logística",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "estoque",
+            "logíst",
+            "logist",
+            "envio",
+            "expediç",
+            "expedic",
+            "entrega"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "conta",
+            "concilia",
+            "caixa",
+            "relatório",
+            "relatorio"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

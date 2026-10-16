@@ -88,7 +88,7 @@ const WORLD = (() => {
   const DESC = {
     diretoria: 'A sala do dono.', operacao: 'Mesas dos agentes: é aqui que o trabalho acontece.',
     reuniao: 'Onde os agentes se reúnem.', recepcao: 'Quem chega entra por aqui.',
-    descanso: 'Jogos e descanso.', sala: 'Uma sala de atendimento, com uma estação.', corredor: 'Recepção, elevador e a circulação entre as salas.'
+    descanso: 'Sala de descanso: é aqui que ficam os agentes desligados.', sala: 'Uma sala de atendimento, com uma estação.', corredor: 'Recepção, elevador e a circulação entre as salas.'
   };
 
   /* ---------- grade ---------- */
@@ -144,7 +144,7 @@ const WORLD = (() => {
         const cor = CORES[s.tipo] || CORES.sala;
         ROOMS[s.id] = { id: s.id, name: String(s.nome).toUpperCase(), short: s.nome, tipo: s.tipo, tamanho: s.tamanho,
                         bx: s.bx, by: s.by, bw: s.bw, bh: s.bh, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2,
-                        porta: s.porta, estacoes: s.estacoes || [], ...cor, desc: DESC[s.tipo] || '' };
+                        porta: s.porta, estacoes: s.estacoes || [], setores: Array.isArray(s.setores) ? s.setores : [], ...cor, desc: DESC[s.tipo] || '' };
         if (s.porta) DOORS.push({ x: s.porta.x, y: s.porta.y, o: 'h' }, { x: s.porta.x + 1, y: s.porta.y, o: 'h' });
       }
       ROOMS.corredor = { id: 'corredor', name: 'RECEPÇÃO & CIRCULAÇÃO', short: 'Corredor', tipo: 'corredor', ...CORES.corredor, desc: DESC.corredor };

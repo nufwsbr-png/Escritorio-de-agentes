@@ -13,6 +13,14 @@
      definirSenha(s)          grava o hash em admin.json (ADMIN)
      estadoClaude()           instalado? conectado? (claude auth status)
      exemplo('manter'|'demitir')
+     interpretar(texto)       a abertura na tela (16/10/2026): da descrição livre do
+                              negócio tira empresa, o que faz, dono, ramo, setores e
+                              conexões; pelo Claude Code sem ferramentas, ou por
+                              palavras-chave quando ele não está conectado
+     montar(escolhas)         grava tudo de uma vez: config (com ramo e estilo),
+                              planta da variação escolhida com os setores por sala,
+                              conexões com variáveis vazias, senha gerada (uma vez)
+     salvarMarca(arquivo)     logo ou planta mandados pela tela, em data/marca/
 
    Linha de comando: node abertura.js atual | aplicar <respostas.json> | senha | claude | exemplo manter|demitir
    Respostas: { empresa, oQueFaz, dono, setores:[{nome,emoji?,desc?}],
@@ -25,7 +33,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { rodarCli, acharClaude } = require('./util');
+const { rodarCli, acharClaude, rodarClaudeSemFerramentas, extrairJson } = require('./util');
+const RAMOS = require('./ramos');
+const PLANTA = require('./planta');
 
 let dep = null;   // { ROOT, DADOS, ADMIN, AVISOS, lerConfig, lerRegistroBruto, gravarRegistro, plataformas }
 const arq = (n) => path.join(dep.DADOS, n);
@@ -55,8 +65,145 @@ function atual() {
     temSenhaAdmin: dep.ADMIN ? dep.ADMIN.temSenha() : false,
     exemplo: reg.exemplo ? 'presente' : 'ausente',
     agentes: Object.keys(reg).filter(k => !k.startsWith('_')),
-    plataformas: dep.plataformas ? dep.plataformas.listar(false).map(p => ({ id: p.id, nome: p.nome, tipo: p.tipo, url: p.url })) : []
+    plataformas: dep.plataformas ? dep.plataformas.listar(false).map(p => ({ id: p.id, nome: p.nome, tipo: p.tipo, url: p.url })) : [],
+    ramo: cfg.ramo || null, estilo: cfg.estilo || null
   };
+}
+
+/* ---------------- a abertura na tela: uma pergunta, interpretada ---------------- */
+const TIPOS_CONEXAO = ['api', 'planilha', 'agenda', 'pasta', 'whatsapp', 'email', 'banco', 'navegador', 'link', 'mcp'];
+/* palavras que denunciam um sistema na descrição livre → nome e tipo da conexão */
+const PISTAS_CONEXAO = [
+  ['whatsapp', 'WhatsApp', 'whatsapp'], ['pipedrive', 'Pipedrive', 'api'], ['rd station', 'RD Station', 'api'], ['hubspot', 'HubSpot', 'api'], ['ophir', 'Ophir', 'api'], ['kommo', 'Kommo', 'api'], ['crm', 'CRM', 'api'],
+  ['google sheets', 'Planilha Google', 'planilha'], ['planilha', 'Planilha', 'planilha'], ['sheets', 'Planilha Google', 'planilha'],
+  ['google agenda', 'Agenda Google', 'agenda'], ['google calendar', 'Agenda Google', 'agenda'], ['agenda', 'Agenda', 'agenda'], ['calendly', 'Calendly', 'link'],
+  ['onedrive', 'OneDrive', 'pasta'], ['google drive', 'Google Drive', 'pasta'], ['dropbox', 'Dropbox', 'pasta'], ['drive', 'Drive', 'pasta'], ['pasta', 'Pasta de arquivos', 'pasta'],
+  ['gmail', 'E-mail (Gmail)', 'email'], ['outlook', 'E-mail (Outlook)', 'email'], ['e-mail', 'E-mail', 'email'], ['email', 'E-mail', 'email'],
+  ['supabase', 'Supabase', 'banco'], ['banco de dados', 'Banco de dados', 'banco'], ['pje', 'PJe', 'navegador'], ['projudi', 'Projudi', 'navegador'], ['site', 'Site', 'link'], ['instagram', 'Instagram', 'link']
+];
+const PAPEL_INTERPRETAR = 'Você lê a descrição livre que uma pessoa fez do negócio dela para abrir um "escritório de agentes de IA". Extraia SÓ o que ela disse e responda com um único JSON, sem crases nem comentários: ' +
+  '{"empresa": nome da empresa como ela escreveu (ou ""), "oQueFaz": uma frase curta do que o negócio faz (até 120 caracteres, ou ""), "dono": nome da pessoa dona (ou ""), "ramo": um id da lista de ramos, o mais próximo, ' +
+  '"setores": 4 a 6 setores de trabalho para agentes de IA nesse negócio, como [{"nome","emoji","desc"}], usando os nomes que a pessoa usou quando ela citou setores e completando com os sugeridos do ramo; desc em uma frase curta, ' +
+  '"conexoes": só os sistemas que ela CITOU, como [{"nome","tipo"}], tipo um da lista de tipos}. Nunca invente nome de empresa, de dono ou sistema que ela não disse. Português do Brasil.';
+
+const pareceChave = (t) => /(token|chave|senha|api[_ -]?key|secret|password)\s*[:=]\s*\S{8,}/i.test(t) || /(^|\s)(?=[^\s]*[A-Za-z])(?=[^\s]*\d)[A-Za-z0-9_\-]{28,}(\s|$)/.test(t);
+const primeiraFrase = (t) => String(t).split(/[.!?\n]/).map(s => s.trim()).find(Boolean) || '';
+const maiusc = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+/** o que dá para tirar sem modelo nenhum: ramo por palavras, setores do ramo, conexões por pistas, empresa e dono por padrões */
+function porPalavras(texto) {
+  const t = String(texto || '');
+  const ramo = RAMOS.detectar(t);
+  const r = RAMOS.obter(ramo);
+  let empresa = '';
+  const mEmp = /(?:somos|sou|chamamos?|chama-se|empresa|escrit[óo]rio|cl[íi]nica|loja|ag[êe]ncia|imobili[áa]ria|contabilidade|neg[óo]cio)\s+(?:é |e |a |o |da |do |de |chamad[ao] )?["“]?([A-ZÀ-Ú][^,.;:\n"”()]{1,50})/.exec(t);
+  if (mEmp) empresa = mEmp[1].trim();
+  else { const mCap = /\b([A-ZÀ-Ú][\wÀ-ú&'-]+(?:\s+(?:de|da|do|e|&)?\s*[A-ZÀ-Ú][\wÀ-ú&'-]+){1,3})/.exec(t); if (mCap) empresa = mCap[1].trim(); }
+  empresa = empresa.replace(/\s+(?:em|de|no|na|que|onde|e)\s*$/i, '').slice(0, 60);
+  let dono = '';
+  const mDono = /(?:don[oa]|propriet[áa]ri[oa]|s[óo]ci[oa]|respons[áa]vel|dirigid[oa] por|comandad[oa] por|meu nome [ée]|eu sou|sou [oa])\s*(?:(?:é|e|:|o|a|pel[oa])\s+)*((?:Dr[a]?\.?\s)?[A-ZÀ-Ú][\wÀ-ú]+(?:\s(?:de|da|do|dos|das)?\s?[A-ZÀ-Ú][\wÀ-ú]+){0,3})/.exec(t);
+  if (mDono) dono = mDono[1].trim().replace(/[.,;]+$/, '').slice(0, 60);
+  const baixo = t.toLowerCase();
+  // uma conexão por tipo (a pista mais específica vem primeiro na lista), menos api, navegador e link, que podem ser vários sistemas
+  const conexoes = []; const UMA_POR_TIPO = new Set(['planilha', 'agenda', 'whatsapp', 'email', 'pasta', 'banco']);
+  for (const [pista, nome, tipo] of PISTAS_CONEXAO) {
+    if (!baixo.includes(pista)) continue;
+    if (conexoes.some(c => c.nome === nome)) continue;
+    if (UMA_POR_TIPO.has(tipo) && conexoes.some(c => c.tipo === tipo)) continue;
+    if (pista === 'crm' && conexoes.some(c => c.tipo === 'api')) continue;   // "Pipedrive CRM" é um sistema só
+    conexoes.push({ nome, tipo });
+  }
+  return { empresa, oQueFaz: maiusc(primeiraFrase(t)).slice(0, 120), dono, ramo, setores: r.setores.map(s => ({ nome: s.nome, emoji: s.emoji, desc: s.desc })), conexoes };
+}
+/** limpa o que o modelo (ou a tela) devolveu: só campos conhecidos, tamanhos certos, ramo e tipos válidos */
+function sanear(e, base) {
+  const out = { ...base };
+  const s = (v, n) => (typeof v === 'string' && v.trim()) ? v.trim().slice(0, n) : '';
+  if (s(e.empresa, 80)) out.empresa = s(e.empresa, 80);
+  if (s(e.oQueFaz, 120)) out.oQueFaz = s(e.oQueFaz, 120);
+  if (s(e.dono, 60)) out.dono = s(e.dono, 60);
+  if (e.ramo && RAMOS.obter(String(e.ramo))) out.ramo = String(e.ramo);
+  if (Array.isArray(e.setores)) {
+    const lista = e.setores.map(x => typeof x === 'string' ? { nome: x } : x).filter(x => x && s(x.nome, 40)).map(x => ({ nome: s(x.nome, 40), emoji: s(x.emoji, 4) || '🏢', desc: s(x.desc, 200) })).slice(0, 8);
+    if (lista.length) out.setores = lista;
+  }
+  if (Array.isArray(e.conexoes)) {
+    const lista = e.conexoes.filter(x => x && s(x.nome, 60)).map(x => ({ nome: s(x.nome, 60), tipo: TIPOS_CONEXAO.includes(String(x.tipo)) ? String(x.tipo) : 'api', url: s(x.url, 300) })).slice(0, 12);
+    out.conexoes = lista;
+  }
+  return out;
+}
+async function interpretar(texto, opts = {}) {
+  const t = String(texto || '').trim();
+  if (t.length < 10) return { ok: false, motivo: 'conte um pouco mais: o nome, o que o negócio faz, quem é o dono e os sistemas que vocês usam' };
+  if (pareceChave(t)) return { ok: false, motivo: 'isso parece uma chave ou senha. Aqui não entra segredo: a chave você cola depois em 🔌 Conexões, como administrador. Tire-a do texto e mande de novo.' };
+  const base = porPalavras(t);
+  let origem = 'palavras', aviso = null, entendido = base;
+  const semClaude = opts.semClaude || process.env.ESCRITORIO_ABERTURA_SEM_CLAUDE === '1';
+  const claude = semClaude ? { conectado: false } : estadoClaude();
+  if (claude.conectado) {
+    const papel = PAPEL_INTERPRETAR + ' Ramos possíveis (id: nome): ' + RAMOS.lista().map(r => r.id + ': ' + r.nome).join('; ') + '. Tipos de conexão: ' + TIPOS_CONEXAO.join(', ') + '.';
+    const r = await rodarClaudeSemFerramentas({ papel, entrada: 'DESCRIÇÃO:\n' + t, cwd: path.join(dep.DADOS, 'abertura'), limiteMs: opts.limiteMs || 120000 });
+    const j = r.texto ? extrairJson(r.texto) : null;
+    if (j) { entendido = sanear(j, base); origem = 'claude'; }
+    else aviso = (r.erro ? 'o Claude Code não respondeu (' + String(r.erro).slice(0, 120) + ')' : 'o Claude Code respondeu fora do formato') + '; entendi por palavras-chave, confira com atenção';
+  } else aviso = (semClaude ? 'entendi por palavras-chave' : 'o Claude Code não está conectado nesta máquina; entendi por palavras-chave') + ', confira com atenção';
+  return { ok: true, origem, aviso, entendido, roupaSugerida: (RAMOS.obter(entendido.ramo) || RAMOS.obter('generico')).roupa };
+}
+
+/* ---------------- a abertura na tela: montar tudo de uma vez ---------------- */
+const ESTILO_PADRAO = { motor: 'iso', planta: 'padrao', tamanho: 'medio', paleta: 'marca', roupa: 'social', mobilia: 'minimalista', movimento: 'parado', tema: 'escuro', rotulos: 'setor' };
+const ESTILO_OPCOES = { motor: ['iso', '2d'], planta: ['compacta', 'padrao', 'ampla'], tamanho: ['enxuto', 'medio', 'amplo'], paleta: ['sobria', 'clara', 'marca'], roupa: ['executivo', 'social', 'casual', 'jaleco', 'classico', 'elegante'], mobilia: ['minimalista', 'aconchegante', 'corporativo'], movimento: ['parado', 'calmo', 'vivo'], tema: ['escuro', 'claro'], rotulos: ['setor', 'livre'] };
+function montar(e) {
+  e = e || {};
+  const base = sanear(e, { empresa: '', oQueFaz: '', dono: '', ramo: 'generico', setores: [], conexoes: [] });
+  if (!base.empresa) return { ok: false, motivos: ['falta o nome da empresa'] };
+  const ramoDef = RAMOS.obter(base.ramo) || RAMOS.obter('generico');
+  const estilo = { ...ESTILO_PADRAO, roupa: ramoDef.roupa };
+  for (const [k, v] of Object.entries(e.estilo && typeof e.estilo === 'object' ? e.estilo : {})) if (ESTILO_OPCOES[k] && ESTILO_OPCOES[k].includes(String(v))) estilo[k] = String(v);
+  const setores = base.setores.length ? base.setores : ramoDef.setores.map(s => ({ nome: s.nome, emoji: s.emoji, desc: s.desc }));
+  // 1. a planta primeiro: se não couber, nada é gravado
+  const sp = RAMOS.salasPara(base.ramo, estilo.planta, setores.map(s => s.nome));
+  const g = PLANTA.gerar(sp.salas);
+  if (!g.ok) return { ok: false, motivos: ['a planta não coube: ' + g.motivo] };
+  // 2. config: empresa, o que faz, dono, setores, marca
+  const marca = e.marca && typeof e.marca === 'object' ? {} : undefined;
+  if (marca) { if (e.marca.cor) marca.cor = String(e.marca.cor); if (e.marca.logo) marca.logo = String(e.marca.logo); if (e.marca.planta) marca.planta = String(e.marca.planta); }
+  const r1 = aplicar({ empresa: base.empresa, oQueFaz: base.oQueFaz, dono: base.dono, setores, marca });
+  if (!r1.ok) return r1;
+  const gravados = [...r1.gravados];
+  const cfg = lerJson(arq('config.json'), {});
+  cfg.ramo = base.ramo; cfg.estilo = estilo;
+  gravarJson(arq('config.json'), cfg);
+  gravarJson(arq('planta.json'), g.planta); gravados.push('planta.json');
+  // 3. conexões com variáveis vazias: a chave entra depois em 🔌 Conexões
+  let conexoes = { criadas: [], erros: [] };
+  if (dep.plataformas && dep.plataformas.criarLista && base.conexoes.length) {
+    const jaTem = new Set(dep.plataformas.listar(false).map(p => p.nome.toLowerCase()));
+    const novas = base.conexoes.filter(c => !jaTem.has(c.nome.toLowerCase()));
+    if (novas.length) { conexoes = dep.plataformas.criarLista(novas); if (conexoes.criadas.length) gravados.push('plataformas.json'); }
+  }
+  // 4. a senha do administrador: gerada aqui e devolvida UMA vez (só quando ainda não há senha, ou quando a tela pede uma nova)
+  let senha = null;
+  if (dep.ADMIN && (!dep.ADMIN.temSenha() || e.novaSenha === true)) { senha = gerarSenha(); const s = dep.ADMIN.definirSenha(senha); if (s.ok) gravados.push('admin.json'); else senha = null; }
+  registrar('abertura pela tela: ' + gravados.join(', ') + ' (empresa: ' + base.empresa + ', ramo: ' + base.ramo + ', planta: ' + estilo.planta + ')');
+  return { ok: true, gravados, senha, ramo: base.ramo, estilo, conexoes,
+    planta: { salas: g.planta.salas.map(s => ({ id: s.id, nome: s.nome, tipo: s.tipo, setores: s.setores || [] })), capacidade: g.capacidade, aviso: g.aviso }, atual: atual() };
+}
+
+/** logo ou planta mandados pela tela: { tipo: 'logo'|'planta', nome, dados (base64) } → grava em data/marca/ e devolve o nome do arquivo */
+function salvarMarca(a) {
+  a = a || {};
+  const tipo = a.tipo === 'planta' ? 'planta' : 'logo';
+  const ext = (String(a.nome || '').match(/\.(png|jpe?g|svg|webp|pdf)$/i) || [])[1];
+  if (!ext) return { ok: false, motivo: 'use um arquivo png, jpg, svg, webp ou pdf' };
+  let buf; try { buf = Buffer.from(String(a.dados || '').replace(/^data:[^,]*,/, ''), 'base64'); } catch (e) { return { ok: false, motivo: 'arquivo ilegível' }; }
+  if (!buf.length) return { ok: false, motivo: 'arquivo vazio' };
+  if (buf.length > 4 * 1024 * 1024) return { ok: false, motivo: 'arquivo grande demais (até 4 MB)' };
+  const nome = tipo + '-' + Date.now().toString(36) + '.' + ext.toLowerCase();
+  fs.mkdirSync(arq('marca'), { recursive: true });
+  fs.writeFileSync(path.join(arq('marca'), nome), buf);
+  return { ok: true, tipo, arquivo: nome };
 }
 
 /* ---------------- validação ---------------- */
@@ -195,7 +342,8 @@ function registrar(texto) {
 
 module.exports = {
   init(d) { dep = d; return module.exports; },
-  atual, validar, montarConfig, aplicar, gerarSenha, definirSenha, conferirSenha, estadoClaude, exemplo
+  atual, validar, montarConfig, aplicar, gerarSenha, definirSenha, conferirSenha, estadoClaude, exemplo,
+  interpretar, porPalavras, montar, salvarMarca, ESTILO_PADRAO, ESTILO_OPCOES
 };
 
 /* ---------------- linha de comando (a skill /criar-escritorio usa) ---------------- */
@@ -210,11 +358,13 @@ if (require.main === module) {
     lerRegistro: () => { const o = {}; for (const [id, s] of Object.entries(lerBruto())) { if (id.startsWith('_')) continue; if (s && s.pasta && !path.isAbsolute(s.pasta)) s.pasta = path.join(ROOT, s.pasta); o[id] = s; } return o; } });
   module.exports.init({ ROOT, DADOS, ADMIN, AVISOS, plataformas: PLAT, lerConfig: () => lerJson(path.join(DADOS, 'config.json'), {}), lerRegistroBruto: lerBruto, gravarRegistro: (b) => gravarJson(REGISTRO, b) });
   rodarCli({
-    _ajuda: 'atual                     o que está configurado, sem segredos\naplicar <respostas.json>  grava config, setores, marca, avisos (sem chave), reunião, senha, exemplo\nsenha                     gera uma senha forte, grava o hash e imprime UMA vez\nclaude                    o Claude Code está instalado e conectado?\nexemplo manter|demitir    o agente de exemplo fica ou sai',
+    _ajuda: 'atual                     o que está configurado, sem segredos\naplicar <respostas.json>  grava config, setores, marca, avisos (sem chave), reunião, senha, exemplo\nsenha                     gera uma senha forte, grava o hash e imprime UMA vez\nclaude                    o Claude Code está instalado e conectado?\nexemplo manter|demitir    o agente de exemplo fica ou sai\ninterpretar <texto.txt>   a descrição livre do negócio → empresa, dono, ramo, setores, conexões (a abertura na tela usa)\nmontar <escolhas.json>    grava tudo da abertura na tela de uma vez (config com ramo e estilo, planta, conexões, senha)',
     atual: () => ({ ok: true, ...atual() }),
     aplicar: (a) => aplicar(JSON.parse(fs.readFileSync(a, 'utf8'))),
     senha: () => { const s = gerarSenha(); const r = definirSenha(s); return r.ok ? { ok: true, senha: s, aviso: 'guarde agora: ela não aparece de novo; o escritório guarda só o hash em data/admin.json' } : r; },
     claude: () => ({ ok: true, ...estadoClaude() }),
-    exemplo: (acao) => exemplo(acao)
+    exemplo: (acao) => exemplo(acao),
+    interpretar: (arqTexto) => interpretar(fs.readFileSync(arqTexto, 'utf8')),
+    montar: (a) => montar(JSON.parse(fs.readFileSync(a, 'utf8')))
   }).then(c => process.exit(c));
 }

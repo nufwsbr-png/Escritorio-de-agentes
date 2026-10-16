@@ -1,0 +1,290 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "contabilidade",
+  "nome": "Escritório de contabilidade",
+  "roupa": "executivo",
+  "palavras": [
+    "contabilidade",
+    "contábil",
+    "contabil",
+    "contador",
+    "fiscal",
+    "imposto",
+    "folha de pagamento",
+    "departamento pessoal",
+    "bpo"
+  ],
+  "setores": [
+    {
+      "nome": "Fiscal",
+      "emoji": "🧾",
+      "desc": "Notas, apurações e obrigações fiscais.",
+      "papeis": [
+        "fiscal",
+        "imposto",
+        "nota",
+        "apuraç",
+        "apurac",
+        "obrigaç",
+        "obrigac",
+        "sped"
+      ]
+    },
+    {
+      "nome": "Contábil",
+      "emoji": "📒",
+      "desc": "Lançamentos, conciliações e balanços.",
+      "papeis": [
+        "contábil",
+        "contabil",
+        "lançamento",
+        "lancamento",
+        "balanç",
+        "balanc",
+        "concilia"
+      ]
+    },
+    {
+      "nome": "Departamento pessoal",
+      "emoji": "👥",
+      "desc": "Folha, admissões, férias e rescisões.",
+      "papeis": [
+        "pessoal",
+        "folha",
+        "admiss",
+        "férias",
+        "ferias",
+        "rescis",
+        "rh",
+        "esocial"
+      ]
+    },
+    {
+      "nome": "Atendimento ao cliente",
+      "emoji": "🤝",
+      "desc": "Responde as empresas, pede documentos, avisa prazos.",
+      "papeis": [
+        "atendimento",
+        "cliente",
+        "document",
+        "prazo",
+        "whatsapp"
+      ]
+    },
+    {
+      "nome": "Financeiro e cobrança",
+      "emoji": "💰",
+      "desc": "Honorários, cobranças e contas do escritório.",
+      "papeis": [
+        "financ",
+        "cobran",
+        "honorári",
+        "honorari",
+        "boleto"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "8 salas: fiscal e contábil, departamento pessoal, atendimento, financeiro, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Fiscal e contábil",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "fiscal",
+            "imposto",
+            "nota",
+            "apuraç",
+            "apurac",
+            "contábil",
+            "contabil",
+            "lançamento",
+            "lancamento",
+            "balanç",
+            "balanc",
+            "concilia"
+          ]
+        },
+        {
+          "nome": "Departamento pessoal",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "pessoal",
+            "folha",
+            "admiss",
+            "férias",
+            "ferias",
+            "rescis",
+            "rh"
+          ]
+        },
+        {
+          "nome": "Atendimento",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "atendimento",
+            "cliente",
+            "document",
+            "prazo",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "cobran",
+            "honorári",
+            "honorari",
+            "boleto"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: fiscal, contábil, pessoal e atendimento separados; o financeiro mora com o atendimento",
+      "salas": [
+        {
+          "nome": "Fiscal",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "fiscal",
+            "imposto",
+            "nota",
+            "apuraç",
+            "apurac",
+            "obrigaç",
+            "obrigac"
+          ]
+        },
+        {
+          "nome": "Contábil",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "contábil",
+            "contabil",
+            "lançamento",
+            "lancamento",
+            "balanç",
+            "balanc",
+            "concilia"
+          ]
+        },
+        {
+          "nome": "Departamento pessoal",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "pessoal",
+            "folha",
+            "admiss",
+            "férias",
+            "ferias",
+            "rescis",
+            "rh"
+          ]
+        },
+        {
+          "nome": "Atendimento e financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "atendimento",
+            "cliente",
+            "document",
+            "prazo",
+            "whatsapp",
+            "financ",
+            "cobran",
+            "honorári",
+            "honorari"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

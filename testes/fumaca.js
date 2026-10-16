@@ -54,7 +54,7 @@ function dadosDeTeste(comPlanta) {
   return DADOS;
 }
 async function subirEscritorio(DADOS) {
-  const p = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), ESCRITORIO_DADOS: DADOS }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const p = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), ESCRITORIO_DADOS: DADOS, ESCRITORIO_ABERTURA_SEM_CLAUDE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let saida = ''; p.stdout.on('data', d => saida += d); p.stderr.on('data', d => saida += d);
   for (let i = 0; i < 50; i++) { try { await getJson('http://127.0.0.1:' + PORT + '/api/admin'); return p; } catch (e) { await espera(200); } }
   throw new Error('o escritório não subiu: ' + saida);
@@ -88,7 +88,10 @@ async function abrirChrome() {
 /* ---------------- os cenários ---------------- */
 async function cenarioPadrao(b) {
   console.log('\nCenário 1: escritório padrão, sem config (não aberto)');
+  // sem config.json a raiz leva à abertura na tela; ?tela=1 abre a tela mesmo assim
   await b.ir(URL_ALVO);
+  ok(String(await b.ev('location.pathname')) === '/abertura', 'sem config, a raiz leva para /abertura');
+  await b.ir(URL_ALVO + '?tela=1');
   ok((await b.ev('document.title')).length > 0, 'a página carregou');
   ok(await b.ev('!document.getElementById("sem-abertura").classList.contains("hidden")'), 'aviso "não foi aberto" visível sem config.json');
   ok(await b.ev('document.querySelectorAll("#team-list .card").length') >= 1, 'equipe tem pelo menos um card');
@@ -254,19 +257,58 @@ async function cenarioEstudio(b) {
   ok(await b.ev('document.querySelectorAll("#pontos i").length') === 10, 'a trilha tem 10 passos');
   ok(await b.ev('document.querySelectorAll(".cartao").length') === 2 && await b.ev('document.querySelectorAll(".cartao canvas").length') === 2, 'passo 1 (estilo) tem 2 cartões com prévia');
   ok(await b.ev('document.getElementById("previa").width') > 0, 'a prévia grande foi desenhada');
-  await b.ev('ESTUDIO.ir(1)'); await espera(400);
+  await b.ev('ESTUDIO_EXEMPLO.ir(1)'); await espera(400);
   ok(await b.ev('document.querySelectorAll(".cartao").length') === 3, 'passo 2 (planta) tem 3 cartões');
   await b.ev('document.querySelectorAll(".cartao")[2].click()'); await espera(400);
-  ok(await b.ev('ESTUDIO.cfg.planta') === 'ampla' && await b.ev('document.querySelectorAll(".cartao.escolhido").length') === 1, 'clicar num cartão escolhe e marca');
-  await b.ev('ESTUDIO.cfg.motor = "2d"; ESTUDIO.cfg.tema = "claro"; ESTUDIO.ir(9)'); await espera(400);
+  ok(await b.ev('ESTUDIO_EXEMPLO.cfg.planta') === 'ampla' && await b.ev('document.querySelectorAll(".cartao.escolhido").length') === 1, 'clicar num cartão escolhe e marca');
+  await b.ev('ESTUDIO_EXEMPLO.cfg.motor = "2d"; ESTUDIO_EXEMPLO.cfg.tema = "claro"; ESTUDIO_EXEMPLO.ir(9)'); await espera(400);
   ok(await b.ev('document.documentElement.dataset.tema') === 'claro', 'o tema claro vale na página');
   ok(await b.ev('document.getElementById("resumo").textContent.includes("ampla") && document.getElementById("avancar").disabled'), 'o resumo lista as escolhas e Montar fica desligado (exemplo)');
+}
+
+async function cenarioAbertura(b, DADOS) {
+  console.log('\nCenário 5: a abertura na tela, de ponta a ponta (sem o Claude: por palavras-chave)');
+  await b.ir('http://localhost:' + PORT + '/abertura');
+  ok(String(await b.ev('document.title')).includes('Abrir'), '/abertura abre');
+  ok(await b.ev('document.getElementById("estado-claude").textContent.length > 20'), 'a boas-vindas diz como está o Claude Code');
+  await b.ev('document.getElementById("b-comecar").click()'); await espera(300);
+  await b.ev('document.getElementById("txt").value = "Somos a Clínica Sorriso, uma clínica odontológica em Curitiba. A dona é a Dra. Carla. Agendamos pelo WhatsApp e usamos a Google Agenda e uma planilha."; document.getElementById("f-cor").value = "#2f7bf0"; document.getElementById("f-cor").dispatchEvent(new Event("input"))');
+  await b.ev('document.getElementById("b-interpretar").click()'); await espera(2500);
+  ok(await b.ev('!document.getElementById("e-2").classList.contains("hidden")'), 'depois da pergunta vem o "Entendi assim"');
+  ok(await b.ev('document.getElementById("c-empresa").value') === 'Clínica Sorriso' && await b.ev('document.getElementById("c-ramo").value') === 'clinica', 'entendeu a empresa e o ramo');
+  ok(await b.ev('document.querySelectorAll("#c-setores .chip").length') >= 4 && await b.ev('document.querySelectorAll("#c-conexoes .conexao").length') === 3, 'setores sugeridos pelo ramo e as 3 conexões citadas');
+  ok(await b.ev('!document.getElementById("aviso-2").classList.contains("hidden")'), 'avisa que entendeu por palavras-chave');
+  await b.ev('document.getElementById("novo-setor").value = "Pós-consulta"; document.getElementById("b-setor").click()'); await espera(200);
+  await b.ev('document.getElementById("b-estudio").click()'); await espera(1500);
+  ok(await b.ev('!document.getElementById("e-3").classList.contains("hidden") && document.querySelectorAll("#pontos i").length === 10'), 'o Estúdio abre com a trilha de 10 passos');
+  await b.ev('document.getElementById("avancar").click()'); await espera(600);
+  ok(await b.ev('document.querySelectorAll("#cartoes .cartao").length') === 3 && await b.ev('document.getElementById("cartoes").textContent.includes("Pós-consulta")'), 'as 3 plantas da clínica, com o setor novo em alguma sala');
+  await b.ev('document.querySelectorAll("#cartoes .cartao")[2].click()'); await espera(400);
+  for (let i = 0; i < 8; i++) { await b.ev('document.getElementById("avancar").click()'); await espera(250); }
+  ok(String(await b.ev('document.getElementById("avancar").textContent')).includes('Montar') && !(await b.ev('document.getElementById("avancar").disabled')), 'no resumo, "Montar o escritório" está ligado');
+  await b.ev('document.getElementById("avancar").click()'); await espera(2500);
+  ok(await b.ev('!document.getElementById("e-4").classList.contains("hidden")'), 'montou e foi para a chave');
+  ok(await b.ev('document.getElementById("senha").textContent.length') >= 12 && await b.ev('document.getElementById("b-abrir").disabled'), 'a senha aparece e "Abrir" só libera depois de "guardei"');
+  ok(!(await b.ev('document.body.innerHTML.includes("precisaAdmin")')), 'sem erro de permissão');
+  const cfg = JSON.parse(fs.readFileSync(path.join(DADOS, 'config.json'), 'utf8'));
+  ok(cfg.empresa === 'Clínica Sorriso' && cfg.ramo === 'clinica' && cfg.estilo.planta === 'ampla' && cfg.estilo.roupa === 'jaleco' && cfg.marca.cores['acc-1'] === '#2f7bf0', 'config.json com empresa, ramo, estilo (planta ampla, roupa jaleco) e a cor');
+  const planta = JSON.parse(fs.readFileSync(path.join(DADOS, 'planta.json'), 'utf8'));
+  ok(planta.salas.some(s => s.tipo === 'descanso') && planta.salas.some(s => (s.setores || []).includes('Pós-consulta')), 'planta.json com a sala de descanso e o setor novo numa sala');
+  ok(JSON.parse(fs.readFileSync(path.join(DADOS, 'plataformas.json'), 'utf8')).length === 3, 'as 3 conexões cadastradas sem chave');
+  ok(fs.existsSync(path.join(DADOS, 'admin.json')), 'a senha ficou como hash');
+  await b.ev('document.getElementById("guardei").click(); document.getElementById("b-abrir").click()'); await espera(4500);
+  ok(String(await b.ev('location.pathname')) === '/' && String(await b.ev('document.getElementById("brand-nome").textContent')).includes('SORRISO'), 'a tela abre com o nome da clínica');
+  ok(await b.ev('Object.keys(WORLD.ROOMS).filter(k => k !== "corredor").length') === 8, 'as 8 salas da planta ampla estão na tela');
+  ok(await b.ev('document.getElementById("sem-abertura").classList.contains("hidden")'), 'a faixa "não foi aberto" sumiu');
+  ok(await b.ev('ADMIN.ehAdmin()'), 'quem montou já é administrador');
 }
 
 (async () => {
   if (typeof WebSocket === 'undefined') { console.log('fumaça pulada: precisa do Node 22 ou mais novo (WebSocket nativo); o resto do npm test vale'); process.exit(0); }
   if (!CHROME) { console.log('fumaça pulada: Chrome não encontrado (defina CHROME=caminho)'); process.exit(0); }
   const DADOS1 = dadosDeTeste(false), DADOS2 = dadosDeTeste(true);
+  const DADOS3 = fs.mkdtempSync(path.join(os.tmpdir(), 'esc-fumaca-ab-'));
+  fs.writeFileSync(path.join(DADOS3, 'sistemas.json'), fs.readFileSync(path.join(ROOT, 'data', 'sistemas.exemplo.json')));
   let esc = null, b = null, crm = null;
   try {
     b = await abrirChrome();
@@ -279,6 +321,9 @@ async function cenarioEstudio(b) {
     crm = await subirCrm(DADOS2);
     await cenarioCrm(b, crm.CRM);
     await cenarioEstudio(b);
+    esc.kill(); if (crm) { crm.p.kill(); crm = null; } await espera(800);
+    esc = await subirEscritorio(DADOS3);
+    await cenarioAbertura(b, DADOS3);
     ok(b.erros.length === 0, 'nenhum erro de JavaScript' + (b.erros.length ? ': ' + b.erros.join(' | ') : ''));
   } catch (e) {
     falhas++; console.log('  ✖ a fumaça quebrou: ' + e.message);
@@ -287,7 +332,7 @@ async function cenarioEstudio(b) {
     if (esc) esc.kill();
     if (crm) crm.p.kill();
     await espera(600);
-    for (const d of [DADOS1, DADOS2, crm && crm.CRM].filter(Boolean)) fs.rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    for (const d of [DADOS1, DADOS2, DADOS3, crm && crm.CRM].filter(Boolean)) fs.rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
   console.log(falhas ? '\nfumaça: ' + falhas + ' falha(s)' : '\nfumaça ok');
   process.exit(falhas ? 1 : 0);

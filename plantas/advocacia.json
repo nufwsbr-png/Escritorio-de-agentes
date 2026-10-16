@@ -1,0 +1,266 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "advocacia",
+  "nome": "Escritório de advocacia",
+  "roupa": "executivo",
+  "palavras": [
+    "advocacia",
+    "advogad",
+    "jurídic",
+    "juridic",
+    "direito",
+    "processo",
+    "petiç",
+    "petic",
+    "oab",
+    "escritório de advocacia"
+  ],
+  "setores": [
+    {
+      "nome": "Entrevista e fechamento de pasta",
+      "emoji": "📁",
+      "desc": "Recebe o caso, faz a entrevista e fecha a pasta com os documentos.",
+      "papeis": [
+        "entrevista",
+        "pasta",
+        "fechamento",
+        "triagem",
+        "documento"
+      ]
+    },
+    {
+      "nome": "Petições",
+      "emoji": "⚖️",
+      "desc": "Redige petições e peças a partir da pasta fechada.",
+      "papeis": [
+        "petiç",
+        "petic",
+        "peça",
+        "redaç",
+        "redac",
+        "contestaç"
+      ]
+    },
+    {
+      "nome": "Audiências e acompanhamento",
+      "emoji": "📅",
+      "desc": "Acompanha prazos, audiências e andamentos.",
+      "papeis": [
+        "audiênc",
+        "audienc",
+        "prazo",
+        "andamento",
+        "acompanh",
+        "protocolo"
+      ]
+    },
+    {
+      "nome": "Financeiro",
+      "emoji": "💰",
+      "desc": "Honorários, cobranças e controle de pagamentos.",
+      "papeis": [
+        "financ",
+        "honorári",
+        "honorari",
+        "cobran",
+        "pagamento"
+      ]
+    },
+    {
+      "nome": "Captação e marketing",
+      "emoji": "📣",
+      "desc": "Conteúdo, anúncios e novos clientes.",
+      "papeis": [
+        "captaç",
+        "captac",
+        "marketing",
+        "conteúdo",
+        "conteudo",
+        "anúncio",
+        "anuncio",
+        "prospec"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "7 salas: atendimento e captação, pastas e petições, financeiro, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Atendimento e captação",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "captaç",
+            "captac",
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "prospec",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Pastas e petições",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "pasta",
+            "entrevista",
+            "fechamento",
+            "petiç",
+            "petic",
+            "audiênc",
+            "audienc",
+            "prazo",
+            "acompanh",
+            "document"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "honorári",
+            "honorari",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: um setor por sala, recepção maior e sala de reunião média",
+      "salas": [
+        {
+          "nome": "Atendimento e captação",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "atendimento",
+            "captaç",
+            "captac",
+            "marketing",
+            "conteúdo",
+            "conteudo",
+            "prospec",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Petições e audiências",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "petiç",
+            "petic",
+            "audiênc",
+            "audienc",
+            "prazo",
+            "acompanh"
+          ]
+        },
+        {
+          "nome": "Fechamento de pasta",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "pasta",
+            "entrevista",
+            "fechamento",
+            "document"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "honorári",
+            "honorari",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "media"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "media"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

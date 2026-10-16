@@ -1,0 +1,310 @@
+{
+  "_leia": "Planta por ramo: setores sugeridos (com as palavras que os reconhecem), a roupa sugerida dos bonecos e três variações de salas para o planta.js. A sala de descanso é obrigatória: é onde ficam os agentes desligados.",
+  "id": "agencia",
+  "nome": "Agência ou estúdio",
+  "roupa": "casual",
+  "palavras": [
+    "agência",
+    "agencia",
+    "estúdio",
+    "estudio",
+    "marketing",
+    "tráfego",
+    "trafego",
+    "criação",
+    "criacao",
+    "design",
+    "social media",
+    "produtora",
+    "automaç",
+    "automac"
+  ],
+  "setores": [
+    {
+      "nome": "Atendimento ao cliente",
+      "emoji": "🤝",
+      "desc": "Fala com as contas, alinha pedidos e prazos.",
+      "papeis": [
+        "atendimento",
+        "conta",
+        "cliente",
+        "cs",
+        "sucesso",
+        "whatsapp"
+      ]
+    },
+    {
+      "nome": "Criação e conteúdo",
+      "emoji": "🎨",
+      "desc": "Textos, artes, roteiros e posts.",
+      "papeis": [
+        "criaç",
+        "criac",
+        "conteúdo",
+        "conteudo",
+        "design",
+        "copy",
+        "arte",
+        "roteiro",
+        "redaç",
+        "redac",
+        "vídeo",
+        "video"
+      ]
+    },
+    {
+      "nome": "Tráfego e dados",
+      "emoji": "📈",
+      "desc": "Campanhas, métricas e relatórios.",
+      "papeis": [
+        "tráfego",
+        "trafego",
+        "dado",
+        "métrica",
+        "metrica",
+        "relatório",
+        "relatorio",
+        "anúncio",
+        "anuncio",
+        "campanha",
+        "ads"
+      ]
+    },
+    {
+      "nome": "Projetos",
+      "emoji": "🗂️",
+      "desc": "Organiza entregas, prazos e tarefas de cada cliente.",
+      "papeis": [
+        "projeto",
+        "entrega",
+        "prazo",
+        "tarefa",
+        "operaç",
+        "operac",
+        "gestão",
+        "gestao"
+      ]
+    },
+    {
+      "nome": "Financeiro",
+      "emoji": "💰",
+      "desc": "Propostas, contratos, cobranças e pagamentos.",
+      "papeis": [
+        "financ",
+        "proposta",
+        "contrato",
+        "cobran",
+        "pagamento"
+      ]
+    }
+  ],
+  "variacoes": {
+    "compacta": {
+      "nome": "Compacta",
+      "desc": "5 salas: todo mundo numa operação só, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Operação",
+          "tipo": "operacao",
+          "tamanho": "grande",
+          "papeis": [
+            "*"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "padrao": {
+      "nome": "Padrão",
+      "desc": "8 salas: criação, tráfego e dados, projetos e atendimento, financeiro, mais recepção, diretoria, reunião e descanso",
+      "salas": [
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Criação e conteúdo",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "criaç",
+            "criac",
+            "conteúdo",
+            "conteudo",
+            "design",
+            "copy",
+            "arte",
+            "roteiro",
+            "vídeo",
+            "video"
+          ]
+        },
+        {
+          "nome": "Tráfego e dados",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "tráfego",
+            "trafego",
+            "dado",
+            "métrica",
+            "metrica",
+            "relatório",
+            "relatorio",
+            "anúncio",
+            "anuncio",
+            "campanha",
+            "ads"
+          ]
+        },
+        {
+          "nome": "Projetos e atendimento",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "projeto",
+            "entrega",
+            "prazo",
+            "atendimento",
+            "conta",
+            "cliente",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "financ",
+            "proposta",
+            "contrato",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    },
+    "ampla": {
+      "nome": "Ampla",
+      "desc": "8 salas: criação, tráfego, projetos e atendimento separados; o financeiro mora com projetos",
+      "salas": [
+        {
+          "nome": "Criação e conteúdo",
+          "tipo": "operacao",
+          "tamanho": "media",
+          "papeis": [
+            "criaç",
+            "criac",
+            "conteúdo",
+            "conteudo",
+            "design",
+            "copy",
+            "arte",
+            "roteiro",
+            "vídeo",
+            "video"
+          ]
+        },
+        {
+          "nome": "Tráfego e dados",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "tráfego",
+            "trafego",
+            "dado",
+            "métrica",
+            "metrica",
+            "relatório",
+            "relatorio",
+            "anúncio",
+            "anuncio",
+            "campanha",
+            "ads"
+          ]
+        },
+        {
+          "nome": "Projetos e financeiro",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "projeto",
+            "entrega",
+            "prazo",
+            "financ",
+            "proposta",
+            "contrato",
+            "cobran"
+          ]
+        },
+        {
+          "nome": "Atendimento ao cliente",
+          "tipo": "operacao",
+          "tamanho": "pequena",
+          "papeis": [
+            "atendimento",
+            "conta",
+            "cliente",
+            "cs",
+            "whatsapp"
+          ]
+        },
+        {
+          "nome": "Diretoria",
+          "tipo": "diretoria",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Recepção",
+          "tipo": "recepcao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de reunião",
+          "tipo": "reuniao",
+          "tamanho": "pequena"
+        },
+        {
+          "nome": "Sala de descanso",
+          "tipo": "descanso",
+          "tamanho": "pequena"
+        }
+      ]
+    }
+  }
+}

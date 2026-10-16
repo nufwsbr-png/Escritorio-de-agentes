@@ -87,4 +87,31 @@ function partirComando(linha) {
   return partes;
 }
 
-module.exports = { slug, acharClaude, lerEnvArquivo, rodarCli, expandirVars, partirComando };
+/** roda o Claude Code SEM ferramentas, só texto (o jeito do Cuki BOT): devolve { texto, custo, sessionId } ou { erro }.
+    Sem ferramenta não há o que permitir; o modo "plan" não serve (escreve um arquivo de plano em vez do texto). */
+function rodarClaudeSemFerramentas({ papel, entrada, cwd, modelo, limiteMs, bin, resume }) {
+  const { spawn } = require('child_process');
+  return new Promise(resolve => {
+    const exe = bin || acharClaude();
+    try { fs.mkdirSync(cwd, { recursive: true }); } catch (e) {}
+    const args = ['-p', '--output-format', 'json', '--permission-mode', 'dontAsk', '--tools', '', '--model', modelo || 'sonnet',
+      '--append-system-prompt', papel + ' Responda só com o texto final pedido: sem preâmbulo, sem plano, sem arquivo, sem explicar o que fez.'];
+    if (resume) args.push('--resume', resume);
+    let saida = '', erro = '', p;
+    try { p = spawn(exe, args, { cwd, env: process.env, stdio: ['pipe', 'pipe', 'pipe'] }); } catch (e) { return resolve({ erro: e.message }); }
+    const prazo = setTimeout(() => { try { p.kill(); } catch (e) {} }, limiteMs || 4 * 60 * 1000);
+    p.stdin.on('error', () => {}); p.stdin.end(entrada, 'utf8');
+    p.stdout.on('data', d => saida += d); p.stderr.on('data', d => erro += d);
+    p.on('error', e => { clearTimeout(prazo); resolve({ erro: e.message }); });
+    p.on('exit', () => { clearTimeout(prazo); let j = null; try { j = JSON.parse(saida); } catch (e) {} if (!j || j.is_error) return resolve({ erro: (j && j.result) || erro.slice(0, 300) || 'sem resposta' }); resolve({ texto: String(j.result || ''), custo: j.total_cost_usd || 0, sessionId: j.session_id || null }); });
+  });
+}
+/** o primeiro objeto JSON dentro de um texto (o modelo às vezes cerca com crases) */
+function extrairJson(texto) {
+  const t = String(texto || '');
+  const i = t.indexOf('{'), j = t.lastIndexOf('}');
+  if (i < 0 || j <= i) return null;
+  try { return JSON.parse(t.slice(i, j + 1)); } catch (e) { return null; }
+}
+
+module.exports = { slug, acharClaude, lerEnvArquivo, rodarCli, expandirVars, partirComando, rodarClaudeSemFerramentas, extrairJson };

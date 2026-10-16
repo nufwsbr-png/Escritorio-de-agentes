@@ -34,7 +34,16 @@
 </main>
 
 <script src="/js/iso.js"></script>
-<script src="/js/avatar.js"></script>
+<script src="/js/boneco-pixel.js"></script>
 <script src="/estudio/estudio.js"></script>
+<script>
+/* o exemplo: um escritório de advocacia fictício, com as plantas da biblioteca; nada é gravado. Na abertura de verdade (/abertura) os dados vêm da resposta da pessoa. */
+(async () => {
+  let ramo = null;
+  try { const e = await (await fetch('/api/abertura/estado')).json(); ramo = (e.ramos || []).find(r => r.id === 'advocacia') || (e.ramos || [])[0]; } catch (e) {}
+  window.ESTUDIO_EXEMPLO = ESTUDIO.criar({ exemplo: true, dados: { empresa: 'Furtado Advocacia', ramo, cor: '#c9a24a',
+    setores: ['Atendimento no WhatsApp', 'Entrevista e fechamento de pasta', 'Petições', 'Audiências e acompanhamento', 'Financeiro', 'Captação e marketing'] } });
+})();
+</script>
 </body>
 </html>

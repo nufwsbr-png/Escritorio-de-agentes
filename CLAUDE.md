@@ -17,14 +17,17 @@ mesmo dia. Não reabra decisões já tomadas.
 
 ## O que fazer quando a pessoa quer criar o escritório
 
-Use a skill **`/criar-escritorio`** (`.claude/skills/criar-escritorio/`). Ela
-faz as dez perguntas da abertura, uma por mensagem, e grava tudo pelos
-scripts do projeto. Também vale quando a pessoa escreve "criar escritório",
-"abrir o escritório", "configurar para o cliente X" ou quando não existe
-`data/config.json`. **Nunca** monte `config.json`, `plataformas.json`,
-`avisos.json` ou `admin.json` à mão: são os scripts `abertura.js`,
-`plataformas.js` e `planta.js` que gravam, e a skill que pergunta. Para
-mudar o que a abertura pergunta, edite a skill, não a tela.
+A abertura acontece **na tela**: `http://localhost:4321/abertura` (desde
+16/10/2026; sem `data/config.json` a raiz leva para lá). Uma pergunta só em
+texto livre, "Entendi assim" para corrigir, o Estúdio (planta pelo ramo,
+tamanho, paleta, roupa dos agentes, mobília, movimento, tema, placas) e a
+senha do administrador mostrada uma vez. A skill **`/criar-escritorio`**
+(`.claude/skills/criar-escritorio/`) é o atalho: sobe o escritório, abre o
+link e acompanha; também lê a planta (imagem ou PDF) que a pessoa mandar.
+**Nunca** monte `config.json`, `plataformas.json`, `planta.json`,
+`avisos.json` ou `admin.json` à mão: são `abertura.js` (`interpretar`,
+`montar`), `plataformas.js` e `planta.js` que gravam. Para mudar o que a
+abertura pergunta ou oferece, edite `abertura/` e `abertura.js`.
 
 ## Onde fica cada coisa
 
@@ -34,12 +37,14 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 | Senha e sessão do administrador | `admin.js`, hash em `data/admin.json` | o botão 🔐 Admin ou `node abertura.js senha` |
 | Contratar: anatomia, trilhas, setores, progresso, ficha | `agentes.js` | o construtor |
 | Conexões do negócio (na tela "🔌 Conexões"; por dentro, `plataformas`): CRM, planilha, agenda, pasta, servidor MCP…; cadastro, permissão por agente e o **teste de conexão** por tipo (`testar`: conectada, sem chave, falhou, desligada; estado gravado na plataforma, nunca o valor; roda ao salvar, ao subir e a cada 15 min; faixa no topo quando alguma precisa de gente; o Cuki BOT usa o mesmo teste) | `plataformas.js`, `data/plataformas.json`, bloco gerenciado no `.env` de cada agente e `mcp.json` (tipo mcp, sem valores); rotas `POST /api/plataformas/testar` e `/api/plataformas/:id/testar` | o botão 🔌 Conexões (Testar, Testar todas), `node plataformas.js testar` |
-| Abertura do escritório (as dez perguntas) | `abertura.js`, skill `/criar-escritorio` | a skill, pelos scripts |
+| Abertura do escritório na tela: uma pergunta, "Entendi assim" (o Claude Code sem ferramentas interpreta; sem ele, palavras-chave), o Estúdio e a senha uma vez; refazer exige administrador | `abertura/` (HTML, CSS, JS, marca NuFws), `abertura.js` (`interpretar`, `montar`, `salvarMarca`; CLI `interpretar`, `montar`), rotas `/api/abertura/{estado,interpretar,marca,montar}` em `server.js`, `util.rodarClaudeSemFerramentas`; skill `/criar-escritorio` como atalho | a tela; a skill, pelos scripts |
+| Biblioteca de plantas por ramo: setores sugeridos (com papéis), roupa sugerida, três variações de salas, sala de descanso obrigatória; setor → sala (`setores` na planta, mesa na sala do setor) | `ramos.js`, `plantas/<ramo>.json` (advocacia, clínica, loja, agência, imobiliária, contabilidade, genérico), `planta.js` (`setores` por sala), `garanteEstacao` em `js/app.js` | o construtor |
+| Os bonecos em pixel art (estilo Habbo): cabelo, pele, óculos, barba, roupa e cor como parâmetros; a roupa é do negócio (`estilo.roupa`), sugerida pelo ramo | `js/boneco-pixel.js`; prévias em `estudio/estudio.js`; quadros de escolha em `estudio/bonecos.html` e `estudio/bonecos-habbo.html` | o construtor |
 | Esteiras: o trabalho passando de agente em agente, aprovação pela tela | `esteiras.js`, `data/esteiras.json`, estado em `data/esteiras/<esteira>/`, skill `/criar-esteira`; no agente, `GET /entidades` e `POST /gatilho` com `GATILHO_CHAVE` | o botão 🧵 Esteiras, `node esteiras.js`, a skill |
 | Cuki BOT, a IA analista: medidas, semáforo, laudo (sem ferramentas, sem segredos) | `cuki.js`, `data/cuki/laudos/`, boneco na recepção | o botão 🩺 Cuki BOT (analisar é do administrador) |
 | Cuki BOT no WhatsApp (WAHA): avisos e conversa com os números autorizados, busca e webhook, briefing diário | `cuki.js` (parte 2), `data/cuki.json` (WAHA, segredo do webhook, autorizados), `data/cuki/conversas.json`, `data/cuki/recusados.log`; canal `cuki` em `avisos.js`; rota `POST /api/cuki/whatsapp` | 🩺 Cuki BOT › 📱 WhatsApp (administrador) |
 | Criar CRM: a ficha única do cliente, pessoas com login e agentes como funcionários (etapa 4 concluída em 14/10/2026) | `crm/` (`criar.js` grava `config.json`, `.env` e `data/`, fora do git; `server.js`, `crm.js`, `dados.js` local ou Supabase, `painel/`), skill `/criar-crm`, plataforma `crm` com token por agente (`porAgente` em `plataformas.js`), `data/crm.json`, botão 🗂️ CRM; no agente, `tools/crm.js`, estado na ficha com espelho local, `POST /acao` (ação direta); ponte em `server.js` (`/api/crm/evento`, `/api/crm/acao`) e `esteiras.colocar`; a aba Equipe desenha o boneco do escritório (`avatar.js` servido pelo CRM em `/escritorio/`, `look` em `/api/sistemas`) e abre o monitor por `/#agente=<id>`; a aba Ajustes (quem tem "gerir pessoas") cria e desativa pessoas, edita cargos, sensíveis e acesso (`/api/pessoas`, `/api/cargos`, `/api/ajustes`) | a skill, pelos scripts; o construtor |
-| Estúdio: a pessoa escolhe o escritório antes de montar (etapa 5, em construção: hoje é o exemplo em `/estudio`, nada grava) | `estudio/` (HTML, CSS, JS; desenha as prévias com `js/iso.js` e `js/avatar.js`), rota `/estudio` em `server.js` | o construtor |
+| Estúdio: a trilha de escolhas (estilo, planta pelo ramo, tamanho, paleta, roupa, mobília, movimento, tema, placas), motor `ESTUDIO.criar({ dados, exemplo, aoMontar })` usado pela abertura e pelo exemplo em `/estudio` (nada grava) | `estudio/` (desenha as prévias com `js/iso.js` e `js/boneco-pixel.js`), rotas `/estudio` e `/abertura` em `server.js`; `estilo` e `ramo` em `data/config.json` | o construtor |
 | Aba Trabalho do monitor: o sistema do agente para leigo, lido da pasta dele (aparece desligado); estado real do boneco (no ar = trabalhando, desligado = sala de descanso) | `js/trabalho.js`, `trabalhoDe` e `agirNoAgente` em `server.js` (`/api/agentes/:id/trabalho`, `/trabalho/acao`), rota `POST /agir` no molde; testador automático (`TESTADOR.agendar`) | o construtor |
 | Agente que aprende vendo: modo Ensinar, "Tarefa concluída", skills aprendidas | `ensino.js`; no agente, `ensino/` (fora do git) e `.claude/skills/<tarefa>/SKILL.md` | o servidor (canal de ensino da conversa) e a destilação, na pasta do agente |
 | Planta: salas lidas da planta do cliente | `planta.js`, `data/planta.json` | a skill, `node planta.js gerar` |
