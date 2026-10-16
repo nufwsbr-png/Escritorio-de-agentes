@@ -83,14 +83,23 @@ com `setores` por sala; `garanteEstacao` passa a dar mesa na sala do setor.
 
 ## Os bonecos
 
-Seis famílias novas, nada parecidas com o boneco de hoje, num quadro em
-`/estudio/bonecos` para o dono escolher: Traço (só linhas, como o símbolo da
-marca), Blocos (formas chapadas), Miniatura (boneco de vinil, cabeça grande),
-Crachá (silhueta com crachá e inicial), Núcleo (uma cápsula de luz, não
-humana) e Esboço (desenho a lápis com aquarela). A escolhida entra em
-`avatar.js` como família, com o mesmo contrato (`draw`, `makeLook`, `headTop`),
-e vira o padrão do Estúdio; o boneco de hoje fica como "Clássico" até o dono
-mandar tirar.
+O dono viu doze famílias (`/estudio/bonecos`) e seis visuais em pixel art
+(`/estudio/bonecos-habbo`) e decidiu em 16/10/2026: "faça no estilo habbo" e
+"não faz sentido eu escolher a roupa pois cada negócio criado vai utilizar um
+tipo de roupa". Então:
+
+- A família é uma só: **pixel art estilo Habbo**, grade de 16 x 40 pixels,
+  contorno escuro, sombra de um lado, cabelo, pele, óculos, barba, roupa e
+  cor como parâmetros (o desenho de `estudio/bonecos-habbo.html` vai para
+  `avatar.js`, com o contrato de hoje: `draw`, `makeLook`, `headTop`). O
+  boneco arredondado de hoje sai.
+- O passo "os bonecos" do Estúdio vira **"a roupa"**: executivo, social,
+  casual, jaleco, clássico (listrado), elegante. A abertura sugere pelo
+  ramo (advocacia e contabilidade → executivo; clínica → jaleco; loja,
+  agência e estúdio → casual; imobiliária → social; genérico → social) e a
+  pessoa troca se quiser. Fica em `estilo.roupa` no `config.json`.
+- A cor de cada agente continua vindo do setor; cabelo, pele e acessórios
+  continuam sorteados pelo id do agente, como hoje.
 
 ## A marca na tela da abertura
 
