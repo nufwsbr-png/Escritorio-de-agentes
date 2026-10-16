@@ -25,7 +25,7 @@ const AVATAR = (() => {
   /* alturas de referência, em pixels acima do chão */
   const SCALE = 1.1;               // escala com que o boneco é desenhado na cena
   const SEAT = 19;                 // quadril sentado (= assento da Hawker no sprite)
-  const HEAD_STAND = 70, HEAD_SIT = 67;
+  const HEAD_STAND = 74, HEAD_SIT = 75;   // o topo do cabelo do boneco em blocos (em pé e sentado)
 
   const rnd = (a, s) => a[Math.abs(hash(s)) % a.length];
   function hash(str) {
@@ -78,9 +78,64 @@ const AVATAR = (() => {
   const PIXEL_K = 1.9;   // pixels por célula: 40 células = 76 px, a cabeça no topo que o headTop promete
   const SENTA = Math.round(SEAT - 4 * PIXEL_K);   // sentado, o pé sobe até o quadril ficar no assento da cadeira (as 4 linhas de perna ficam abaixo dele)
 
-  /** o boneco em pixel art; pé em (sx, sy). st: { moving, phase, sitting, quieto, scale, roupa } */
+  /* ---------- a família "Blocos" (escolha do dono em 16/10/2026, em /estudio/bonecos-cena.html) ----------
+     O boneco é feito das mesmas caixas isométricas da mobília: pernas, tronco, braços, cabeça e cabelo
+     são ISO.box com as três faces sombreadas e sem contorno (sólido, sem cara de vidro). Olha para
+     'facing': as pernas sentadas vão para a frente dele e o rosto só aparece de frente ('s' e 'e'). */
+  const FAMILIA = 'blocos';
+  const DIR = { s: [0, 1], n: [0, -1], e: [1, 0], w: [-1, 0] };
+  function drawBlocos(ctx, look, sx, sy, facing, st = {}) {
+    const sc = st.scale || 1, sitting = !!st.sitting, moving = !!st.moving, phase = st.phase || 0;
+    const bob = moving ? -Math.abs(Math.sin(phase * Math.PI)) * 2.4 : 0;
+    const g = ISO.toTile(sx, sy + bob);                       // o pé do boneco, em tiles
+    const p = lookPixel(look, st), c = BONECO_PIXEL.cores(p);
+    const roupa = p.roupa === 'executivo' ? c.c : p.roupa === 'jaleco' ? '#f2f4f8' : c.a;
+    const calca = c.l || '#26304a', pele = p.skin, cab = p.hair;
+    const [dx, dy] = DIR[facing] || DIR.s;                   // para onde ele olha
+    const ax = dy, ay = dx;                                   // o eixo dos ombros é perpendicular ao olhar
+    const deFrente = facing === 's' || facing === 'e';
+    const SOLIDO = { line: 'rgba(0,0,0,0)' };
+    /* caixa centrada em (along, across) a partir do pé: along na direção do olhar, across na dos ombros */
+    const B = (along, across, cAlong, cAcross, h, z, cor, opt) => {
+      const cx = along * dx + across * ax, cy = along * dy + across * ay;
+      const w = (Math.abs(dx) * cAlong + Math.abs(ax) * cAcross) * sc, d = (Math.abs(dy) * cAlong + Math.abs(ay) * cAcross) * sc;
+      ISO.box(ctx, g.x + cx * sc - w / 2, g.y + cy * sc - d / 2, w, d, h * sc, z * sc, cor, Object.assign({ left: ISO.shade(cor, -.12), right: ISO.shade(cor, -.36), top: ISO.shade(cor, .2) }, SOLIDO, opt || {}));
+    };
+    ISO.shadow(ctx, g.x, g.y, (sitting ? .34 : .4) * sc, .3);
+    let zc;   // onde a cabeça começa
+    if (sitting) {
+      B(.16, -.1, .3, .16, 7, 19, calca); B(.16, .1, .3, .16, 7, 19, calca);     // coxas, para a frente
+      B(.32, -.1, .14, .16, 19, 0, calca); B(.32, .1, .14, .16, 19, 0, calca);   // canelas até o chão
+      B(.32, -.1, .16, .17, 3, 0, '#15181f'); B(.32, .1, .16, .17, 3, 0, '#15181f');
+      B(0, -.31, .2, .12, 18, 21, roupa); B(0, .31, .2, .12, 18, 21, roupa);     // braços
+      B(0, -.31, .2, .12, 5, 39, pele); B(0, .31, .2, .12, 5, 39, pele);         // mãos
+      B(0, 0, .32, .5, 22, 19, roupa);                                            // tronco
+      zc = 41;
+    } else {
+      B(0, -.11, .18, .17, 18, 0, calca); B(0, .11, .18, .17, 18, 0, calca);     // pernas
+      B(0, -.11, .19, .18, 3, 0, '#15181f'); B(0, .11, .19, .18, 3, 0, '#15181f'); // sapatos
+      B(0, -.31, .2, .12, 20, 20, roupa); B(0, .31, .2, .12, 20, 20, roupa);     // braços
+      B(0, -.31, .2, .12, 5, 16, pele); B(0, .31, .2, .12, 5, 16, pele);         // mãos
+      B(0, 0, .32, .5, 22, 18, roupa);                                            // tronco
+      zc = 40;
+    }
+    const comprido = /longo|coque|franja/.test(p.style);
+    const cabeloAtras = () => B(-.14, 0, .14, .42, 18, zc + 4, cab);
+    if (comprido && deFrente) cabeloAtras();
+    B(0, 0, .38, .38, 20, zc, pele);                                              // cabeça
+    B(0, 0, .42, .42, 7, zc + 18, cab);                                           // cabelo
+    if (comprido && !deFrente) cabeloAtras();
+    if (deFrente) {                                                               // o rosto, na face virada para a câmera
+      B(.17, -.085, .04, .07, 3, zc + 10, '#15181f'); B(.17, .085, .04, .07, 3, zc + 10, '#15181f');
+      if (p.glasses) { B(.18, -.085, .02, .13, 5, zc + 9, '#0e1119'); B(.18, .085, .02, .13, 5, zc + 9, '#0e1119'); }
+      if (p.beard) B(.17, 0, .04, .26, 4, zc + 1, ISO.shade(cab, -.1));
+    }
+  }
+
+  /** o boneco; pé em (sx, sy). st: { moving, phase, sitting, quieto, scale, roupa } */
   function draw(ctx, look, sx, sy, facing, st = {}) {
     if (typeof BONECO_PIXEL === 'undefined') return drawClassico(ctx, look, sx, sy, facing, st);
+    if (FAMILIA === 'blocos' && typeof ISO !== 'undefined') return drawBlocos(ctx, look, sx, sy, facing, st);
     const sc = st.scale || 1, sitting = !!st.sitting, moving = !!st.moving, phase = st.phase || 0;
     const bob = moving ? -Math.abs(Math.sin(phase * Math.PI)) * 2.4 : 0;
     const breath = (st.quieto || moving) ? 0 : Math.round(Math.sin(phase * 1.5) * 0.6);

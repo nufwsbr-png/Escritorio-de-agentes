@@ -25,10 +25,10 @@ const FURN = (() => {
   }
 
   /** cadeira no lugar do boneco, em duas camadas para ele sentar DENTRO dela.
-      A pegada acompanha a escala do boneco: se a cadeira ficasse menor que
-      ele, o corpo sobraria para fora do encosto.                          */
+      A pegada acompanha a escala do boneco em blocos: um pouco mais larga
+      que os ombros (0,5 tile), para o encosto não engolir o tronco.       */
   function cadeira(seat, tipo, hue) {
-    const L = 1.05 * AVATAR.SCALE;                   // lado da pegada, em tiles
+    const L = 0.72 * AVATAR.SCALE;                   // lado da pegada, em tiles
     const comum = { x: seat.x - L / 2, y: seat.y - L / 2, w: L, d: L,
                     face: seat.facing, hue: hue || 200 };
     // o boneco é desenhado em (seat.x + seat.y + 0.5)
@@ -301,7 +301,7 @@ const FURN = (() => {
      feito em 2x para continuar nítido no zoom. O que tem RGB ou animação
      — mesa, arcade, rack, TV, planta — continua sendo desenhado ao vivo. */
   const ALTURA_CACHE = {
-    chairSimple: 58, expositor: 96,
+    chairGamer: 78, chairBoss: 84, chairSimple: 58, expositor: 96,
     pilhaCaixas: 118, poolTable: 56, foosball: 52, sofa: 60,
     rug: 12, lowTable: 40, cooler: 64
   };
@@ -461,10 +461,12 @@ const FURN = (() => {
     },
 
     /* ================= CADEIRAS ================= */
-    chairGamer(ctx, o) { cadeiraPixel(ctx, o, '#14171f', ISO.hsl(o.hue, 85, 52)); },
-    chairBoss(ctx, o)  { cadeiraPixel(ctx, o, '#1a1419', '#7c6cff'); },
+    chairGamer(ctx, o) { const a = ISO.hsl(o.hue, 85, 52);
+      cadeiraBase(ctx, o, '#2a3145', a, 20, true); },
+    chairBoss(ctx, o)  {
+      cadeiraBase(ctx, o, '#2f283d', '#9b7bff', 23, true); },
     chairSimple(ctx, o){
-      cadeiraBase(ctx, o, '#1c2234', '#4a5a86', 14, false); },
+      cadeiraBase(ctx, o, '#2a3245', '#5a6a96', 16, false); },
 
     /* ---------- o resto do mobiliário ---------- */
     arcade(ctx, o, t) {
@@ -917,125 +919,64 @@ const FURN = (() => {
   }
 
   /**
-   * Cadeira gamer no estilo da Hawker (Westwing) que o usuário mandou:
-   * concha com bolsters laterais, encosto alto com "asas", almofadas de
-   * cabeça e lombar, braços acolchoados e base estrela de 5 pontas.
-   * Centrada no lugar do boneco; encosto do lado oposto ao que ele encara.
-   * Assento com topo em z=15, casando com AVATAR.SEAT.
-   */
-  /**
-   * Cadeira gamer, em DUAS camadas.
+   * A cadeira das mesas, em voxel como a mobília, em DUAS camadas.
    *
-   * Quando o boneco está de costas para a câmera ('n' e 'w'), a cadeira fica
-   * entre ele e nós: aí tudo do assento para cima é pintado DEPOIS dele, e a
-   * cadeira tapa de verdade as pernas e as costas. Antes ela era pintada toda
-   * antes do boneco e parecia translúcida.
-   * Quando ele está de frente ('s' e 'e'), a cadeira inteira vai atrás.
+   * De costas para a câmera ('n' e 'w') a cadeira inteira (base, assento,
+   * braços e encosto) é pintada DEPOIS do boneco, tapando as pernas e as
+   * costas dele; só a sombra fica atrás. De frente ('s' e 'e') a cadeira
+   * inteira vai atrás. Dentro da cadeira as peças são inteiras e pintadas
+   * de trás para a frente (pela profundidade isométrica), para nenhuma
+   * ficar "enfiada" na outra. Assento com topo em AVATAR.SEAT, onde o
+   * quadril do boneco sentado cai.
    */
-  /** a cadeira das mesas em pixel art, no traço do boneco (BONECO_PIXEL.cadeira), em duas camadas */
-  function cadeiraPixel(ctx, o, cor, accent) {
-    const cx = o.x + o.w / 2, cy = o.y + o.d / 2;
-    const costas = (o.face === 'n' || o.face === 'w');
-    if ((o.camada || 'tras') === 'tras') ISO.shadow(ctx, cx, cy, .5, .26);
-    if (typeof BONECO_PIXEL === 'undefined') return cadeiraBase(ctx, o, cor, accent, 16, true);
-    const p = ISO.toScreen(cx, cy);
-    BONECO_PIXEL.cadeira(ctx, p.x, p.y, 1.9 * AVATAR.SCALE, o.camada || 'tras', { k: cor, a: accent }, costas);
-  }
-
   function cadeiraBase(ctx, o, cor, accent, altEncosto, gamer) {
-    // o boneco é desenhado em AVATAR.SCALE, então o assento precisa subir junto
     const ESC     = AVATAR.SCALE;
-    const ASSENTO = AVATAR.SEAT * ESC;  // topo do assento = quadril sentado
+    const ASSENTO = AVATAR.SEAT * ESC;
     const { x, y, w, d } = o;
     const f      = o.face || 'n';
     const camada = o.camada || 'tras';
     const costasNaFrente = (f === 'n' || f === 'w');
-
-    const corD = ISO.shade(cor, -.24);
-    const corL = ISO.shade(cor, .14);
-    const trim = gamer ? ISO.shade(cor, .19) : ISO.shade(cor, .14);
     const cx = x + w / 2, cy = y + d / 2;
-    const eixoX = (f === 'e' || f === 'w');
     const H = altEncosto * ESC;
+    const corL = ISO.shade(cor, .18), corD = ISO.shade(cor, -.2);
 
-    /* fatia paralela ao encosto: a0..a1 ao longo da largura,
-       esp = espessura, rec = recuo a partir da borda de trás */
-    const seg = (a0, a1, esp, rec) =>
-      f === 'n' ? [x + w * a0, y + d - rec - esp, w * (a1 - a0), esp]
-    : f === 's' ? [x + w * a0, y + rec,           w * (a1 - a0), esp]
-    : f === 'e' ? [x + rec,          y + d * a0,  esp, d * (a1 - a0)]
-    :             [x + w - rec - esp, y + d * a0, esp, d * (a1 - a0)];
-    const bx = (s, h, z, c, opt) => ISO.box(ctx, s[0], s[1], s[2], s[3], h, z, c, opt);
+    if (camada === 'tras') { ISO.shadow(ctx, cx, cy, .62, .28); if (costasNaFrente) return; }
+    else if (!costasNaFrente) return;
 
-    /* De costas, a cadeira INTEIRA (inclusive a base) vai na frente dele:
-       é ela que esconde as pernas e os pés, como aconteceria de verdade.
-       Só a sombra fica atrás. De frente, a cadeira inteira fica atrás.    */
-    if (camada === 'tras') {
-      ISO.shadow(ctx, cx, cy, .68, .28);
-      if (costasNaFrente) return;
-    } else if (!costasNaFrente) {
-      return;
-    }
+    // as peças, em tiles: o encosto fica do lado oposto ao que ele olha; os braços nos dois lados
+    const encosto = f === 'n' ? [x + w * .06, y + d - .22, w * .88, .14]
+                  : f === 's' ? [x + w * .06, y + .08,     w * .88, .14]
+                  : f === 'e' ? [x + .08,     y + d * .06, .14, d * .88]
+                  :             [x + w - .22, y + d * .06, .14, d * .88];
+    const eixoX = (f === 'e' || f === 'w');
+    const bracos = eixoX
+      ? [[x + .1, y + .0, w - .2, .1], [x + .1, y + d - .1, w - .2, .1]]
+      : [[x + .0, y + .1, .1, d - .2], [x + w - .1, y + .1, .1, d - .2]];
+    const assento = [x + .06, y + .06, w - .12, d - .12];
+    const prof = r => r[0] + r[2] / 2 + r[1] + r[3] / 2;   // profundidade isométrica do centro da peça
 
-    /* ---------- base estrela de 5 pontas + rodízios ---------- */
-    {
+    const pecas = [];
+    pecas.push({ k: prof(assento) - .01, f: () => {   // base estrela, pistão e assento
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2 + .35;
-        const ex = cx + Math.cos(a) * w * .36, ey = cy + Math.sin(a) * d * .36;
-        ISO.box(ctx, (cx + ex) / 2 - .075, (cy + ey) / 2 - .075, .15, .15, 3, 1, '#1b1f29');
-        ISO.cyl(ctx, ex, ey, .07, 4, 0, '#39415a');
+        const ex = cx + Math.cos(a) * w * .42, ey = cy + Math.sin(a) * d * .42;
+        ISO.box(ctx, (cx + ex) / 2 - .06, (cy + ey) / 2 - .06, .12, .12, 3, 1, '#2c3242');
+        ISO.cyl(ctx, ex, ey, .06, 4, 0, '#55607a');
       }
-      ISO.cyl(ctx, cx, cy, .14, 4, 3, '#272d3b');
-      ISO.cyl(ctx, cx, cy, .075, ASSENTO - 7, 6, '#8e97ab');   // pistão cromado
-    }
-
-    /* ---------- assento tipo concha ---------- */
-    ISO.box(ctx, x + .1, y + .1, w - .2, d - .2, 5, ASSENTO - 6, cor, { top: corL });
-    if (eixoX) {
-      ISO.box(ctx, x + .08, y + .04, w - .16, .15, 4, ASSENTO - 2, corD);
-      ISO.box(ctx, x + .08, y + d - .19, w - .16, .15, 4, ASSENTO - 2, corD);
-    } else {
-      ISO.box(ctx, x + .04, y + .08, .15, d - .16, 4, ASSENTO - 2, corD);
-      ISO.box(ctx, x + w - .19, y + .08, .15, d - .16, 4, ASSENTO - 2, corD);
-    }
-    ISO.plane(ctx, x + .24, y + .24, w - .48, d - .48, ASSENTO + .1, ISO.rgba(accent, .16));
-
-    /* ---------- encosto ---------- */
-    const estofado = () => {
-      const est = seg(.24, .76, .05, .53);
-      ISO.box(ctx, est[0], est[1], est[2], est[3], H * .8, ASSENTO + 3, trim);
-    };
-    const painel = () => {
-      bx(seg(.03, .97, .18, .34), H, ASSENTO, cor, { top: corL });
-      bx(seg(-.02, .20, .32, .30), H * .74, ASSENTO, corD);
-      bx(seg(.80, 1.02, .32, .30), H * .74, ASSENTO, corD);
-      if (costasNaFrente) {
-        // costas viradas para a câmera: casca preta, com costura e placa
-        bx(seg(.03, .97, .185, .325), H, ASSENTO, '#0a0c12', { top: '#161a24' });
-        const cst = seg(.46, .54, .2, .32);
-        ISO.box(ctx, cst[0], cst[1], cst[2], cst[3], H * .92, ASSENTO, '#05070b');
-        const plc = seg(.34, .66, .205, .318);
-        ISO.box(ctx, plc[0], plc[1], plc[2], plc[3], H * .1, ASSENTO + H * .56, '#20252f');
-      }
-    };
-    if (costasNaFrente) { estofado(); painel(); }
-    else                { painel();  estofado(); }
-
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const tp = seg(.03, .97, .18, .34);
-    ISO.plane(ctx, tp[0], tp[1], tp[2], tp[3], ASSENTO + H, ISO.rgba(accent, .34));
-    ctx.restore();
-
-    /* ---------- braços ---------- */
-    if (gamer) {
-      const br = eixoX
-        ? [[x + .1, y + .0, w - .2, .14], [x + .1, y + d - .14, w - .2, .14]]
-        : [[x + .0, y + .1, .14, d - .2], [x + w - .14, y + .1, .14, d - .2]];
-      for (const a of br) {
-        ISO.box(ctx, a[0], a[1], a[2], a[3], 6, ASSENTO, '#1d2230');
-        ISO.box(ctx, a[0] - .02, a[1] - .02, a[2] + .04, a[3] + .04, 3, ASSENTO + 6, corD, { top: corL });
-      }
-    }
+      ISO.cyl(ctx, cx, cy, .075, ASSENTO - 8, 4, '#9aa3b5');                                 // pistão
+      ISO.box(ctx, assento[0], assento[1], assento[2], assento[3], 7, ASSENTO - 7, cor, { top: corL });
+      ISO.plane(ctx, x + .16, y + .16, w - .32, d - .32, ASSENTO + .1, ISO.rgba(accent, .18));  // o estofado do assento
+    } });
+    if (gamer) for (const b of bracos) pecas.push({ k: prof(b), f: () => {
+      ISO.box(ctx, b[0], b[1], b[2], b[3], 7, ASSENTO, corD, { top: ISO.shade(cor, .3) });
+    } });
+    pecas.push({ k: prof(encosto), f: () => {
+      ISO.box(ctx, encosto[0], encosto[1], encosto[2], encosto[3], H, ASSENTO, cor, { top: corL });
+      // a faixa na cor do agente, no alto do encosto (a cara da cadeira gamer)
+      const fx = eixoX ? [encosto[0], encosto[1] + .08, encosto[2], encosto[3] - .16] : [encosto[0] + .08, encosto[1], encosto[2] - .16, encosto[3]];
+      ISO.box(ctx, fx[0], fx[1], fx[2], fx[3], 4, ASSENTO + H - 4, accent, { top: ISO.shade(accent, .3) });
+    } });
+    pecas.sort((a, b) => a.k - b.k).forEach(p => p.f());
   }
 
   function dispenser(ctx, cx, cy, color, t) {

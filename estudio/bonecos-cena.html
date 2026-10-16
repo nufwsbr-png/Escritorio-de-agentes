@@ -131,12 +131,12 @@ const K0 = 1.9 * 1.1;
 const famHoje = {
   pe(ctx, p, x, y, costas) { ctx.save(); ctx.translate(x, y); ctx.scale(1.1, 1.1); if (costas) ctx.scale(-1, 1); BONECO_PIXEL.draw(ctx, { ...p, roupa: ROUPA }, 0, 0, 1.9, 'pe', costas); ctx.restore(); },
   sentado(ctx, p, x, y, costas) { ctx.save(); ctx.translate(x, y); ctx.scale(1.1, 1.1); if (costas) ctx.scale(-1, 1); BONECO_PIXEL.draw(ctx, { ...p, roupa: ROUPA }, 0, -11, 1.9, 'sentado', costas); ctx.restore(); },
-  cadeira(ctx, x, y, parte, cor, costas) { BONECO_PIXEL.cadeira(ctx, x, y, K0, parte, { k: '#14171f', a: cor }, costas); }
+  cadeira(ctx, x, y, parte, cor, costas) { famBlocos.cadeira(ctx, x, y, parte, cor, costas); }
 };
 
 /* ================= 1 · BLOCOS (voxel, como a mobília) ================= */
 function blocosCorpo(ctx, p, gx, gy, sentado, costas) {
-  const B = (dx, dy, w, d, h, z, c, opt) => ISO.box(ctx, gx + dx, gy + dy, w, d, h, z, c, opt);
+  const B = (dx, dy, w, d, h, z, c, opt) => ISO.box(ctx, gx + dx, gy + dy, w, d, h, z, c, Object.assign({ line: 'rgba(0,0,0,0)', left: ISO.shade(c, -.12), right: ISO.shade(c, -.36), top: ISO.shade(c, .2) }, opt || {}));
   const calca = '#26304a', pele = p.skin, cab = p.hair, roupa = p.acc;
   if (sentado) {
     B(-.12, -.2, .26, .16, 7, 17, calca); B(-.12, .04, .26, .16, 7, 17, calca);         // coxas
@@ -312,8 +312,8 @@ const famTraco = {
 
 /* ---------- os quadros ---------- */
 const FAMILIAS = {
-  'pixel-frente': { nome: 'Pixel de frente (o de hoje)', desc: 'O boneco atual: pixel art visto de frente, como no Habbo antigo, com a cadeira em pixel que entrou hoje. Está aqui para comparar.', fam: famHoje },
-  blocos: { nome: 'Blocos', desc: 'Feito das mesmas caixas isométricas das mesas, monitores e paredes: cabeça, tronco, braços e pernas são blocos com as três faces sombreadas. O boneco vira parte da mobília; a cadeira é um bloco com encosto. É o que mais "combina" com a cena, porque é a mesma técnica.', fam: famBlocos },
+  'pixel-frente': { nome: 'Pixel de frente (o anterior)', desc: 'O boneco que estava na cena até 16/10/2026: pixel art visto de frente, como no Habbo antigo. Fica aqui para comparar.', fam: famHoje },
+  blocos: { nome: 'Blocos (o escolhido, na cena)', desc: 'Feito das mesmas caixas isométricas das mesas, monitores e paredes: cabeça, tronco, braços e pernas são blocos sólidos com as três faces sombreadas, sem contorno. O boneco vira parte da mobília e senta na cadeira de voxel. É o que mais "combina" com a cena, porque é a mesma técnica. Escolhido pelo dono em 16/10/2026.', fam: famBlocos },
   pixel34: { nome: 'Pixel 3/4', desc: 'Pixel art na diagonal, como os bonecos do Habbo são de verdade: o rosto virado um pouco, o ombro acompanhando a grade isométrica, uma perna à frente da outra. A cadeira também na diagonal. Mais fiel ao estilo e mais encaixado nas mesas.', fam: fam34 },
   traco: { nome: 'Traço', desc: 'Vetor de contorno fino e formas arredondadas, cores chapadas: cabeça oval, tronco em cápsula, sorriso. Parece ilustração de app. Limpo de longe, simpático de perto; a cadeira é desenhada no mesmo traço.', fam: famTraco }
 };
@@ -323,7 +323,7 @@ function pintar() {
   grade_.innerHTML = Object.entries(FAMILIAS).map(([id, f], n) => `
     <div class="card ${escolhida === id ? 'escolhida' : ''}" data-id="${id}">
       <span class="selo">escolhido</span>
-      <span class="mini">${String(n).padStart(2, '0')} · ${n ? 'família nova' : 'referência'}</span>
+      <span class="mini">${String(n).padStart(2, '0')} · ${id === 'blocos' ? 'na cena' : n ? 'família nova' : 'referência'}</span>
       <h3>${f.nome}</h3><p>${f.desc}</p>
       <canvas width="560" height="340" data-fam="${id}"></canvas>
       <span class="leg"><span>${PESSOAS.map(p => p.nome).join(' · ')} em pé</span><span>de costas na mesa · de frente na diretoria</span></span>

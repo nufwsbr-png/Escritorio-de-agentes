@@ -97,13 +97,18 @@ testes automáticos inteiros.
   A fumaça ganhou a checagem do tema (ícones nas duas barras, `data-rotulo`,
   Admin com a palavra).
 
-## 5g-7: a cadeira em pixel, a barra maior, as duas páginas de escolha
+## 5g-7 e 5g-8: a cadeira, a barra maior, as duas páginas de escolha, os Blocos
 
-- **A cadeira das mesas em pixel art**, no traço do boneco. Fotos de perto
-  (zoom 4): Bia sentada de costas, com o encosto até os ombros e a cabeça
-  livre; a mesa vazia com a cadeira inteira; a dona de frente na diretoria
-  com a cadeira atrás. Antes, no zoom, a cadeira era um bloco de voxel que
-  tapava o boneco inteiro (fotografado também).
+- **A cadeira das mesas**: a tentativa em pixel art foi recusada pelo dono
+  ("ficou horrível; eu queria apenas que corrigisse a sobreposição"). A de
+  voxel voltou, desenhada sozinha num quadro para enxergar o defeito (as
+  fatias do encosto e dos braços pintadas fora de ordem, desmontadas), e
+  reescrita com peças inteiras de trás para a frente. Fotos de perto (zoom
+  4): Bia sentada de costas (o encosto na frente, até os ombros, a cabeça
+  livre), a mesa vazia com a cadeira inteira, a dona de frente na diretoria.
+- **Os bonecos em Blocos** na cena: fotografados de costas na mesa, de
+  frente na diretoria, nos cartões da equipe e na tela inteira; sólidos, sem
+  contorno. Nenhum erro de JS.
 - **A barra do topo** com 54 px e os contadores com a palavra.
 - **As páginas de escolha** fotografadas quadro a quadro, sem erro de JS:
   três painéis do agente e quatro famílias de boneco na cena.
