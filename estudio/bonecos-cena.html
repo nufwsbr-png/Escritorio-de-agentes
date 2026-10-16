@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Os bonecos na cena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+  :root{--preto:#05080E;--noite:#0A1424;--carvao:#0E1522;--linha:#1A2233;--branco:#fff;--gelo:#EBEBEC;--cinza:#A4AEB9;--cinza-2:#686D86;
+    --ciano:#5FE0FB;--grad:linear-gradient(90deg,#5FE0FB 0%,#A1AFF4 45%,#C79FF4 65%,#F76BE8 100%);--titulo:"Outfit",system-ui,sans-serif;--texto:"DM Sans",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--preto);color:var(--gelo);font-family:var(--texto);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:110px}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 28px}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(5,8,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--linha)}
+  .topbar .wrap{display:flex;align-items:center;gap:14px;height:62px}
+  .topbar svg{width:30px;height:30px}
+  .wordmark{font-family:var(--titulo);font-weight:600;font-size:20px;letter-spacing:-.02em;color:var(--branco)}
+  .wordmark small{font-family:var(--texto);font-weight:400;font-size:12px;color:var(--cinza);margin-left:10px;letter-spacing:.18em;text-transform:uppercase}
+  .topbar .tag{margin-left:auto;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--linha);border-radius:99px;padding:6px 14px;color:var(--cinza);white-space:nowrap;text-decoration:none}
+  header.capa{padding:56px 0 36px;border-bottom:1px solid var(--linha)}
+  .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--cinza);font-weight:500}
+  .eyebrow::after{content:"";display:block;width:36px;height:2px;background:var(--ciano);margin-top:12px}
+  h1{font-family:var(--titulo);font-weight:300;font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.02em;color:var(--branco);margin:22px 0 14px}
+  h1 strong{font-weight:500;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lead{font-size:17px;color:var(--cinza);max-width:720px;font-weight:300}
+  p.lead b{color:var(--gelo);font-weight:500}
+  section{padding:32px 0}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}.wrap{padding:0 16px}}
+  .card{background:var(--carvao);border:1px solid var(--linha);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s;position:relative}
+  .card:hover{border-color:rgba(95,224,251,.45)}
+  .card.escolhida{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(95,224,251,.18)}
+  .card .mini{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano);font-weight:600}
+  .card h3{font-family:var(--titulo);font-weight:500;font-size:22px;letter-spacing:-.015em;color:var(--branco)}
+  .card p{font-size:14px;color:var(--cinza)}
+  .card canvas{width:100%;height:auto;border-radius:12px;background:#07090f;border:1px solid var(--linha);image-rendering:pixelated}
+  .card .leg{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza-2)}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--ciano);color:var(--preto);font-family:var(--texto);font-weight:600;font-size:14px;padding:11px 20px;border-radius:99px;border:0;cursor:pointer;align-self:flex-start}
+  .btn.ghost{background:transparent;color:var(--branco);border:1px solid rgba(255,255,255,.35);font-weight:500}
+  .card.escolhida .btn{background:var(--branco)}
+  .selo{display:none;position:absolute;right:18px;top:18px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--preto);background:var(--ciano);border-radius:99px;padding:4px 10px;font-weight:600}
+  .card.escolhida .selo{display:block}
+  .rodape{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(5,8,14,.92);backdrop-filter:blur(10px);border-top:1px solid var(--linha);padding:14px 0}
+  .rodape .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .rodape .txt{flex:1;font-size:14px;color:var(--cinza)}
+  .rodape .txt b{color:var(--branco);font-weight:500}
+  .rodape code{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--ciano);background:var(--carvao);border:1px solid var(--linha);border-radius:8px;padding:4px 10px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FE0FB"/><stop offset=".5" stop-color="#7C4DF7"/><stop offset="1" stop-color="#F76BE8"/></linearGradient></defs><polyline points="34,60 74,100 34,140" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="66,56 110,100 66,144" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><polyline points="104,50 154,100 104,150" fill="none" stroke="url(#gs)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="wordmark">NuFws<small>Estúdio · bonecos na cena</small></span>
+  <a class="tag" href="/estudio/bonecos-habbo.html">as roupas (Habbo)</a>
+</div></div>
+
+<header class="capa"><div class="wrap">
+  <div class="eyebrow">Escolha · os bonecos, vistos na cena</div>
+  <h1>Três famílias novas,<br><strong>desenhadas no escritório.</strong></h1>
+  <p class="lead">Cada quadro é a cena de verdade (o mesmo motor isométrico das mesas e salas): três pessoas em pé, uma sentada de costas na mesa com o monitor virado para você, uma sentada de frente na mesa da diretoria. A cadeira é desenhada no traço de cada família. O primeiro quadro é <b>o de hoje</b>, para comparar. Clique em <b>Escolher este</b> e me diga o nome.</p>
+</div></header>
+
+<section class="wrap"><div class="grid" id="grade"></div></section>
+
+<div class="rodape"><div class="wrap">
+  <span class="txt" id="escolha">Clique em <b>Escolher este</b> no quadro que você preferir.</span>
+  <code id="codigo">bonecos: ?</code>
+</div></div>
+
+<script src="/js/iso.js"></script>
+<script src="/js/boneco-pixel.js"></script>
+<script>
+/* ---------- utilidades ---------- */
+const tom = (hex, k) => { const n = parseInt(String(hex).slice(1), 16); if (isNaN(n)) return hex; const f = (v) => Math.max(0, Math.min(255, Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)))); return '#' + [16, 8, 0].map(sh => f((n >> sh) & 255).toString(16).padStart(2, '0')).join(''); };
+const PESSOAS = [
+  { nome: 'Tati', skin: '#f2c9a6', hair: '#2a1a10', style: 'longo', acc: '#5FE0FB', glasses: false, beard: false },
+  { nome: 'Léo',  skin: '#c98a5b', hair: '#111111', style: 'curto', acc: '#7C4DF7', glasses: true, beard: true },
+  { nome: 'Bia',  skin: '#7a4a2c', hair: '#1a1a1a', style: 'coque', acc: '#F76BE8', glasses: false, beard: false }
+];
+const ROUPA = 'social';
+/** pinta uma grade de letras (pixel art) com o pé em (x, y) e k px por célula; mirror espelha */
+function pintaGrade(ctx, grade, cores, x, y, k, mirror) {
+  const alto = grade.length, largo = grade[0].length;
+  const x0 = x - largo * k / 2, y0 = y - alto * k;
+  for (let j = 0; j < alto; j++) for (let i = 0; i < largo; i++) {
+    const ch = grade[j][i]; if (ch === '.' || !cores[ch]) continue;
+    const ii = mirror ? largo - 1 - i : i;
+    ctx.fillStyle = cores[ch]; ctx.fillRect(x0 + ii * k, y0 + j * k, k + 0.02, k + 0.02);
+  }
+}
+
+/* ---------- a cena comum ---------- */
+const TOPO = 28;
+function cena(ctx, fam) {
+  const W = 560, H = 340;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); ctx.translate(290, 118); ctx.scale(1.55, 1.55);
+  // piso
+  for (let x = 0; x < 6; x++) for (let y = 0; y < 6; y++) ISO.tile(ctx, x, y, (x + y) % 2 ? '#121728' : '#151b2e', 'rgba(255,255,255,.04)');
+  // parede do fundo com LED
+  ISO.box(ctx, 0, -0.3, 6, 0.3, 70, 0, '#1b2033'); ISO.plane(ctx, 0.05, -0.28, 5.9, 0.1, 71, ISO.rgba('#5FE0FB', .6));
+  // mesa de costas (monitor para a câmera): mesa em (1.2,0.4), assento em (2.7, 2.4)
+  const mesa = (gx, gy, w, d, cor) => { ISO.box(ctx, gx, gy, w, d, 3, TOPO - 3, '#1d2436', { top: '#2a3147' }); ISO.box(ctx, gx + .15, gy + .15, .25, d - .3, TOPO - 3, 0, '#161b2a'); ISO.box(ctx, gx + w - .4, gy + .15, .25, d - .3, TOPO - 3, 0, '#161b2a'); ISO.plane(ctx, gx + .1, gy + d - .08, w - .2, .06, TOPO + 0.5, cor); };
+  const monitor = (gx, gy, w, virado) => { ISO.box(ctx, gx + w / 2 - .12, gy + .5, .24, .24, 5, TOPO, '#2a3147'); ISO.box(ctx, gx + .2, gy + .55, w - .4, .08, 34, TOPO + 5, '#10131d', { left: virado ? '#1c2b44' : '#0e1119', right: '#0b0d14', top: '#20273a' }); };
+  // mesa 1: boneco de costas, monitor virado para nós
+  const m1 = { x: 1.1, y: 0.45, w: 2.2, d: 1.1 }, s1 = { x: 2.2, y: 2.35 };
+  mesa(m1.x, m1.y, m1.w, m1.d, '#5FE0FB'); monitor(m1.x, m1.y, m1.w, true);
+  const p1 = ISO.toScreen(s1.x, s1.y);
+  ISO.shadow(ctx, s1.x, s1.y, .45, .3);
+  fam.cadeira(ctx, p1.x, p1.y, 'tras', '#5FE0FB', true);
+  fam.sentado(ctx, PESSOAS[2], p1.x, p1.y, true);
+  fam.cadeira(ctx, p1.x, p1.y, 'frente', '#5FE0FB', true);
+  // três em pé
+  [[0.5, 3.6], [1.2, 4.3], [1.9, 5.0]].forEach(([x, y], i) => { const p = ISO.toScreen(x, y); ISO.shadow(ctx, x, y, .4, .3); fam.pe(ctx, PESSOAS[i], p.x, p.y, false); });
+  // mesa 2 (diretoria): boneco de frente, mesa na frente dele
+  const s2 = { x: 4.4, y: 1.9 }, m2 = { x: 3.4, y: 2.6, w: 2.2, d: 1.1 };
+  const p2 = ISO.toScreen(s2.x, s2.y);
+  ISO.shadow(ctx, s2.x, s2.y, .45, .3);
+  fam.cadeira(ctx, p2.x, p2.y, 'tras', '#7C4DF7', false);
+  fam.sentado(ctx, PESSOAS[1], p2.x, p2.y, false);
+  fam.cadeira(ctx, p2.x, p2.y, 'frente', '#7C4DF7', false);
+  mesa(m2.x, m2.y, m2.w, m2.d, '#7C4DF7'); monitor(m2.x, m2.y, m2.w, false);
+  ISO.cyl(ctx, m2.x + .3, m2.y + .3, .09, 9, TOPO, '#e9edf8');
+  ctx.restore();
+}
+
+/* ================= 0 · PIXEL DE FRENTE (o de hoje) ================= */
+const K0 = 1.9 * 1.1;
+const famHoje = {
+  pe(ctx, p, x, y, costas) { ctx.save(); ctx.translate(x, y); ctx.scale(1.1, 1.1); if (costas) ctx.scale(-1, 1); BONECO_PIXEL.draw(ctx, { ...p, roupa: ROUPA }, 0, 0, 1.9, 'pe', costas); ctx.restore(); },
+  sentado(ctx, p, x, y, costas) { ctx.save(); ctx.translate(x, y); ctx.scale(1.1, 1.1); if (costas) ctx.scale(-1, 1); BONECO_PIXEL.draw(ctx, { ...p, roupa: ROUPA }, 0, -11, 1.9, 'sentado', costas); ctx.restore(); },
+  cadeira(ctx, x, y, parte, cor, costas) { BONECO_PIXEL.cadeira(ctx, x, y, K0, parte, { k: '#14171f', a: cor }, costas); }
+};
+
+/* ================= 1 · BLOCOS (voxel, como a mobília) ================= */
+function blocosCorpo(ctx, p, gx, gy, sentado, costas) {
+  const B = (dx, dy, w, d, h, z, c, opt) => ISO.box(ctx, gx + dx, gy + dy, w, d, h, z, c, opt);
+  const calca = '#26304a', pele = p.skin, cab = p.hair, roupa = p.acc;
+  if (sentado) {
+    B(-.12, -.2, .26, .16, 7, 17, calca); B(-.12, .04, .26, .16, 7, 17, calca);         // coxas
+    B(-.34, -.2, .22, .16, 17, 0, calca); B(-.34, .04, .22, .16, 17, 0, calca);         // canelas descendo
+    B(-.25, -.17, .5, .34, 22, 17, roupa, { top: tom(roupa, .25) });                    // tronco
+    B(-.37, -.1, .12, .2, 18, 19, roupa); B(.25, -.1, .12, .2, 18, 19, roupa);         // braços
+    B(-.37, -.1, .12, .2, 5, 37, pele); B(.25, -.1, .12, .2, 5, 37, pele);
+    cabeca(39);
+  } else {
+    B(-.22, -.1, .19, .2, 18, 0, calca); B(.03, -.1, .19, .2, 18, 0, calca);            // pernas
+    B(-.22, -.1, .19, .2, 3, 0, '#15181f'); B(.03, -.1, .19, .2, 3, 0, '#15181f');      // sapatos
+    B(-.25, -.17, .5, .34, 22, 18, roupa, { top: tom(roupa, .25) });                    // tronco
+    B(-.37, -.1, .12, .2, 20, 20, roupa); B(.25, -.1, .12, .2, 20, 20, roupa);         // braços
+    B(-.37, -.1, .12, .2, 5, 16, pele); B(.25, -.1, .12, .2, 5, 16, pele);             // mãos
+    cabeca(40);
+  }
+  function cabeca(z) {
+    B(-.19, -.19, .38, .38, 20, z, pele, { top: tom(pele, .2) });
+    B(-.21, -.21, .42, .42, 7, z + 18, cab, { top: tom(cab, .15) });                     // cabelo
+    if (p.style === 'longo' || p.style === 'coque') B(-.21, -.21, .42, .14, 18, z + 4, cab);  // cabelo comprido atrás
+    if (!costas) {   // rosto na face virada para a câmera (plano y = gy+.19)
+      B(-.12, .16, .07, .04, 3, z + 10, '#15181f'); B(.05, .16, .07, .04, 3, z + 10, '#15181f');
+      if (p.glasses) { B(-.15, .17, .13, .02, 5, z + 9, '#0e1119'); B(.02, .17, .13, .02, 5, z + 9, '#0e1119'); }
+      if (p.beard) B(-.13, .16, .26, .04, 4, z + 1, tom(cab, -.1));
+    }
+  }
+}
+const famBlocos = {
+  pe(ctx, p, x, y, costas) { const g = ISO.toTile(x, y); blocosCorpo(ctx, p, g.x, g.y, false, costas); },
+  sentado(ctx, p, x, y, costas) { const g = ISO.toTile(x, y); blocosCorpo(ctx, p, g.x, g.y, true, costas); },
+  cadeira(ctx, x, y, parte, cor, costas) {
+    const g = ISO.toTile(x, y), gx = g.x, gy = g.y;
+    const B = (dx, dy, w, d, h, z, c, opt) => ISO.box(ctx, gx + dx, gy + dy, w, d, h, z, c, opt);
+    const assento = () => { B(-.3, -.3, .6, .6, 5, 13, '#14171f', { top: '#262b3a' }); ISO.cyl(ctx, gx, gy, .05, 9, 4, '#8e97ab'); B(-.26, -.05, .52, .1, 3, 1, '#2a3040'); B(-.05, -.26, .1, .52, 3, 1, '#2a3040'); };
+    const encosto = () => { B(-.3, -.3, .6, .1, 26, 18, '#14171f', { top: cor, right: '#0d0f16' }); B(-.27, -.3, .05, .1, 26, 18, cor); B(.22, -.3, .05, .1, 26, 18, cor); };
+    if (!costas) { if (parte === 'tras') { encosto(); assento(); } }
+    else { if (parte === 'tras') assento(); else encosto(); }
+  }
+};
+
+/* ================= 2 · PIXEL 3/4 (o Habbo de verdade) ================= */
+const G34_PE = [
+  '......oooooooo......',
+  '.....ohhhhhhhhHo....',
+  '....ohhhhhhhhhhHo...',
+  '....ohhhhhhhhhhHo...',
+  '....osssssshhhhHo...',
+  '....ossssssshhhHo...',
+  '....osepsssSShhHo...',
+  '....osssssssSSSSo...',
+  '....ossssssSSSSSo...',
+  '.....ossmssSSSSo....',
+  '......oossssSoo.....',
+  '........ossSo.......',
+  '.....oooaaaaaaAAoo..',
+  '....oaaaaaaaaaaAAAo.',
+  '...oaaaaaaaaaaaAAAAo',
+  '...oaaoaaaaaaaaAAAAo',
+  '...oaaoaaaaaaaaAAoAo',
+  '...oaaoaaaaaaaaAAoAo',
+  '...oaaoaaaaaaaaAAoAo',
+  '...oaaoaaaaaaaaAAoAo',
+  '...osaoaaaaaaaaAAoSo',
+  '...oooaaaaaaaaaAAooo',
+  '.....oaaaaaaaaaAAo..',
+  '.....oAAAAAAAAAAAo..',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....ollllooLLLLo...',
+  '.....obbbbooLLLLo...',
+  '.....oooooobbbbbo...',
+  '...........ooooo....'
+];
+const G34_SENTADO = G34_PE.slice(0, 24).concat([
+  '.....ollllllllLLo...',
+  '...ollllllllllLLo...',
+  '..obbollllllLLLo....',
+  '..ooooooooooooo.....'
+]);
+const G34_CADEIRA = [   // 22 x 32, 3/4: encosto atrás-direita, assento à frente-esquerda
+  '..........okkkkkkkk...',
+  '..........okaaaaaakK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okcccccckK..',
+  '..........okKKKKKKkK..',
+  '...okkkkkkkkkkkkkkkK..',
+  '..okccccccccccccccKK..',
+  '..okKKKKKKKKKKKKKKK...',
+  '...........mm.........',
+  '...........mm.........',
+  '...........mm.........',
+  '..........MMMM........',
+  '......mmmmMMMMmmmm....',
+  '.....ww....ww....ww...',
+  '.....ww....ww....ww...'
+];
+function cores34(p) {
+  return { o: '#17120f', s: p.skin, S: tom(p.skin, -.22), h: p.hair, H: tom(p.hair, -.3), e: '#fff', p: '#1a1a1a', m: tom(p.skin, -.45),
+    a: p.acc, A: tom(p.acc, -.3), l: '#26304a', L: tom('#26304a', -.3), b: '#1a1a1a' };
+}
+const K34 = 2.0;
+const fam34 = {
+  pe(ctx, p, x, y, costas) { pintaGrade(ctx, costas ? G34_PE.map(r => r.replace(/[ep]/g, 's').replace(/^(....)osss/, '$1ohhh')) : G34_PE, cores34(p), x, y, K34, costas); },
+  sentado(ctx, p, x, y, costas) { pintaGrade(ctx, costas ? G34_SENTADO.map(r => r.replace(/[ep]/g, 's')) : G34_SENTADO, cores34(p), x, y - 10, K34, costas); },
+  cadeira(ctx, x, y, parte, cor, costas) {
+    const c = { k: '#14171f', K: '#0b0d12', c: '#20242e', a: cor, m: '#8e97ab', M: '#5c6578', w: '#39415a' };
+    const g = G34_CADEIRA;
+    const rows = !costas ? (parte === 'tras' ? g : []) : (parte === 'tras' ? g.map((r, j) => j >= 11 ? r : '.'.repeat(22)) : g.map((r, j) => j < 11 ? r : '.'.repeat(22)));
+    if (!rows.length) return;
+    pintaGrade(ctx, rows, c, x + 2, y + 2, K34, costas);
+  }
+};
+
+/* ================= 3 · TRAÇO (vetor, 3/4) ================= */
+function tracoCorpo(ctx, p, x, y, sentado, costas) {
+  ctx.save(); ctx.translate(x, y); if (costas) ctx.scale(-1, 1);
+  const lw = 1.6, out = '#12151f';
+  const rr = (cx, cy, w, h, r, fill) => { ISO.rrect(ctx, cx - w / 2, cy - h, w, h, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = out; ctx.lineWidth = lw; ctx.stroke(); };
+  const el = (cx, cy, rx, ry, fill) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = out; ctx.lineWidth = lw; ctx.stroke(); };
+  const calca = '#2b3550';
+  if (sentado) {
+    rr(-9, -8, 16, 20, 6, calca);                 // coxas vindo para a frente
+    rr(-13, 0, 7, 12, 3, '#15181f');              // pés
+    rr(0, -18, 26, 30, 9, p.acc);                 // tronco
+    el(-14, -28, 4.5, 9, p.acc); el(13, -28, 4.5, 9, p.acc);
+    el(-14, -20, 4, 4, p.skin); el(13, -20, 4, 4, p.skin);
+    cabeca(-50);
+  } else {
+    rr(-6, 0, 10, 26, 4, calca); rr(6, 0, 10, 26, 4, calca);          // pernas
+    rr(-6, 0, 11, 5, 2.5, '#15181f'); rr(6, 0, 11, 5, 2.5, '#15181f'); // sapatos
+    rr(0, -24, 28, 32, 10, p.acc);                                      // tronco
+    el(-16, -40, 4.5, 11, p.acc); el(16, -40, 4.5, 11, p.acc);         // braços
+    el(-16, -30, 4, 4, p.skin); el(16, -30, 4, 4, p.skin);             // mãos
+    cabeca(-56);
+  }
+  function cabeca(cy) {
+    el(0, cy, 13, 14, p.skin);                                           // rosto
+    ctx.beginPath(); ctx.ellipse(0, cy - 5, 13.5, 10, 0, Math.PI, 2 * Math.PI); ctx.fillStyle = p.hair; ctx.fill(); ctx.stroke();   // cabelo
+    if (p.style === 'longo' || p.style === 'coque') { el(-12, cy + 6, 4, 10, p.hair); el(12, cy + 6, 4, 10, p.hair); }
+    if (!costas) {
+      ctx.fillStyle = '#12151f'; ctx.beginPath(); ctx.ellipse(-5, cy + 1, 1.8, 2.4, 0, 0, 7); ctx.ellipse(4, cy + 1, 1.8, 2.4, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#12151f'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(-0.5, cy + 6, 3.2, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();   // sorriso
+      if (p.glasses) { ctx.lineWidth = 1.4; ctx.strokeStyle = '#0e1119'; ctx.beginPath(); ctx.ellipse(-5, cy + 1, 4.2, 3.6, 0, 0, 7); ctx.ellipse(4.5, cy + 1, 4.2, 3.6, 0, 0, 7); ctx.stroke(); }
+      if (p.beard) { ctx.fillStyle = tom(p.hair, -.05); ctx.beginPath(); ctx.ellipse(0, cy + 9, 8, 4, 0, 0, Math.PI); ctx.fill(); }
+    } else { ctx.fillStyle = p.hair; ctx.beginPath(); ctx.ellipse(0, cy + 1, 12.5, 12, 0, 0, 7); ctx.fill(); ctx.strokeStyle = out; ctx.stroke(); }
+  }
+  ctx.restore();
+}
+const famTraco = {
+  pe(ctx, p, x, y, costas) { tracoCorpo(ctx, p, x, y, false, costas); },
+  sentado(ctx, p, x, y, costas) { tracoCorpo(ctx, p, x, y - 4, true, costas); },
+  cadeira(ctx, x, y, parte, cor, costas) {
+    ctx.save(); ctx.translate(x, y);
+    const out = '#12151f';
+    const rr = (cx, cy, w, h, r, fill) => { ISO.rrect(ctx, cx - w / 2, cy - h, w, h, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = out; ctx.lineWidth = 1.6; ctx.stroke(); };
+    const base = () => { ctx.strokeStyle = '#8e97ab'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, -18); ctx.stroke(); ctx.lineWidth = 2.4; [-14, 0, 14].forEach(dx => { ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(dx, 1); ctx.stroke(); ctx.fillStyle = '#39415a'; ctx.beginPath(); ctx.arc(dx, 2, 2.6, 0, 7); ctx.fill(); }); rr(0, -16, 34, 8, 4, '#1c2030'); };
+    const encosto = () => { rr(0, -22, 30, 40, 9, '#1c2030'); rr(0, -26, 20, 30, 6, '#262c3c'); ctx.fillStyle = cor; ctx.fillRect(-9, -54, 3, 26); ctx.fillRect(6, -54, 3, 26); };
+    if (!costas) { if (parte === 'tras') { encosto(); base(); } }
+    else { if (parte === 'tras') base(); else encosto(); }
+    ctx.restore();
+  }
+};
+
+/* ---------- os quadros ---------- */
+const FAMILIAS = {
+  'pixel-frente': { nome: 'Pixel de frente (o de hoje)', desc: 'O boneco atual: pixel art visto de frente, como no Habbo antigo, com a cadeira em pixel que entrou hoje. Está aqui para comparar.', fam: famHoje },
+  blocos: { nome: 'Blocos', desc: 'Feito das mesmas caixas isométricas das mesas, monitores e paredes: cabeça, tronco, braços e pernas são blocos com as três faces sombreadas. O boneco vira parte da mobília; a cadeira é um bloco com encosto. É o que mais "combina" com a cena, porque é a mesma técnica.', fam: famBlocos },
+  pixel34: { nome: 'Pixel 3/4', desc: 'Pixel art na diagonal, como os bonecos do Habbo são de verdade: o rosto virado um pouco, o ombro acompanhando a grade isométrica, uma perna à frente da outra. A cadeira também na diagonal. Mais fiel ao estilo e mais encaixado nas mesas.', fam: fam34 },
+  traco: { nome: 'Traço', desc: 'Vetor de contorno fino e formas arredondadas, cores chapadas: cabeça oval, tronco em cápsula, sorriso. Parece ilustração de app. Limpo de longe, simpático de perto; a cadeira é desenhada no mesmo traço.', fam: famTraco }
+};
+const grade_ = document.getElementById('grade');
+let escolhida = null;
+function pintar() {
+  grade_.innerHTML = Object.entries(FAMILIAS).map(([id, f], n) => `
+    <div class="card ${escolhida === id ? 'escolhida' : ''}" data-id="${id}">
+      <span class="selo">escolhido</span>
+      <span class="mini">${String(n).padStart(2, '0')} · ${n ? 'família nova' : 'referência'}</span>
+      <h3>${f.nome}</h3><p>${f.desc}</p>
+      <canvas width="560" height="340" data-fam="${id}"></canvas>
+      <span class="leg"><span>${PESSOAS.map(p => p.nome).join(' · ')} em pé</span><span>de costas na mesa · de frente na diretoria</span></span>
+      <button class="btn ${escolhida === id ? '' : 'ghost'}" data-esc="${id}">${escolhida === id ? 'Escolhido ✓' : 'Escolher este'}</button>
+    </div>`).join('');
+  document.querySelectorAll('canvas[data-fam]').forEach(cv => { const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false; cena(ctx, FAMILIAS[cv.dataset.fam].fam); });
+  document.querySelectorAll('[data-esc]').forEach(b => b.onclick = () => { escolhida = b.dataset.esc; pintar(); });
+  const t = document.getElementById('escolha'), cod = document.getElementById('codigo');
+  if (escolhida) { t.innerHTML = 'Você escolheu <b>' + FAMILIAS[escolhida].nome + '</b>. Diga ao Claude, no chat, a linha ao lado.'; cod.textContent = 'bonecos: ' + escolhida; }
+  else { t.innerHTML = 'Clique em <b>Escolher este</b> no quadro que você preferir.'; cod.textContent = 'bonecos: ?'; }
+}
+pintar();
+</script>
+</body>
+</html>

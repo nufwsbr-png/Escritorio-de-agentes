@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O painel do agente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{--preto:#05080E;--noite:#0A1424;--carvao:#0E1522;--linha:#1A2233;--branco:#fff;--gelo:#EBEBEC;--cinza:#A4AEB9;--cinza-2:#686D86;
+    --ciano:#5FE0FB;--violeta:#7C4DF7;--grad:linear-gradient(90deg,#5FE0FB 0%,#A1AFF4 45%,#C79FF4 65%,#F76BE8 100%);--titulo:"Outfit",system-ui,sans-serif;--texto:"DM Sans",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--preto);color:var(--gelo);font-family:var(--texto);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:110px}
+  .wrap{max-width:1400px;margin:0 auto;padding:0 28px}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(5,8,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--linha)}
+  .topbar .wrap{display:flex;align-items:center;gap:14px;height:62px}
+  .topbar svg{width:30px;height:30px}
+  .wordmark{font-family:var(--titulo);font-weight:600;font-size:20px;letter-spacing:-.02em;color:var(--branco)}
+  .wordmark small{font-family:var(--texto);font-weight:400;font-size:12px;color:var(--cinza);margin-left:10px;letter-spacing:.18em;text-transform:uppercase}
+  .topbar .tag{margin-left:auto;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--linha);border-radius:99px;padding:6px 14px;color:var(--cinza);white-space:nowrap;text-decoration:none}
+  header.capa{padding:56px 0 36px;border-bottom:1px solid var(--linha)}
+  .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--cinza);font-weight:500}
+  .eyebrow::after{content:"";display:block;width:36px;height:2px;background:var(--ciano);margin-top:12px}
+  h1{font-family:var(--titulo);font-weight:300;font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.02em;color:var(--branco);margin:22px 0 14px}
+  h1 strong{font-weight:500;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lead{font-size:17px;color:var(--cinza);max-width:760px;font-weight:300}
+  p.lead b{color:var(--gelo);font-weight:500}
+  section.lista{padding:28px 0;display:flex;flex-direction:column;gap:34px}
+  .quadro{background:var(--carvao);border:1px solid var(--linha);border-radius:18px;overflow:hidden;transition:border-color .15s}
+  .quadro.escolhida{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(95,224,251,.18)}
+  .cabeca{display:flex;align-items:flex-start;gap:18px;padding:20px 24px;border-bottom:1px solid var(--linha)}
+  .cabeca .mini{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano);font-weight:600;display:block;margin-bottom:4px}
+  .cabeca h3{font-family:var(--titulo);font-weight:500;font-size:24px;letter-spacing:-.015em;color:var(--branco);line-height:1.1}
+  .cabeca p{font-size:14px;color:var(--cinza);margin-top:6px;max-width:820px}
+  .cabeca .btn{margin-left:auto;flex:none;align-self:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--ciano);color:var(--preto);font-family:var(--texto);font-weight:600;font-size:14px;padding:11px 20px;border-radius:99px;border:0;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .btn.ghost{background:transparent;color:var(--branco);border:1px solid rgba(255,255,255,.35);font-weight:500}
+  .quadro.escolhida .cabeca .btn{background:var(--branco)}
+  .selo{display:none;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--preto);background:var(--ciano);border-radius:99px;padding:4px 10px;font-weight:600;align-self:center}
+  .quadro.escolhida .selo{display:inline-block}
+  .rolagem{overflow-x:auto}
+  .palco{min-width:1180px;font-family:var(--texto);font-size:14px;line-height:1.5;background:#07090f;color:#e3e6ec}
+  .rodape{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(5,8,14,.92);backdrop-filter:blur(10px);border-top:1px solid var(--linha);padding:14px 0}
+  .rodape .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .rodape .txt{flex:1;font-size:14px;color:var(--cinza)}
+  .rodape .txt b{color:var(--branco);font-weight:500}
+  .rodape code{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--ciano);background:var(--carvao);border:1px solid var(--linha);border-radius:8px;padding:4px 10px}
+  @media (max-width:900px){.wrap{padding:0 16px}.cabeca{flex-wrap:wrap}.cabeca .btn{margin-left:0}}
+
+  /* ---------- peças comuns do painel ---------- */
+  .palco .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .palco .b{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #1c2232;background:transparent;color:#e3e6ec;padding:7px 12px;border-radius:8px;white-space:nowrap}
+  .palco .b.p{background:#7C4DF7;border-color:#7C4DF7;color:#fff}
+  .palco .b.ok{color:#3ddc97;border-color:rgba(61,220,151,.35)}
+  .palco .b.bad{color:#f28b82;border-color:rgba(242,139,130,.35)}
+  .palco .b.fraco{color:#9aa3b5}
+  .palco .pil{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:5px;white-space:nowrap}
+  .palco .pil.ok{background:rgba(61,220,151,.14);color:#3ddc97}.palco .pil.warn{background:rgba(243,201,105,.14);color:#f3c969}.palco .pil.bad{background:rgba(242,139,130,.14);color:#f28b82}.palco .pil.dim{background:rgba(107,116,136,.18);color:#9aa3b5}.palco .pil.acc{background:rgba(124,77,247,.18);color:#c9b8ff}
+  .palco input,.palco textarea{font:inherit;font-size:13px;color:#e3e6ec;background:#0d111a;border:1px solid #1c2232;border-radius:8px;padding:8px 11px}
+  .palco input::placeholder{color:#6b7488}
+  .palco .dim{color:#9aa3b5}
+  .palco .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#9fe8c4}
+  .palco table{width:100%;border-collapse:collapse;font-size:13px}
+  .palco th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#9aa3b5;font-weight:600;padding:8px 10px;border-bottom:1px solid #1c2232}
+  .palco td{padding:9px 10px;border-bottom:1px solid #141a26;vertical-align:top}
+  .palco .av{width:34px;height:44px;border-radius:8px;flex:none;background:#0a0d18 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 24' shape-rendering='crispEdges'><rect x='5' y='2' width='6' height='2' fill='%232a1a10'/><rect x='4' y='4' width='8' height='5' fill='%23f2c9a6'/><rect x='6' y='6' width='1' height='1' fill='%23000'/><rect x='9' y='6' width='1' height='1' fill='%23000'/><rect x='4' y='10' width='8' height='7' fill='%2322304e'/><rect x='7' y='10' width='2' height='7' fill='%23e8ecf7'/><rect x='4' y='17' width='3' height='5' fill='%231b2030'/><rect x='9' y='17' width='3' height='5' fill='%231b2030'/></svg>") center/60% no-repeat;border:1px solid #1c2232}
+
+  /* ================= 01 · UMA PÁGINA, EM BLOCOS DE GENTE ================= */
+  .v-blocos .top{display:flex;align-items:center;gap:14px;padding:0 22px;height:56px;border-bottom:1px solid #1c2232;background:#07090f}
+  .v-blocos .top h2{font-family:var(--titulo);font-weight:600;font-size:16px;color:#fff}
+  .v-blocos .top .dim{font-size:12.5px}
+  .v-blocos .top nav{margin-left:auto;display:flex;gap:4px}
+  .v-blocos .top nav a{color:#9aa3b5;font-size:12.5px;text-decoration:none;padding:6px 10px;border-radius:8px}
+  .v-blocos .top nav a.on{background:#151a26;color:#fff}
+  .v-blocos .hoje{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;padding:18px 22px 0}
+  .v-blocos .kpi{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:14px 16px}
+  .v-blocos .kpi .rot{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b5;font-weight:600}
+  .v-blocos .kpi .num{font-family:var(--titulo);font-weight:600;font-size:30px;color:#fff;line-height:1.1;margin-top:6px}
+  .v-blocos .kpi .num small{font-family:var(--texto);font-size:12.5px;color:#9aa3b5;font-weight:400;margin-left:6px}
+  .v-blocos .kpi .sub{font-size:12.5px;color:#9aa3b5;margin-top:6px}
+  .v-blocos .kpi.foco{border-color:rgba(243,201,105,.4);background:rgba(243,201,105,.06)}
+  .v-blocos .kpi.foco .num{color:#f3c969}
+  .v-blocos .bar{height:6px;background:#151a26;border-radius:6px;overflow:hidden;margin-top:10px}.v-blocos .bar i{display:block;height:100%;background:#7C4DF7;width:100%}
+  .v-blocos .sec{padding:18px 22px 0}
+  .v-blocos .sec h3{font-family:var(--titulo);font-weight:600;font-size:15px;color:#fff;display:flex;align-items:center;gap:10px}
+  .v-blocos .sec h3 .pil{margin-left:4px}
+  .v-blocos .sec .expl{font-size:13px;color:#9aa3b5;margin:2px 0 10px}
+  .v-blocos .bloco{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:14px 16px}
+  .v-blocos .linha-ent{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #141a26}
+  .v-blocos .linha-ent:last-child{border-bottom:0}
+  .v-blocos .linha-ent b{font-weight:600}
+  .v-blocos .linha-ent .q{flex:1;min-width:0}
+  .v-blocos .linha-ent .q small{display:block;color:#9aa3b5;font-size:12.5px}
+  .v-blocos .acoes{display:flex;gap:6px;flex-wrap:wrap}
+  .v-blocos .rodar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .v-blocos .rodar input{min-width:280px}
+  .v-blocos .fim{padding:18px 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .v-blocos details{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:12px 16px}
+  .v-blocos summary{cursor:pointer;font-weight:600;font-size:14px;color:#fff;list-style:none;display:flex;align-items:center;gap:8px}
+  .v-blocos summary .dim{font-weight:400;font-size:12.5px}
+  .v-blocos summary::after{content:"";margin-left:auto;width:7px;height:7px;border-right:1.5px solid #9aa3b5;border-bottom:1.5px solid #9aa3b5;transform:rotate(45deg)}
+
+  /* ================= 02 · ABAS ================= */
+  .v-abas .top{display:flex;align-items:center;gap:14px;padding:0 22px;height:64px;background:#0a0d14;border-bottom:1px solid #1c2232}
+  .v-abas .top h2{font-family:var(--titulo);font-weight:600;font-size:17px;color:#fff;line-height:1.1}
+  .v-abas .top .sub{display:block;font-size:12.5px;color:#9aa3b5;font-weight:400}
+  .v-abas .top .estado{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#9aa3b5}
+  .v-abas .top .estado i{width:8px;height:8px;border-radius:50%;background:#3ddc97}
+  .v-abas .abas{display:flex;gap:2px;padding:0 22px;background:#0a0d14;border-bottom:1px solid #1c2232}
+  .v-abas .aba{padding:12px 14px;font-size:13px;font-weight:600;color:#9aa3b5;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .v-abas .aba.on{color:#fff;border-bottom-color:#7C4DF7}
+  .v-abas .aba .n{font-size:10.5px;font-weight:700;background:#151a26;color:#c9b8ff;padding:1px 7px;border-radius:99px}
+  .v-abas .aba .n.warn{background:rgba(243,201,105,.18);color:#f3c969}
+  .v-abas .corpo{display:grid;grid-template-columns:1fr 320px;gap:0}
+  .v-abas .principal{padding:20px 22px}
+  .v-abas .lateral{border-left:1px solid #1c2232;padding:20px 18px;background:#0a0d14;display:flex;flex-direction:column;gap:14px}
+  .v-abas .lateral h4{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b5;font-weight:600;margin-bottom:6px}
+  .v-abas .lateral .kv{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #141a26}
+  .v-abas .lateral .kv b{font-weight:600;color:#fff}
+  .v-abas .lateral .bar{height:6px;background:#151a26;border-radius:6px;overflow:hidden;margin-top:8px}.v-abas .lateral .bar i{display:block;height:100%;background:#7C4DF7;width:100%}
+  .v-abas .lateral .caixa{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:12px 14px}
+  .v-abas .lateral .rodar{display:flex;flex-direction:column;gap:8px}
+  .v-abas .lateral .rodar input{width:100%}
+  .v-abas .lateral .rodar .b{justify-content:center}
+  .v-abas .principal h3{font-family:var(--titulo);font-weight:600;font-size:16px;color:#fff;margin-bottom:4px}
+  .v-abas .principal .expl{font-size:13px;color:#9aa3b5;margin-bottom:14px}
+  .v-abas .cartao{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;align-items:center}
+  .v-abas .cartao .q{flex:1;min-width:0}
+  .v-abas .cartao .q b{font-weight:600}
+  .v-abas .cartao .q small{display:block;color:#9aa3b5;font-size:12.5px;margin-top:2px}
+  .v-abas .cartao.vazio{color:#9aa3b5;justify-content:center;border-style:dashed}
+  .v-abas .acoes{display:flex;gap:6px}
+
+  /* ================= 03 · LINHA DO TEMPO ================= */
+  .v-tempo .top{display:flex;align-items:center;gap:14px;padding:0 22px;height:56px;background:#07090f;border-bottom:1px solid #1c2232}
+  .v-tempo .top h2{font-family:var(--titulo);font-weight:600;font-size:16px;color:#fff}
+  .v-tempo .top .dim{font-size:12.5px}
+  .v-tempo .top .b{margin-left:auto}
+  .v-tempo .corpo{display:grid;grid-template-columns:300px 1fr;min-height:560px}
+  .v-tempo .lado{border-right:1px solid #1c2232;padding:18px;display:flex;flex-direction:column;gap:14px;background:#0a0d14}
+  .v-tempo .ficha{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:14px}
+  .v-tempo .ficha .quem{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .v-tempo .ficha .quem b{display:block;font-family:var(--titulo);font-weight:600;font-size:15px;color:#fff}
+  .v-tempo .ficha .quem small{color:#9aa3b5;font-size:12.5px}
+  .v-tempo .ficha .kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #141a26}
+  .v-tempo .ficha .kv:last-child{border-bottom:0}
+  .v-tempo .ficha .kv b{color:#fff;font-weight:600}
+  .v-tempo .ficha h4{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b5;font-weight:600;margin-bottom:6px}
+  .v-tempo .ficha .lista{display:flex;flex-direction:column;gap:6px;font-size:13px}
+  .v-tempo .ficha .lista span{display:flex;align-items:center;gap:8px}
+  .v-tempo .ficha .lista i{width:7px;height:7px;border-radius:50%;background:#3ddc97;flex:none}
+  .v-tempo .ficha .lista i.warn{background:#f3c969}
+  .v-tempo .ficha .bar{height:6px;background:#151a26;border-radius:6px;overflow:hidden;margin-top:8px}.v-tempo .ficha .bar i{display:block;height:100%;background:#7C4DF7;width:100%}
+  .v-tempo .feed{padding:18px 22px}
+  .v-tempo .feed h3{font-family:var(--titulo);font-weight:600;font-size:16px;color:#fff;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .v-tempo .feed .expl{font-size:13px;color:#9aa3b5;margin-bottom:16px}
+  .v-tempo .dia{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b5;font-weight:600;margin:14px 0 8px}
+  .v-tempo .ev{display:grid;grid-template-columns:56px 18px 1fr;gap:0 10px;padding:0 0 14px;position:relative}
+  .v-tempo .ev .hora{font-size:12px;color:#9aa3b5;padding-top:3px;text-align:right;font-variant-numeric:tabular-nums}
+  .v-tempo .ev .ponto{position:relative}
+  .v-tempo .ev .ponto::before{content:"";position:absolute;left:8px;top:4px;bottom:-14px;width:1px;background:#1c2232}
+  .v-tempo .ev:last-child .ponto::before{display:none}
+  .v-tempo .ev .ponto i{position:relative;z-index:1;display:block;width:10px;height:10px;border-radius:50%;background:#6b7488;margin:5px 0 0 3.5px;box-shadow:0 0 0 3px #07090f}
+  .v-tempo .ev .ponto i.ok{background:#3ddc97}.v-tempo .ev .ponto i.warn{background:#f3c969}.v-tempo .ev .ponto i.bad{background:#f28b82}.v-tempo .ev .ponto i.acc{background:#7C4DF7}
+  .v-tempo .ev .txt{background:#0d111a;border:1px solid #1c2232;border-radius:12px;padding:10px 14px}
+  .v-tempo .ev .txt.pede{border-color:rgba(243,201,105,.4)}
+  .v-tempo .ev .txt b{font-weight:600}
+  .v-tempo .ev .txt small{display:block;color:#9aa3b5;font-size:12.5px;margin-top:2px}
+  .v-tempo .ev .txt .acoes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .v-tempo .ev .txt input{min-width:240px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FE0FB"/><stop offset=".5" stop-color="#7C4DF7"/><stop offset="1" stop-color="#F76BE8"/></linearGradient></defs><polyline points="34,60 74,100 34,140" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="66,56 110,100 66,144" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><polyline points="104,50 154,100 104,150" fill="none" stroke="url(#gs)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="wordmark">NuFws<small>Estúdio · painel do agente</small></span>
+  <a class="tag" href="/?tela=1">a tela do escritório</a>
+</div></div>
+
+<header class="capa"><div class="wrap">
+  <div class="eyebrow">Escolha · o sistema de cada agente</div>
+  <h1>Três jeitos de mostrar<br><strong>o que o agente está fazendo.</strong></h1>
+  <p class="lead">É a página que abre no monitor de cada agente (o "sistema" dele). Hoje ela é uma grade de caixas técnicas: Resumo, Construção, Plataformas, Rodar uma entidade, Perguntas, Entidades, Lições, Conhecimento, Rodadas, Log. As três variações mostram <b>o mesmo conteúdo</b> (um agente de exemplo com um caso esperando resposta, um esperando aprovação e dois prontos), reorganizado para quem não é técnico: o que ele está fazendo agora, o que espera de você, o que já fez. Clique em <b>Escolher este</b> e me diga o nome.</p>
+</div></header>
+
+<section class="lista wrap" id="lista"></section>
+
+<div class="rodape"><div class="wrap">
+  <span class="txt" id="escolha">Clique em <b>Escolher este</b> no quadro que você preferir.</span>
+  <code id="codigo">painel: ?</code>
+</div></div>
+
+<script>
+const ICO = {
+  ligar: '<path d="M7 4l13 8-13 8z"/>', pausa: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  check: '<path d="M5 12l5 5 9-10"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', volta: '<path d="M9 14l-5-5 5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/>',
+  lupa: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', lamp: '<path d="M9 18h6M10 21h4"/><path d="M8 13a5.5 5.5 0 1 1 8 0c-1 1-1.5 2-1.5 3h-5c0-1-.5-2-1.5-3z"/>',
+  doc: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>', conv: '<path d="M4 5h16v11H9l-5 4z"/>', pasta: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  plug: '<path d="M9 2v6M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/>', relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', sair: '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>'
+};
+const ic = n => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO[n] || ''}</svg>`;
+
+const V = {
+  blocos: { nome: 'Uma página, em blocos de gente', desc: 'Tudo numa rolagem só, mas na ordem que um chefe pergunta: "o que ele está fazendo agora?", "o que está esperando de mim?", "o que ele já fez hoje?". As caixas técnicas (construção, conexões, lições, conhecimento, log) viram quatro números no topo e blocos recolhidos no fim. As ações ficam ao lado de cada caso.' },
+  abas:   { nome: 'Abas: Agora · Esperando você · Feito · Ajustes', desc: 'A página vira quatro abas, com o número de pendências em cada uma. A aba "Esperando você" é a que importa e abre com destaque. Uma coluna fixa à direita guarda a ficha curta do agente (construção, conexões, limites) e a caixa "Rodar um caso", que hoje fica solta no meio.' },
+  tempo:  { nome: 'Linha do tempo', desc: 'O agente contado como uma conversa: cada rodada, pergunta, aprovação e erro vira um ponto na linha do tempo do dia, com a hora e a ação no próprio ponto. A ficha do agente fica à esquerda, parada. É o jeito mais parecido com acompanhar um funcionário pelo chat.' }
+};
+
+const top3 = (classe) => `<div class="av"></div><div><h2>Exemplo <span class="sub">Agente de demonstração · Escritório de Agentes · agente de tarefa</span></h2></div>`;
+
+function blocos() {
+  return `<div class="palco">
+    <div class="top"><div class="av"></div><h2>Exemplo</h2><span class="dim">Agente de demonstração · em serviço desde 09:12</span>
+      <nav><a class="on">Hoje</a><a>Casos</a><a>O que aprendeu</a><a>Regras</a><a>Ajustes</a></nav></div>
+    <div class="hoje">
+      <div class="kpi"><div class="rot">Agora</div><div class="num">rodando<small>caso-07 há 2 min</small></div><div class="sub">em ensaio: só lê, não grava nada</div></div>
+      <div class="kpi foco"><div class="rot">Esperando você</div><div class="num">2</div><div class="sub">1 pergunta · 1 aprovação</div></div>
+      <div class="kpi"><div class="rot">Feito hoje</div><div class="num">2<small>casos prontos</small></div><div class="sub">8 rodadas · limite 50</div></div>
+      <div class="kpi"><div class="rot">Confiança</div><div class="num">3<small>de 10 aprovações</small></div><div class="sub">com 10 seguidas ele passa a gravar de verdade</div><div class="bar"><i style="width:30%"></i></div></div>
+    </div>
+    <div class="sec"><h3>Esperando você <span class="pil warn">2</span></h3><div class="expl">Ele parou nestes casos e só continua quando você responder ou aprovar.</div>
+      <div class="bloco">
+        <div class="linha-ent"><span class="pil warn">pergunta</span><div class="q"><b>caso-03 · Maria Souza</b><small>"A cliente mandou dois RGs com nomes diferentes. Uso o do contrato ou o da conversa?"</small></div><div class="acoes"><input placeholder="sua resposta"><button class="b ok">${ic('conv')}Responder</button></div></div>
+        <div class="linha-ent"><span class="pil acc">aprovação</span><div class="q"><b>caso-05 · João Lima</b><small>Proposta pronta em saidas/caso-05: pasta montada com 6 documentos e o resumo da entrevista.</small></div><div class="acoes"><button class="b ok">${ic('check')}Aprovar e aplicar</button><button class="b bad">${ic('x')}Rejeitar</button><button class="b fraco">${ic('lupa')}Ver</button></div></div>
+      </div></div>
+    <div class="sec"><h3>Todos os casos <span class="pil dim">4</span></h3><div class="expl">Um caso é cada coisa que ele trabalha: um cliente, um pedido, uma pasta.</div>
+      <div class="bloco">
+        <div class="linha-ent"><span class="pil ok">rodando</span><div class="q"><b>caso-07 · Pedro Alves</b><small>ensaio · começou às 11:58</small></div><div class="acoes"><span class="dim">rodando…</span></div></div>
+        <div class="linha-ent"><span class="pil ok">pronto</span><div class="q"><b>caso-01 · Ana Paula</b><small>proposta · 10:41 · 5 feitos · aprovado por você</small></div><div class="acoes"><button class="b fraco">${ic('volta')}Corrigir</button><button class="b fraco">Assumir</button></div></div>
+        <div class="linha-ent"><span class="pil ok">pronto</span><div class="q"><b>caso-02 · Carlos Mendes</b><small>proposta · 09:50 · 4 feitos · aprovado por você</small></div><div class="acoes"><button class="b fraco">${ic('volta')}Corrigir</button><button class="b fraco">Assumir</button></div></div>
+        <div class="linha-ent" style="border-top:1px dashed #1c2232;margin-top:4px;padding-top:12px"><div class="q rodar"><input placeholder="novo caso: ex.: amostras/caso-08 ou o ID"><button class="b">${ic('lupa')}Ensaio</button><button class="b p">${ic('ligar')}Rodar em proposta</button><span class="dim" style="font-size:12.5px">Ensaio só lê. Proposta escreve e espera sua aprovação.</span></div></div>
+      </div></div>
+    <div class="fim">
+      <details><summary>${ic('lamp')}O que ele aprendeu <span class="dim">· 1 lição proposta, 4 aprovadas</span></summary></details>
+      <details><summary>${ic('doc')}As regras dele (constituição) <span class="dim">· editar vale na próxima rodada</span></summary></details>
+      <details><summary>${ic('plug')}Conexões e construção <span class="dim">· 2 conexões · 17 de 17 componentes</span></summary></details>
+      <details><summary>${ic('relogio')}Rodadas e log <span class="dim">· as últimas 25 rodadas, o log do sistema</span></summary></details>
+    </div>
+  </div>`;
+}
+
+function abas() {
+  return `<div class="palco">
+    <div class="top"><div class="av"></div><div><h2>Exemplo<span class="sub">Agente de demonstração · agente de tarefa</span></h2></div><span class="estado"><i></i>em serviço · rodando caso-07 há 2 min</span><button class="b" style="margin-left:14px">${ic('sair')}Sair</button></div>
+    <div class="abas"><span class="aba">Agora <span class="n">1</span></span><span class="aba on">Esperando você <span class="n warn">2</span></span><span class="aba">Feito hoje <span class="n">2</span></span><span class="aba">Todos os casos <span class="n">4</span></span><span class="aba">O que aprendeu</span><span class="aba">Regras</span></div>
+    <div class="corpo">
+      <div class="principal">
+        <h3>Esperando você</h3><div class="expl">Ele parou nestes casos. Responda ou aprove e ele continua sozinho.</div>
+        <div class="cartao"><span class="pil warn">pergunta</span><div class="q"><b>caso-03 · Maria Souza</b><small>"A cliente mandou dois RGs com nomes diferentes. Uso o do contrato ou o da conversa?"</small><div class="acoes" style="margin-top:10px"><input placeholder="sua resposta" style="min-width:300px"><button class="b ok">${ic('conv')}Responder</button></div></div></div>
+        <div class="cartao"><span class="pil acc">aprovação</span><div class="q"><b>caso-05 · João Lima</b><small>Proposta pronta em saidas/caso-05: pasta montada com 6 documentos e o resumo da entrevista.</small><div class="acoes" style="margin-top:10px"><button class="b ok">${ic('check')}Aprovar e aplicar</button><button class="b bad">${ic('x')}Rejeitar</button><button class="b fraco">${ic('lupa')}Ver a proposta</button></div></div></div>
+        <div class="cartao vazio">Quando não houver nada aqui, ele está trabalhando sozinho.</div>
+      </div>
+      <aside class="lateral">
+        <div class="caixa"><h4>Rodar um caso</h4><div class="rodar"><input placeholder="ex.: amostras/caso-08 ou o ID"><button class="b">${ic('lupa')}Ensaio (só lê)</button><button class="b p">${ic('ligar')}Rodar em proposta</button><span class="dim" style="font-size:12px">Proposta escreve em saidas/ e espera sua aprovação.</span></div></div>
+        <div class="caixa"><h4>Confiança</h4><div class="kv"><span>aprovações seguidas</span><b>3 de 10</b></div><div class="bar"><i style="width:30%"></i></div><span class="dim" style="font-size:12px;display:block;margin-top:6px">com 10 seguidas ele passa a gravar de verdade</span></div>
+        <div class="caixa"><h4>A ficha</h4><div class="kv"><span>hoje</span><b>8 rodadas · limite 50</b></div><div class="kv"><span>conexões</span><b>CRM, Planilha</b></div><div class="kv"><span>construção</span><b>17 de 17</b></div><div class="kv"><span>no ar há</span><b>3 h</b></div><div class="kv"><span>porta</span><b>4401</b></div></div>
+      </aside>
+    </div>
+  </div>`;
+}
+
+function tempo() {
+  const ev = (h, cor, txt, pede) => `<div class="ev"><span class="hora">${h}</span><span class="ponto"><i class="${cor}"></i></span><div class="txt ${pede ? 'pede' : ''}">${txt}</div></div>`;
+  return `<div class="palco">
+    <div class="top"><h2>Exemplo</h2><span class="dim">Agente de demonstração · em serviço</span><button class="b p">${ic('ligar')}Rodar um caso</button></div>
+    <div class="corpo">
+      <aside class="lado">
+        <div class="ficha"><div class="quem"><div class="av"></div><div><b>Exemplo</b><small>agente de tarefa · no ar há 3 h</small></div></div>
+          <div class="kv"><span>agora</span><b>rodando caso-07</b></div><div class="kv"><span>esperando você</span><b style="color:#f3c969">2</b></div><div class="kv"><span>feito hoje</span><b>2 casos</b></div><div class="kv"><span>rodadas hoje</span><b>8 de 50</b></div></div>
+        <div class="ficha"><h4>Confiança</h4><div class="kv"><span>aprovações seguidas</span><b>3 de 10</b></div><div class="bar"><i style="width:30%"></i></div></div>
+        <div class="ficha"><h4>Conexões</h4><div class="lista"><span><i></i>CRM · conectada</span><span><i class="warn"></i>Planilha · sem chave</span></div></div>
+        <div class="ficha"><h4>Mais</h4><div class="lista"><span>${ic('lamp')}O que aprendeu (4)</span><span>${ic('doc')}As regras dele</span><span>${ic('relogio')}Rodadas e log</span></div></div>
+      </aside>
+      <div class="feed">
+        <h3>Hoje <span class="pil warn">2 esperando você</span></h3><div class="expl">Cada ponto é algo que ele fez ou perguntou. O que está em amarelo espera a sua ação.</div>
+        <div class="dia">Agora</div>
+        ${ev('12:00', 'ok', `<b>Rodando caso-07 · Pedro Alves</b><small>em ensaio: só lê, não grava nada · há 2 min</small>`)}
+        <div class="dia">Esperando você</div>
+        ${ev('11:42', 'warn', `<b>Perguntou sobre o caso-03 · Maria Souza</b><small>"A cliente mandou dois RGs com nomes diferentes. Uso o do contrato ou o da conversa?"</small><div class="acoes"><input placeholder="sua resposta"><button class="b ok">${ic('conv')}Responder</button></div>`, true)}
+        ${ev('11:20', 'acc', `<b>Terminou a proposta do caso-05 · João Lima</b><small>pasta montada com 6 documentos e o resumo da entrevista, em saidas/caso-05</small><div class="acoes"><button class="b ok">${ic('check')}Aprovar e aplicar</button><button class="b bad">${ic('x')}Rejeitar</button><button class="b fraco">${ic('lupa')}Ver</button></div>`, true)}
+        <div class="dia">Feito</div>
+        ${ev('10:41', 'ok', `<b>Caso-01 · Ana Paula pronto</b><small>proposta aprovada por você · 5 feitos</small>`)}
+        ${ev('10:05', 'bad', `<b>Erro no caso-02 · Carlos Mendes</b><small>a planilha não respondeu (sem chave em 🔌 Conexões) · ele tentou de novo às 09:50 e deu certo</small>`)}
+        ${ev('09:50', 'ok', `<b>Caso-02 · Carlos Mendes pronto</b><small>proposta aprovada por você · 4 feitos</small>`)}
+        ${ev('09:12', 'acc', `<b>Ligado pelo escritório</b><small>porta 4401 · 17 de 17 componentes</small>`)}
+      </div>
+    </div>
+  </div>`;
+}
+
+const DESENHO = { blocos, abas, tempo };
+const lista = document.getElementById('lista');
+let escolhida = null;
+function pintar() {
+  lista.innerHTML = Object.keys(V).map((id, i) => `
+  <section class="quadro v-${id}" data-id="${id}">
+    <div class="cabeca"><div><span class="mini">0${i + 1} · variação</span><h3>${V[id].nome}</h3><p>${V[id].desc}</p></div><span class="selo">escolhido</span><button class="btn ghost" data-esc="${id}">Escolher este</button></div>
+    <div class="rolagem">${DESENHO[id]()}</div>
+  </section>`).join('');
+  document.querySelectorAll('.quadro').forEach(q => q.classList.toggle('escolhida', q.dataset.id === escolhida));
+  document.querySelectorAll('[data-esc]').forEach(b => { const minha = b.dataset.esc === escolhida; b.textContent = minha ? 'Escolhido ✓' : 'Escolher este'; b.classList.toggle('ghost', !minha); b.onclick = () => { escolhida = b.dataset.esc; pintar(); }; });
+  const t = document.getElementById('escolha'), cod = document.getElementById('codigo');
+  if (escolhida) { t.innerHTML = 'Você escolheu <b>' + V[escolhida].nome + '</b>. Diga ao Claude, no chat, a linha ao lado.'; cod.textContent = 'painel: ' + escolhida; }
+  else { t.innerHTML = 'Clique em <b>Escolher este</b> no quadro que você preferir.'; cod.textContent = 'painel: ?'; }
+}
+pintar();
+</script>
+</body>
+</html>

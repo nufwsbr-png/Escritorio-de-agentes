@@ -301,7 +301,7 @@ const FURN = (() => {
      feito em 2x para continuar nítido no zoom. O que tem RGB ou animação
      — mesa, arcade, rack, TV, planta — continua sendo desenhado ao vivo. */
   const ALTURA_CACHE = {
-    chairGamer: 78, chairBoss: 84, chairSimple: 58, expositor: 96,
+    chairSimple: 58, expositor: 96,
     pilhaCaixas: 118, poolTable: 56, foosball: 52, sofa: 60,
     rug: 12, lowTable: 40, cooler: 64
   };
@@ -461,10 +461,8 @@ const FURN = (() => {
     },
 
     /* ================= CADEIRAS ================= */
-    chairGamer(ctx, o) { const a = ISO.hsl(o.hue, 85, 52);
-      cadeiraBase(ctx, o, '#14171f', a, 16, true); },
-    chairBoss(ctx, o)  {
-      cadeiraBase(ctx, o, '#1a1419', '#7c6cff', 19, true); },
+    chairGamer(ctx, o) { cadeiraPixel(ctx, o, '#14171f', ISO.hsl(o.hue, 85, 52)); },
+    chairBoss(ctx, o)  { cadeiraPixel(ctx, o, '#1a1419', '#7c6cff'); },
     chairSimple(ctx, o){
       cadeiraBase(ctx, o, '#1c2234', '#4a5a86', 14, false); },
 
@@ -934,6 +932,16 @@ const FURN = (() => {
    * antes do boneco e parecia translúcida.
    * Quando ele está de frente ('s' e 'e'), a cadeira inteira vai atrás.
    */
+  /** a cadeira das mesas em pixel art, no traço do boneco (BONECO_PIXEL.cadeira), em duas camadas */
+  function cadeiraPixel(ctx, o, cor, accent) {
+    const cx = o.x + o.w / 2, cy = o.y + o.d / 2;
+    const costas = (o.face === 'n' || o.face === 'w');
+    if ((o.camada || 'tras') === 'tras') ISO.shadow(ctx, cx, cy, .5, .26);
+    if (typeof BONECO_PIXEL === 'undefined') return cadeiraBase(ctx, o, cor, accent, 16, true);
+    const p = ISO.toScreen(cx, cy);
+    BONECO_PIXEL.cadeira(ctx, p.x, p.y, 1.9 * AVATAR.SCALE, o.camada || 'tras', { k: cor, a: accent }, costas);
+  }
+
   function cadeiraBase(ctx, o, cor, accent, altEncosto, gamer) {
     // o boneco é desenhado em AVATAR.SCALE, então o assento precisa subir junto
     const ESC     = AVATAR.SCALE;

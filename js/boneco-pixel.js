@@ -87,6 +87,51 @@ const BONECO_PIXEL = (() => {
       c: terno, C: tom(terno, -0.3), a: acc, A: tom(acc, -0.3), w: '#f2f4f8', W: '#c9d0e0', r: manga, R: tom(manga, -0.3), B: tom(hair, -0.1),
       l: calca, L: tom(calca, -0.3), b: '#1a1a1a' };
   }
+  /* ---------- a cadeira, no mesmo traço: 18 x 30 células, vista de frente ----------
+     Linhas 8 a 19 são o encosto (até os ombros do boneco sentado; a cabeça fica livre); 20 a 22 o assento (o topo fica 10 células acima do pé,
+     onde o quadril do boneco sentado cai); 23 a 29 o pistão, a base em estrela e os rodízios.
+     Duas camadas: de frente para a câmera a cadeira inteira vai ATRÁS do boneco; de costas
+     ('n' e 'w') o assento e a base vão atrás e o encosto vai NA FRENTE, tapando o corpo. */
+  const CADEIRA = [
+    '..................', '..................', '..................', '..................',
+    '..................', '..................', '..................', '..................',
+    '...kkkkkkkkkkkk...',
+    '..kaaaaaaaaaaaaK..',
+    '..kcaccccccccacK..', '..kcaccccccccacK..', '..kcaccccccccacK..', '..kcaccccccccacK..',
+    '..kcaccccccccacK..', '..kcaccccccccacK..', '..kcaccccccccacK..',
+    '..kccccccccccccK..',
+    '..kKKKKKKKKKKKKK..',
+    '...kk........kk...',
+    '.kkkkkkkkkkkkkkkk.',
+    'kccccccccccccccccK',
+    'kKKKKKKKKKKKKKKKKK',
+    '........mm........',
+    '........mm........',
+    '........mm........',
+    '.......MMMM.......',
+    '...mmmmMMMMmmmm...',
+    '..ww....ww....ww..',
+    '..ww....ww....ww..'
+  ];
+  /** cadeira com o pé do boneco em (x, y); parte 'tras' ou 'frente'; cor = { k: casco, a: destaque }; costas = boneco de costas */
+  function cadeira(ctx, x, y, k, parte, cor, costas) {
+    const casco = cor.k || '#14171f', acc = cor.a || '#5FE0FB';
+    const c = { k: casco, K: tom(casco, -0.35), c: tom(casco, 0.2), a: acc, A: tom(acc, -0.3), m: '#8e97ab', M: '#5c6578', w: '#39415a' };
+    const j0 = !costas ? (parte === 'tras' ? 0 : 30) : (parte === 'tras' ? 20 : 0);
+    const j1 = !costas ? 30 : (parte === 'tras' ? 30 : 20);
+    const x0 = x - 9 * k, y0 = y - 30 * k;
+    for (let j = j0; j < j1; j++) {
+      const row = CADEIRA[j]; let i = 0;
+      while (i < 18) {
+        const ch = row[i];
+        if (ch === '.' || !c[ch]) { i++; continue; }
+        let n = 1; while (i + n < 18 && row[i + n] === ch) n++;
+        ctx.fillStyle = c[ch]; ctx.fillRect(x0 + i * k, y0 + j * k, n * k + 0.02, k + 0.02);
+        i += n;
+      }
+    }
+  }
+
   /** desenha com o pé em (x, y); k = tamanho de cada pixel; pose 'pe' ou 'sentado' (pernas curtas, para a cadeira); costas = visto por trás */
   function draw(ctx, look, x, y, k, pose, costas) {
     const g = grade(look, pose, costas), c = cores(look);
@@ -115,6 +160,6 @@ const BONECO_PIXEL = (() => {
     return Object.assign({ seed: String(seed), skin: SKIN[h % SKIN.length], hair: HAIRC[(h >> 3) % HAIRC.length], style: STYLES[(h >> 6) % STYLES.length],
       glasses: (h % 5 === 0), beard: (h % 4 === 0) && !/longo|coque|franja/.test(STYLES[(h >> 6) % STYLES.length]), acc: '#5FE0FB', roupa: 'social' }, hints);
   }
-  return { grade, cores, draw, makeLook, ROUPAS, HAIR, BODY, ALTURA: 40, LARGURA: 16 };
+  return { grade, cores, draw, cadeira, makeLook, ROUPAS, HAIR, BODY, ALTURA: 40, LARGURA: 16 };
 })();
 if (typeof module !== 'undefined') module.exports = BONECO_PIXEL;

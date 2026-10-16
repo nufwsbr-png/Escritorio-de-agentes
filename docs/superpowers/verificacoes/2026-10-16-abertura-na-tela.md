@@ -97,6 +97,17 @@ testes automáticos inteiros.
   A fumaça ganhou a checagem do tema (ícones nas duas barras, `data-rotulo`,
   Admin com a palavra).
 
+## 5g-7: a cadeira em pixel, a barra maior, as duas páginas de escolha
+
+- **A cadeira das mesas em pixel art**, no traço do boneco. Fotos de perto
+  (zoom 4): Bia sentada de costas, com o encosto até os ombros e a cabeça
+  livre; a mesa vazia com a cadeira inteira; a dona de frente na diretoria
+  com a cadeira atrás. Antes, no zoom, a cadeira era um bloco de voxel que
+  tapava o boneco inteiro (fotografado também).
+- **A barra do topo** com 54 px e os contadores com a palavra.
+- **As páginas de escolha** fotografadas quadro a quadro, sem erro de JS:
+  três painéis do agente e quatro famílias de boneco na cena.
+
 ## O que fica
 
 - A interpretação por palavras-chave pega o "o que faz" da primeira frase;
