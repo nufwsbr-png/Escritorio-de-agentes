@@ -2,8 +2,9 @@
    ajustes.js (navegador) — ⚙️ Ajustes e o aviso de escritório não aberto
 
    Mostra o que está configurado (sem segredos), o status da conta do Claude
-   Code, logo e planta, atalhos e a instrução para refazer a abertura. A
-   abertura em si acontece no Claude Code, com /criar-escritorio: a tela só
+   Code, logo e planta, atalhos e o Estúdio para refazer a abertura. A
+   abertura em si acontece em /abertura (uma pergunta, o Estúdio, a chave);
+   /criar-escritorio no Claude Code abre o mesmo link. Esta tela só
    aponta para lá.
    =========================================================== */
 const AJUSTES = (() => {
@@ -60,8 +61,8 @@ const AJUSTES = (() => {
       </div>
       <div class="aj-figs">${img(a.marca.logo, 'logo')}${img(a.marca.planta, 'planta')}
         <div class="aj-bloco"><b>Salas</b><div class="hint">${a.plantaSalas ? a.plantaSalas.length + ' salas lidas da planta: ' + a.plantaSalas.map(s => esc(s.nome)).join(', ') : 'as 5 salas padrão do escritório (sem planta)'}</div></div></div>
-      <p class="hint" style="margin-top:12px;line-height:1.6"><b>Para mudar qualquer coisa daqui, ou refazer a abertura para outro cliente:</b> abra esta pasta no Claude Code e digite ${COMANDO}. Ele mostra o que está configurado e muda só o que você pedir. A planta nova redesenha as salas.</p>
-      <div class="mactions"><button class="btn" id="aj-fechar">Fechar</button></div>`;
+      <p class="hint" style="margin-top:12px;line-height:1.6"><b>Para trocar o visual (planta, cores, roupa dos agentes) ou refazer a abertura para outro cliente:</b> o Estúdio, em <a href="/abertura" id="aj-estudio">/abertura</a>, como administrador. Troca empresa, dono, setores, planta e visual; agentes, conexões e senha ficam. Pelo chat, ${COMANDO} abre o mesmo link e lê a planta do escritório (imagem ou PDF) para redesenhar as salas.</p>
+      <div class="mactions"><a class="btn primary" href="/abertura" id="aj-estudio-btn">🎨 Estúdio · refazer a abertura</a><button class="btn" id="aj-fechar">Fechar</button></div>`;
     $('#aj-fechar').onclick = () => $('#modal').classList.add('hidden');
     $('#aj-plat').onclick = e => { e.preventDefault(); PLATAFORMAS_UI.abrir(); };
     $('#aj-admin').onclick = e => { e.preventDefault(); ADMIN.abrir(); };
@@ -70,15 +71,31 @@ const AJUSTES = (() => {
     if (!admin) { /* o cliente vê tudo isso; só os botões de escrita exigem a senha, e cada modal já cobra */ }
   }
 
-  /* o aviso de "não foi aberto", no topo da tela, quando não há config.json */
+  /* a faixa no topo da tela: "não foi aberto" (sem config.json) ou "nenhum agente ainda: contrate o primeiro" */
   function avisoSemAbertura() {
     const E = window.ESCRITORIO || {};
     const el = $('#sem-abertura');
     if (!el) return;
-    el.classList.toggle('hidden', E.aberto !== false);
-    el.innerHTML = `Este escritório ainda não foi aberto. Abra esta pasta no Claude Code e digite ${COMANDO}. <a href="#" id="sem-abertura-mais">o que isso faz?</a>`;
-    const m = $('#sem-abertura-mais'); if (m) m.onclick = e => { e.preventDefault(); abrir(); };
+    if (E.aberto === false) {
+      el.innerHTML = `Este escritório ainda não foi aberto. <a href="/abertura">Abrir agora</a>: uma pergunta sobre o seu negócio, o Estúdio e a chave de administrador. <a href="#" id="sem-abertura-mais">o que já está aqui?</a>`;
+      el.classList.remove('hidden');
+      const m = $('#sem-abertura-mais'); if (m) m.onclick = e => { e.preventDefault(); abrir(); };
+      return;
+    }
+    // agente contratado = sistema com trilha (criado pelo escritório), fora o exemplo; antes do primeiro /api/sistemas não se sabe, então nada é mostrado
+    const sistemas = typeof SISTEMAS !== 'undefined' && SISTEMAS.todos ? SISTEMAS.todos() : null;
+    if (!sistemas || !sistemas.length) { el.classList.add('hidden'); return; }
+    const contratados = sistemas.filter(s => s.trilha && s.id !== 'exemplo');
+    if (!contratados.length) {
+      el.innerHTML = `Nenhum agente ainda. Contrate o primeiro na aba <b>Contratar</b>: escolha o setor, dê um nome e marque as conexões que ele pode usar. <a href="#" id="sem-abertura-contratar">Contratar agora</a>`;
+      el.classList.remove('hidden');
+      const c = $('#sem-abertura-contratar'); if (c) c.onclick = e => { e.preventDefault(); if (typeof CONTRATAR !== 'undefined') CONTRATAR.abrir(); };
+      return;
+    }
+    el.classList.add('hidden');
   }
+  // a faixa acompanha a equipe: some quando o primeiro agente é contratado
+  window.addEventListener('load', () => { setInterval(avisoSemAbertura, 2000); if (typeof SISTEMAS !== 'undefined' && SISTEMAS.onChange) SISTEMAS.onChange(avisoSemAbertura); });
 
   return { abrir, avisoSemAbertura };
 })();

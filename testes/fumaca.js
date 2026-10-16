@@ -93,7 +93,7 @@ async function cenarioPadrao(b) {
   ok(String(await b.ev('location.pathname')) === '/abertura', 'sem config, a raiz leva para /abertura');
   await b.ir(URL_ALVO + '?tela=1');
   ok((await b.ev('document.title')).length > 0, 'a página carregou');
-  ok(await b.ev('!document.getElementById("sem-abertura").classList.contains("hidden")'), 'aviso "não foi aberto" visível sem config.json');
+  ok(await b.ev('!document.getElementById("sem-abertura").classList.contains("hidden") && document.getElementById("sem-abertura").innerHTML.includes("/abertura")'), 'aviso "não foi aberto" visível sem config.json, com o link da abertura');
   ok(await b.ev('document.querySelectorAll("#team-list .card").length') >= 1, 'equipe tem pelo menos um card');
   ok(await b.ev('document.querySelectorAll("#rooms-list .roomcard").length') === 5, 'painel Salas mostra as 5 salas padrão');
   ok(await b.ev('document.getElementById("opt-mov").value') === 'parado' && await b.ev('__escritorio.opts.movimento') === 'parado', 'o movimento nasce parado (leve)');
@@ -299,7 +299,7 @@ async function cenarioAbertura(b, DADOS) {
   await b.ev('document.getElementById("guardei").click(); document.getElementById("b-abrir").click()'); await espera(4500);
   ok(String(await b.ev('location.pathname')) === '/' && String(await b.ev('document.getElementById("brand-nome").textContent')).includes('SORRISO'), 'a tela abre com o nome da clínica');
   ok(await b.ev('Object.keys(WORLD.ROOMS).filter(k => k !== "corredor").length') === 8, 'as 8 salas da planta ampla estão na tela');
-  ok(await b.ev('document.getElementById("sem-abertura").classList.contains("hidden")'), 'a faixa "não foi aberto" sumiu');
+  ok(await b.ev('document.getElementById("sem-abertura").textContent.includes("Nenhum agente ainda") && !!document.getElementById("sem-abertura-contratar")'), 'a faixa agora pede para contratar o primeiro agente');
   ok(await b.ev('ADMIN.ehAdmin()'), 'quem montou já é administrador');
 }
 

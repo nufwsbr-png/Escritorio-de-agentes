@@ -59,15 +59,31 @@ testes automáticos inteiros.
 - A sala de descanso da planta ficou sem arcade, sinuca, puff e neon:
   sofás, copa e plantas.
 
-## O que fica para a 5g-3 e a 5g-4
+## 5g-3 e 5g-4, no mesmo dia
 
-- Na cena do escritório os bonecos ainda são os antigos: o pixel art entra
-  no `avatar.js` na 5g-3, com a roupa de `estilo.roupa`.
-- Faixa "nenhum agente ainda: contrate o primeiro" e ⚙️ Ajustes › Estúdio
-  na 5g-4. A abertura real com o Claude Code conectado (a leitura pelo
-  modelo) fica para a verificação final da etapa, fotografada.
+- **O boneco em pixel art entrou na cena** (`avatar.js` desenha com
+  `boneco-pixel.js`; a roupa vem de `estilo.roupa`; cabelo, pele, óculos,
+  barba e cor continuam da aparência de cada agente). Fotos de perto: o
+  dono de terno na mesa da diretoria, os agentes nas mesas, os retratos na
+  lista da equipe. O desenho antigo ficou só como reserva (`drawClassico`).
+- **Setor vira sala de verdade**: num escritório com a planta da advocacia,
+  Tati (financeiro) ganhou mesa na sala Financeiro e Léo (petições) em
+  Pastas e petições, sem ninguém escolher.
+- **A faixa no topo** passou a ter dois estados: sem configuração, "ainda
+  não foi aberto" com o link `/abertura`; aberto e sem agente contratado,
+  "Nenhum agente ainda. Contrate o primeiro na aba Contratar", com o link
+  que abre o Contratar. Some quando o primeiro agente de trilha existe.
+- **⚙️ Ajustes** ganhou o botão "🎨 Estúdio · refazer a abertura", que abre
+  `/abertura` (administrador). Avisos e reunião continuam em 🔔 Avisos e
+  nos Ajustes, com padrão.
+
+## O que fica
+
 - A interpretação por palavras-chave pega o "o que faz" da primeira frase;
-  com o Claude fica melhor. A planta mandada pela tela é guardada, não lida.
+  com o Claude Code conectado a leitura é do modelo (provada na linha de
+  comando, abaixo). A planta mandada pela tela é guardada, não lida.
+- A abertura real completa, com o Claude conectado e fotografada, entra na
+  verificação final da etapa 5.
 
 ## Testes que cobrem
 
@@ -84,3 +100,14 @@ testes automáticos inteiros.
   Estúdio; cenário 5, a abertura de ponta a ponta até a tela com o nome da
   clínica, as 8 salas e o administrador logado.
 - `npm test`: 82 testes, conferidor ok, fumaça ok.
+
+## A leitura pelo Claude Code, de verdade (linha de comando)
+
+`node abertura.js interpretar descricao.txt` com o Claude conectado, para
+"Clínica Vida Leve, nutrição e estética em Florianópolis, dona Dra. Paula
+Mendes, WhatsApp, Google Agenda, planilha do Google, pasta do Google Drive;
+agentes para agendamento e confirmação, pós-consulta, faturamento e
+conteúdo nas redes": origem `claude`, empresa e dona certas, "o que faz" em
+uma frase limpa, ramo clínica, os quatro setores pedidos com os nomes da
+pessoa mais dois sugeridos (Atendimento, Prontuários), as quatro conexões
+com o tipo certo, roupa sugerida jaleco. Nenhum sistema inventado.
