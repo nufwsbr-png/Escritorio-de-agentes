@@ -51,7 +51,7 @@ abertura pergunta ou oferece, edite `abertura/` e `abertura.js`.
 | Memória do escritório, recados e propostas | `memoria.js`, `data/mensagens.json`, `data/propostas.json` | o servidor |
 | Testador, reunião, avisos | `testador.js`, `reuniao.js`, `avisos.js`; `data/testes/`, `data/reunioes/`, `data/avisos.json` | o servidor, o botão 🔔 Avisos |
 | Funções compartilhadas (slug, executável do Claude, leitura de `.env`, CLI) | `util.js` | o construtor |
-| A tela | `index.html`, `css/`, `js/` (motor isométrico, salas, bonecos, painéis, admin, contratação, plataformas, extras) | o construtor |
+| A tela, no tema **Compacto** (escolhido pelo dono em 16/10/2026 em `/estudio/telas.html`): barras de 46 px, botões só de ícone em traço com o rótulo no hover (`data-ico`, `data-rotulo`, classe `rotulado` para manter a palavra), Outfit e DM Sans, violeta na ação | `index.html`, `css/style.css` (variáveis em `:root`), `js/icones.js` (os traços; `ICONES.rotular`), `js/` (motor isométrico, salas, bonecos, painéis, admin, contratação, plataformas, extras) | o construtor |
 | Configuração do escritório: nome, empresa, dono, porta, marca, setores, reunião | `data/config.json` (modelo comentado em `data/config.exemplo.json`) | `node abertura.js aplicar` |
 | Registro dos sistemas e da equipe | `data/sistemas.json`, `data/equipe.json` | o servidor (contratar, cadastrar, demitir) |
 | Estado de execução (quem está vivo, portas, desejados, conversas, sessões, logs) | `data/vivos.json`, `data/portas.json`, `data/desejados.json`, `data/conversas.json`, `data/sessoes.json`, `data/logs/` | o servidor; pode ser apagado com o escritório parado |

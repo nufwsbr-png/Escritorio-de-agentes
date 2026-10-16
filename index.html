@@ -7,7 +7,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -35,19 +35,28 @@
       <div class="stat off"><b id="st-off">0</b><span>offline</span></div>
     </div>
 
-    <div class="topactions">
-      <button id="btn-admin" class="btn ghost" title="Administrador">🔐 Admin</button>
-      <button id="btn-quadro" class="btn primary" title="Ideias e agenda da Diretoria">📌 Quadro</button>
-      <button id="btn-plataformas" class="btn" title="As conexões do negócio: CRM, planilha, agenda, pasta…">🔌 Conexões</button>
-      <button id="btn-esteiras" class="btn" title="O trabalho passando de agente em agente, com aprovação pela tela">🧵 Esteiras</button>
-      <button id="btn-crm" class="btn hidden" title="O CRM do escritório: a ficha de cada cliente, pessoas e agentes como funcionários">🗂️ CRM</button>
-      <button id="btn-cuki" class="btn" title="Cuki BOT, a IA analista: saúde dos agentes, das plataformas e do fluxo; aptidão para o CRM">🩺 Cuki BOT</button>
-      <button id="btn-ajustes" class="btn ghost" title="O que está configurado, a conta do Claude e como refazer a abertura">⚙️ Ajustes</button>
-      <button id="btn-avisos" class="btn" title="Avisos no celular">🔔 Avisos</button>
-      <button id="btn-report" class="btn" title="Relatório do gerente">📋 Relatório</button>
-      <button id="btn-voice" class="btn" title="Falar com o gerente">🎤 Voz</button>
-      <button id="btn-speak" class="btn ghost" title="Ler em voz alta">🔊</button>
-      <button id="btn-panel" class="btn ghost only-mobile" title="Painel">☰</button>
+    <!-- tema Compacto: só ícone, o rótulo aparece em baixo ao passar o mouse; Admin e Quadro mantêm a palavra -->
+    <div class="topactions barra">
+      <span class="grupo">
+        <button id="btn-admin" class="btn ghost rotulado" data-ico="admin">Admin</button>
+        <button id="btn-quadro" class="btn primary rotulado" data-ico="quadro" data-rotulo="Ideias e agenda da Diretoria">Quadro</button>
+      </span>
+      <span class="grupo">
+        <button id="btn-plataformas" class="btn" data-ico="conexoes">Conexões</button>
+        <button id="btn-esteiras" class="btn" data-ico="esteiras">Esteiras</button>
+        <button id="btn-crm" class="btn hidden" data-ico="crm">CRM</button>
+        <button id="btn-cuki" class="btn" data-ico="cuki">Cuki BOT</button>
+      </span>
+      <span class="grupo">
+        <button id="btn-ajustes" class="btn ghost" data-ico="ajustes">Ajustes</button>
+        <button id="btn-avisos" class="btn" data-ico="avisos">Avisos</button>
+        <button id="btn-report" class="btn" data-ico="relatorio">Relatório</button>
+      </span>
+      <span class="grupo">
+        <button id="btn-voice" class="btn" data-ico="voz">Voz</button>
+        <button id="btn-speak" class="btn ghost" data-ico="som">Ler em voz alta</button>
+        <button id="btn-panel" class="btn ghost only-mobile" data-ico="menu">Painel</button>
+      </span>
     </div>
   </header>
 
@@ -139,20 +148,28 @@
       </div>
     </div>
     <div class="mon-estado"><i id="mon-luz"></i><span id="mon-txt">—</span></div>
-    <div class="mon-acoes">
-      <button class="btn" id="mon-ligar">▶ Ligar</button>
-      <button class="btn ghost" id="mon-desligar">■ Desligar</button>
-      <button class="btn ghost" id="mon-trabalho" title="O que ele está fazendo, o que espera por você e o que já fez">🗂️ Trabalho<span class="badge hidden" id="bd-trabalho"></span></button>
-      <button class="btn ghost" id="mon-chat">💬 Conversar</button>
-      <button class="btn ghost" id="mon-ficha" title="A constituição do agente, seção por seção">📋 Ficha</button>
-      <button class="btn ghost" id="mon-memoria" title="O que ele aprendeu">🧠 Memória</button>
-      <button class="btn ghost" id="mon-recados" title="Recados entre agentes">✉️ Recados<span class="badge hidden" id="bd-recados"></span></button>
-      <button class="btn ghost" id="mon-propostas" title="Mudanças que ele propôs, para você aprovar">📝 Propostas<span class="badge hidden" id="bd-propostas"></span></button>
-      <button class="btn ghost" id="mon-plataformas" title="As conexões que este agente pode usar">🔌 Conexões</button>
-      <button class="btn ghost" id="mon-testar" title="O testador: duas réguas">🧪 Testar</button>
-      <button class="btn ghost" id="mon-log">📜 Log</button>
-      <button class="btn ghost" id="mon-aba">↗ Nova aba</button>
-      <button class="btn ghost" id="mon-x">✕</button>
+    <div class="mon-acoes barra">
+      <span class="grupo">
+        <button class="btn primary rotulado" id="mon-ligar" data-ico="ligar">Ligar</button>
+        <button class="btn ghost rotulado" id="mon-desligar" data-ico="desligar">Desligar</button>
+      </span>
+      <span class="grupo">
+        <button class="btn ghost" id="mon-trabalho" data-ico="trabalho" data-rotulo="Trabalho: o que ele faz, espera e já fez">Trabalho<span class="badge hidden" id="bd-trabalho"></span></button>
+        <button class="btn ghost" id="mon-chat" data-ico="conversar">Conversar</button>
+        <button class="btn ghost" id="mon-ficha" data-ico="ficha" data-rotulo="Ficha: a constituição do agente">Ficha</button>
+        <button class="btn ghost" id="mon-memoria" data-ico="memoria" data-rotulo="Memória: o que ele aprendeu">Memória</button>
+        <button class="btn ghost" id="mon-recados" data-ico="recados" data-rotulo="Recados entre agentes">Recados<span class="badge hidden" id="bd-recados"></span></button>
+        <button class="btn ghost" id="mon-propostas" data-ico="propostas" data-rotulo="Propostas: mudanças para você aprovar">Propostas<span class="badge hidden" id="bd-propostas"></span></button>
+      </span>
+      <span class="grupo">
+        <button class="btn ghost" id="mon-plataformas" data-ico="conexoes" data-rotulo="Conexões que este agente pode usar">Conexões</button>
+        <button class="btn ghost" id="mon-testar" data-ico="testar" data-rotulo="Testar: o testador, duas réguas">Testar</button>
+        <button class="btn ghost" id="mon-log" data-ico="log">Log</button>
+      </span>
+      <span class="grupo">
+        <button class="btn ghost" id="mon-aba" data-ico="novaAba">Nova aba</button>
+        <button class="btn ghost" id="mon-x" data-ico="fechar">Fechar</button>
+      </span>
     </div>
   </header>
   <div class="mon-corpo">
@@ -208,6 +225,7 @@
 </div>
 
 <script src="/config.js"></script>
+<script src="js/icones.js"></script>
 <script src="js/quadro.js"></script>
 <script src="js/sistemas.js"></script>
 <script src="js/conversa.js"></script>

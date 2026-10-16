@@ -77,6 +77,26 @@ testes automáticos inteiros.
   `/abertura` (administrador). Avisos e reunião continuam em 🔔 Avisos e
   nos Ajustes, com padrão.
 
+## 5g-5 e 5g-6, à tarde: o acabamento que o dono pediu olhando a tela
+
+- **A cena**: as divisórias de vidro que subiam até o teto (as "paredes" no
+  zoom) saíram; entre salas fica só o parapeito. Os objetos (LED das mesas,
+  plantas, painéis) animam sempre a 12 fps, mesmo no movimento "parado", que
+  passou a ser só dos bonecos (1,3 ms por quadro medidos). O boneco sentado
+  fica com o quadril no assento, de costas mostra cabelo e pescoço, e o
+  encosto das cadeiras desceu para os ombros. Fotos de perto antes e depois
+  (mesa de costas, mesa vazia, mesa do dono).
+- **Abertura**: a linha "Claude Code conectado" some quando está tudo certo.
+- **Textos das caixas** um pouco maiores.
+- **As variações de telas** em `/estudio/telas.html`: seis quadros, fotografados
+  um a um, sem erro de JS; o dono escolheu **Compacto**.
+- **O tema Compacto na tela**: fotografados a tela com o rótulo "Conexões"
+  aparecendo em baixo do ícone ao passar o mouse, o monitor do exemplo com a
+  barra de 46 px e a caixa de Conexões. Fontes conferidas por
+  `getComputedStyle` (DM Sans), topo com 46 px, 12 ícones em traço na barra.
+  A fumaça ganhou a checagem do tema (ícones nas duas barras, `data-rotulo`,
+  Admin com a palavra).
+
 ## O que fica
 
 - A interpretação por palavras-chave pega o "o que faz" da primeira frase;

@@ -95,6 +95,7 @@ async function cenarioPadrao(b) {
   ok((await b.ev('document.title')).length > 0, 'a página carregou');
   ok(await b.ev('!document.getElementById("sem-abertura").classList.contains("hidden") && document.getElementById("sem-abertura").innerHTML.includes("/abertura")'), 'aviso "não foi aberto" visível sem config.json, com o link da abertura');
   ok(await b.ev('document.querySelectorAll("#team-list .card").length') >= 1, 'equipe tem pelo menos um card');
+  ok(await b.ev('document.querySelectorAll("#topbar .btn svg.ico").length >= 10 && document.querySelectorAll("#monitor .mon-acoes .btn svg.ico").length >= 12 && document.getElementById("btn-plataformas").dataset.rotulo === "Conexões" && document.getElementById("btn-admin").querySelector(".rotulo")?.textContent === "Admin"'), 'tema Compacto: as barras têm ícones em traço, rótulo no hover e Admin com a palavra');
   ok(await b.ev('document.querySelectorAll("#rooms-list .roomcard").length') === 5, 'painel Salas mostra as 5 salas padrão');
   ok(await b.ev('document.getElementById("opt-mov").value') === 'parado' && await b.ev('__escritorio.opts.movimento') === 'parado', 'o movimento nasce parado (leve)');
   // os bonecos entram pelo elevador e andam até a mesa (uns 20 s); depois disso só os objetos animam, a 12 fps

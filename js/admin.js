@@ -27,7 +27,8 @@ const ADMIN = (() => {
   function pintarBotao() {
     const b = $('#btn-admin');
     if (!b) return;
-    b.textContent = !est.temSenha ? '🔓 Admin' : est.admin ? '🔐 Admin' : '🔒 Entrar';
+    if (typeof ICONES !== 'undefined') ICONES.rotular(b, !est.temSenha ? 'destrancado' : 'admin', !est.temSenha || est.admin ? 'Admin' : 'Entrar');
+    else b.textContent = !est.temSenha ? '🔓 Admin' : est.admin ? '🔐 Admin' : '🔒 Entrar';
     b.classList.toggle('aberto', !est.temSenha);
     b.title = !est.temSenha ? 'Sem senha de administrador: tudo aberto. Clique para definir uma.'
             : est.admin ? 'Você é o administrador' : 'Entrar como administrador';
