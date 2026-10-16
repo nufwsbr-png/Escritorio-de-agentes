@@ -24,7 +24,7 @@ const PADRAO_CHAVE = /(api[_-]?key|apikey|token|senha|password|secret|chave)\s*[
 const URL_FIXA = /https?:\/\/(?!localhost|127\.0\.0\.1|\[::1\]|\$\{)[a-z0-9.-]+\.[a-z]{2,}/i;
 const PORTA_FIXA = /:4[0-9]{3}(?![\w.])/;   // só porta em endereço (":4401"), não um tempo em ms nem um tamanho
 // onde endereço externo fixo pode existir
-const URL_PERMITIDA = [/^avisos\.js$/, /^modelos\/agente\/atendimento\/server\.js$/, /^index\.html$/, /\.md$/, /^docs\//, /^modelos\/skills\//,
+const URL_PERMITIDA = [/^avisos\.js$/, /^modelos\/agente\/atendimento\/server\.js$/, /^index\.html$/, /^estudio\/[a-z-]+\.html$/, /\.md$/, /^docs\//, /^modelos\/skills\//,
   /^exemplo-agente\/\.claude\//, /^testes\//, /^js\/plataformas\.js$/, /^js\/app\.js$/, /^server\.js$/, /^plataformas\.js$/, /^modelos\/agente\/[a-z]+\/env$/, /\.exemplo$/];
 // onde uma porta 4xxx pode estar fixa (padrões e sugestões)
 const PORTA_PERMITIDA = [/^server\.js$/, /^modelos\/agente\/comum\/agente-base\.js$/, /^exemplo-agente\/agente-base\.js$/, /^js\/contratar\.js$/, /^js\/app\.js$/,

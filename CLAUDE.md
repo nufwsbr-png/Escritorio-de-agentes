@@ -82,7 +82,8 @@ mudar o que a abertura pergunta, edite a skill, não a tela.
 - **Não reestruture pastas nem divida arquivos grandes sem pedir.** `server.js`
   e `js/app.js` são grandes de propósito, em seções nomeadas.
 - **Endereço fixo só onde já existe:** `avisos.js` (ntfy, CallMeBot), o
-  OpenRouter no molde do atendente, fontes no `index.html`, os servidores do
+  OpenRouter no molde do atendente, fontes no `index.html` e nas páginas do
+  Estúdio, os servidores do
   Google e de IMAP no teste de conexão de `plataformas.js`, documentação.
 - **Textos em português do Brasil**, no tom da tela: direto, sem jargão solto.
 - **Antes de dizer "pronto", `npm test`.** Ele roda unidade, API, o conferidor

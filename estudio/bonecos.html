@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Os bonecos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+  /* a marca NuFws (ID Visual v1.1): fundo noite, ciano como ação, violeta e magenta só no degradê */
+  :root{--preto:#05080E;--noite:#0A1424;--carvao:#0E1522;--linha:#1A2233;--branco:#fff;--gelo:#EBEBEC;--cinza:#A4AEB9;--cinza-2:#686D86;
+    --ciano:#5FE0FB;--violeta:#7C4DF7;--magenta:#F76BE8;--grad:linear-gradient(90deg,#5FE0FB 0%,#A1AFF4 45%,#C79FF4 65%,#F76BE8 100%);
+    --titulo:"Outfit",system-ui,sans-serif;--texto:"DM Sans",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--preto);color:var(--gelo);font-family:var(--texto);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:110px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(5,8,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--linha)}
+  .topbar .wrap{display:flex;align-items:center;gap:14px;height:62px}
+  .topbar svg{width:30px;height:30px}
+  .wordmark{font-family:var(--titulo);font-weight:600;font-size:20px;letter-spacing:-.02em;color:var(--branco)}
+  .wordmark small{font-family:var(--texto);font-weight:400;font-size:12px;color:var(--cinza);margin-left:10px;letter-spacing:.18em;text-transform:uppercase}
+  .topbar .tag{margin-left:auto;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--linha);border-radius:99px;padding:6px 14px;color:var(--cinza);white-space:nowrap}
+  header.capa{position:relative;overflow:hidden;padding:64px 0 40px;border-bottom:1px solid var(--linha)}
+  .glow{position:absolute;pointer-events:none;filter:blur(90px);border-radius:50%}
+  .g1{width:460px;height:460px;background:#2a9ac9;right:-140px;top:-200px;opacity:.22}
+  .g2{width:380px;height:380px;background:#a02cd8;right:260px;bottom:-260px;opacity:.16}
+  .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--cinza);font-weight:500}
+  .eyebrow::after{content:"";display:block;width:36px;height:2px;background:var(--ciano);margin-top:12px}
+  h1{font-family:var(--titulo);font-weight:300;font-size:clamp(34px,5vw,56px);line-height:1.05;letter-spacing:-.02em;color:var(--branco);margin:22px 0 14px}
+  h1 strong{font-weight:500;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lead{font-size:17px;color:var(--cinza);max-width:620px;font-weight:300}
+  section{padding:40px 0}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+  @media (max-width:620px){.grid{grid-template-columns:1fr}.wrap{padding:0 16px}}
+  .card{background:var(--carvao);border:1px solid var(--linha);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,transform .15s;position:relative}
+  .card:hover{border-color:rgba(95,224,251,.45);transform:translateY(-2px)}
+  .card.escolhida{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(95,224,251,.18),0 0 40px rgba(95,224,251,.12)}
+  .card .mini{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano);font-weight:600}
+  .card h3{font-family:var(--titulo);font-weight:500;font-size:22px;letter-spacing:-.015em;color:var(--branco)}
+  .card p{font-size:14px;color:var(--cinza)}
+  .palco{background:var(--noite);border:1px solid var(--linha);border-radius:14px;padding:10px 8px 4px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;align-items:end}
+  .palco svg{width:100%;height:auto;display:block}
+  .palco .leg{grid-column:1/5;display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza-2);padding:4px 6px 2px}
+  .card .btn{margin-top:auto;align-self:flex-start}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--ciano);color:var(--preto);font-family:var(--texto);font-weight:600;font-size:14px;padding:11px 20px;border-radius:99px;border:0;cursor:pointer;box-shadow:0 0 24px rgba(95,224,251,.25)}
+  .btn.ghost{background:transparent;color:var(--branco);border:1px solid rgba(255,255,255,.4);box-shadow:none;font-weight:500}
+  .card.escolhida .btn{background:var(--branco)}
+  .selo{position:absolute;right:16px;top:16px;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--preto);background:var(--ciano);border-radius:99px;padding:4px 10px;font-weight:600;display:none}
+  .card.escolhida .selo{display:block}
+  .rodape{position:fixed;left:0;right:0;bottom:0;background:rgba(5,8,14,.92);backdrop-filter:blur(10px);border-top:1px solid var(--linha);padding:14px 0}
+  .rodape .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .rodape .txt{flex:1;font-size:14px;color:var(--cinza)}
+  .rodape .txt b{color:var(--branco);font-weight:500}
+  .rodape code{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--ciano);background:var(--carvao);border:1px solid var(--linha);border-radius:8px;padding:4px 10px}
+  .nota{margin-top:26px;font-size:13.5px;color:var(--cinza-2);max-width:760px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FE0FB"/><stop offset=".5" stop-color="#7C4DF7"/><stop offset="1" stop-color="#F76BE8"/></linearGradient></defs><polyline points="34,60 74,100 34,140" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="66,56 110,100 66,144" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><polyline points="104,50 154,100 104,150" fill="none" stroke="url(#gs)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="wordmark">NuFws<small>Estúdio · os bonecos</small></span>
+  <span class="tag">quadro de escolha · nada é gravado</span>
+</div></div>
+
+<header class="capa"><div class="glow g1"></div><div class="glow g2"></div><div class="wrap">
+  <div class="eyebrow">Escritório de Agentes · passo "os bonecos"</div>
+  <h1>Seis famílias novas.<br><strong>Qual vira o padrão?</strong></h1>
+  <p class="lead">Nenhuma parece com o boneco de hoje. Cada cartão mostra três agentes da família, em pé, e um sentado à mesa, como ficam no escritório. Escolha uma; a que você escolher entra no motor da tela e no Estúdio.</p>
+</div></header>
+
+<section><div class="wrap">
+  <div class="grid" id="grade"></div>
+  <p class="nota">As cores dos agentes seguem a paleta do escritório do cliente (aqui, as da NuFws só para mostrar). Nome, setor e balão de "esperando você" continuam acima do boneco em todas as famílias. Se nenhuma agradar, diga o que falta: dá para cruzar duas (por exemplo, Miniatura com o traço do Esboço).</p>
+</div></section>
+
+<div class="rodape"><div class="wrap">
+  <span class="txt" id="escolha">Clique em <b>Escolher esta</b> no cartão que você preferir.</span>
+  <code id="codigo">bonecos: ?</code>
+</div></div>
+
+<script>
+/* ---------- as famílias: cada uma desenha um boneco em SVG (viewBox 120×170, chão em y=152) ---------- */
+const ACC = ['#5FE0FB', '#7C4DF7', '#F76BE8'];
+const PELE = ['#f2c9a6', '#c98a5b', '#6b4327'];
+const CABELO = ['#1a120c', '#d9b56a', '#3d2a1a'];
+const ESCURO = '#232c42', ESCURO2 = '#1b2130';
+const esc = s => String(s);
+
+const chao = (pose) => pose === 'pe' ? '<ellipse cx="60" cy="152" rx="22" ry="5" fill="rgba(0,0,0,.4)"/>' : '';
+/* a cadeira atrás e a mesa na frente: iguais para todas as famílias */
+const cadeira = () => '<rect x="42" y="58" width="36" height="58" rx="10" fill="#111726" stroke="#232c42" stroke-width="1.5"/>';
+const mesa = (acc) => '<rect x="10" y="118" width="100" height="16" rx="5" fill="#1A2233" stroke="#2b3550" stroke-width="1.5"/><rect x="14" y="120" width="92" height="2" rx="1" fill="' + acc + '" opacity=".55"/>';
+
+const FAMILIAS = {
+  traco: {
+    nome: 'Traço', desc: 'Só linhas, na cor do agente, como o símbolo da marca. Leve, técnico, sem rosto detalhado.',
+    svg(i, pose) {
+      const c = ACC[i];
+      const pernas = pose === 'pe' ? '<path d="M50 112 L48 150 M70 112 L72 150 M40 150 h12 M68 150 h12"/>' : '<path d="M50 112 L52 124 M70 112 L68 124"/>';
+      const var_ = i === 0 ? '<path d="M46 30 Q60 15 74 30"/>' : i === 1 ? '<circle cx="53" cy="37" r="5"/><circle cx="67" cy="37" r="5"/><path d="M58 37 h4"/>' : '<path d="M60 60 l-3 6 3 16 3-16 z" fill="' + c + '"/>';
+      return `<g fill="none" stroke="${c}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 6px ${c}88)">
+        <circle cx="60" cy="36" r="15"/><path d="M53 38 h3 M64 38 h3" stroke-width="3"/><path d="M60 51 v9"/>
+        <path d="M40 60 Q60 52 80 60 L84 108 Q60 116 36 108 Z"/><path d="M42 64 L28 100 M78 64 L92 100"/>
+        <circle cx="28" cy="102" r="3" fill="${c}"/><circle cx="92" cy="102" r="3" fill="${c}"/>${pernas}${var_}</g>`;
+    }
+  },
+  blocos: {
+    nome: 'Blocos', desc: 'Formas chapadas, sem contorno, duas cores por agente. Limpo como um ícone de aplicativo.',
+    svg(i, pose) {
+      const c = ACC[i], p = PELE[i], h = CABELO[i];
+      const pernas = pose === 'pe' ? `<rect x="46" y="106" width="11" height="42" rx="5" fill="${ESCURO2}"/><rect x="63" y="106" width="11" height="42" rx="5" fill="${ESCURO2}"/><rect x="43" y="145" width="17" height="7" rx="3" fill="#0b0f18"/><rect x="60" y="145" width="17" height="7" rx="3" fill="#0b0f18"/>`
+                                     : `<rect x="46" y="106" width="11" height="18" rx="5" fill="${ESCURO2}"/><rect x="63" y="106" width="11" height="18" rx="5" fill="${ESCURO2}"/>`;
+      const var_ = i === 1 ? '<rect x="48" y="33" width="10" height="8" rx="2" fill="none" stroke="#0b0f18" stroke-width="1.8"/><rect x="62" y="33" width="10" height="8" rx="2" fill="none" stroke="#0b0f18" stroke-width="1.8"/>'
+                 : i === 2 ? `<circle cx="60" cy="18" r="8" fill="${h}"/>` : '';
+      return `${pernas}
+        <rect x="24" y="66" width="12" height="40" rx="6" fill="${c}" opacity=".75"/><rect x="84" y="66" width="12" height="40" rx="6" fill="${c}" opacity=".75"/>
+        <circle cx="30" cy="108" r="6" fill="${p}"/><circle cx="90" cy="108" r="6" fill="${p}"/>
+        <rect x="38" y="60" width="44" height="52" rx="16" fill="${c}"/><rect x="60" y="60" width="22" height="52" rx="16" fill="rgba(0,0,0,.16)"/>
+        <rect x="54" y="48" width="12" height="14" fill="${p}"/>
+        <circle cx="60" cy="36" r="18" fill="${p}"/>
+        <path d="M42 36 Q42 14 60 16 Q78 14 78 36 Q70 26 60 28 Q50 26 42 36 Z" fill="${h}"/>
+        <circle cx="54" cy="38" r="2" fill="#0b0f18"/><circle cx="66" cy="38" r="2" fill="#0b0f18"/><path d="M55 45 q5 4 10 0" fill="none" stroke="#0b0f18" stroke-width="1.6" stroke-linecap="round"/>${var_}`;
+    }
+  },
+  miniatura: {
+    nome: 'Miniatura', desc: 'Boneco de vinil: cabeça grande, olhos redondos, brilho. Simpático, de mesa de escritório.',
+    svg(i, pose) {
+      const c = ACC[i], p = PELE[i], h = CABELO[i];
+      const pernas = pose === 'pe' ? `<rect x="46" y="106" width="12" height="36" rx="6" fill="${ESCURO2}"/><rect x="62" y="106" width="12" height="36" rx="6" fill="${ESCURO2}"/><ellipse cx="51" cy="146" rx="10" ry="6" fill="#0b0f18"/><ellipse cx="69" cy="146" rx="10" ry="6" fill="#0b0f18"/>`
+                                     : `<rect x="46" y="106" width="12" height="18" rx="6" fill="${ESCURO2}"/><rect x="62" y="106" width="12" height="18" rx="6" fill="${ESCURO2}"/>`;
+      const cabelo = i === 0 ? `<path d="M36 50 Q34 18 60 18 Q86 18 84 50 Q78 36 60 34 Q42 36 36 50 Z" fill="${h}"/>`
+                   : i === 1 ? `<path d="M36 50 Q34 18 60 18 Q86 18 84 50 Q78 30 60 30 Q42 30 36 50 Z" fill="${h}"/><circle cx="60" cy="20" r="9" fill="${h}"/>`
+                   : `<path d="M36 44 Q36 16 60 16 Q84 16 84 44 Q72 28 60 30 Q48 28 36 44 Z" fill="${h}"/>`;
+      const var_ = i === 1 ? '<circle cx="51" cy="52" r="7" fill="none" stroke="#0b0f18" stroke-width="1.8"/><circle cx="69" cy="52" r="7" fill="none" stroke="#0b0f18" stroke-width="1.8"/>' : '';
+      return `${pernas}
+        <rect x="30" y="76" width="10" height="28" rx="5" fill="${c}"/><rect x="80" y="76" width="10" height="28" rx="5" fill="${c}"/>
+        <circle cx="35" cy="106" r="5.5" fill="${p}"/><circle cx="85" cy="106" r="5.5" fill="${p}"/>
+        <rect x="42" y="72" width="36" height="38" rx="16" fill="${c}"/><ellipse cx="52" cy="80" rx="6" ry="4" fill="#fff" opacity=".18"/>
+        <ellipse cx="60" cy="48" rx="24" ry="26" fill="${p}"/>${cabelo}
+        <ellipse cx="48" cy="38" rx="7" ry="11" fill="#fff" opacity=".18"/>
+        <circle cx="51" cy="52" r="4" fill="#111"/><circle cx="69" cy="52" r="4" fill="#111"/><circle cx="52.5" cy="50.5" r="1.5" fill="#fff"/><circle cx="70.5" cy="50.5" r="1.5" fill="#fff"/>
+        <ellipse cx="45" cy="61" rx="4" ry="2.5" fill="#f76be8" opacity=".35"/><ellipse cx="75" cy="61" rx="4" ry="2.5" fill="#f76be8" opacity=".35"/>
+        <path d="M56 63 q4 3 8 0" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>${var_}`;
+    }
+  },
+  cracha: {
+    nome: 'Crachá', desc: 'Silhueta escura com gola na cor do agente e um crachá com a inicial. O mais sóbrio: feito para escritório.',
+    svg(i, pose, nome) {
+      const c = ACC[i], ini = (nome || 'A')[0].toUpperCase();
+      const corpo = pose === 'pe' ? 'M34 150 L34 90 Q34 62 60 60 Q86 62 86 90 L86 150 Z' : 'M34 124 L34 90 Q34 62 60 60 Q86 62 86 90 L86 124 Z';
+      const badge = i === 1 ? `<rect x="47" y="88" width="26" height="26" rx="6" fill="#05080E" stroke="${c}" stroke-width="2.5"/>` : `<circle cx="60" cy="101" r="13" fill="#05080E" stroke="${c}" stroke-width="2.5"/>`;
+      const cordao = i === 2 ? `<path d="M52 66 L58 88 M68 66 L62 88" stroke="${c}" stroke-width="1.5" opacity=".7"/>` : '';
+      return `<path d="${corpo}" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/>
+        <circle cx="60" cy="36" r="16" fill="${ESCURO}" stroke="#3a4766" stroke-width="1.5"/>
+        <path d="M48 60 L60 78 L72 60" fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round"/>${cordao}${badge}
+        <text x="60" y="106" text-anchor="middle" font-family="Outfit,system-ui,sans-serif" font-weight="600" font-size="14" fill="${c}">${ini}</text>
+        <circle cx="71" cy="91" r="3.5" fill="#23e08a" stroke="${ESCURO}" stroke-width="1.5"/>`;
+    }
+  },
+  nucleo: {
+    nome: 'Núcleo', desc: 'Não é gente: uma cápsula de luz que flutua, com um anel e dois olhos. Diz "agente de IA" sem fingir ser pessoa.',
+    svg(i, pose) {
+      const c = ACC[i], id = 'gn' + i + pose;
+      const dy = pose === 'pe' ? 0 : 8;
+      const olhos = i === 0 ? '<circle cx="52" cy="66" r="3.5" fill="#fff"/><circle cx="68" cy="66" r="3.5" fill="#fff"/>'
+                  : i === 1 ? '<path d="M47 66 q5 -5 10 0 M63 66 q5 -5 10 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'
+                  : '<rect x="46" y="62" width="28" height="7" rx="3.5" fill="#fff" opacity=".9"/>';
+      return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#0E1522"/></linearGradient></defs>
+        <g transform="translate(0 ${dy})">
+        ${pose === 'pe' ? `<ellipse cx="60" cy="150" rx="20" ry="5" fill="${c}" opacity=".28"/>` : ''}
+        <rect x="40" y="40" width="40" height="70" rx="20" fill="url(#${id})" style="filter:drop-shadow(0 0 10px ${c}66)"/>
+        <ellipse cx="60" cy="80" rx="27" ry="6" fill="none" stroke="#fff" stroke-width="2" opacity=".45"/>
+        <circle cx="60" cy="34" r="3.5" fill="${c}" style="filter:drop-shadow(0 0 5px ${c})"/><path d="M60 37 v4" stroke="#fff" stroke-width="1.5" opacity=".6"/>${olhos}</g>`;
+    }
+  },
+  esboco: {
+    nome: 'Esboço', desc: 'Desenho a lápis com uma mancha de cor por baixo, meio fora do traço. Tem mão humana, parece prancheta de arquiteto.',
+    svg(i, pose) {
+      const c = ACC[i];
+      const tinta = '#e8ecf7';
+      const pernas = pose === 'pe' ? '<path d="M50 112 c-1 12 -2 26 -2 38 M70 112 c1 12 2 26 2 38 M40 150 c4 1 8 1 12 0 M68 150 c4 1 8 1 12 0"/>' : '<path d="M50 112 c0 4 1 8 2 12 M70 112 c0 4 -1 8 -2 12"/>';
+      const cabelo = i === 0 ? '<path d="M45 30 l4 -6 4 5 4 -7 4 6 4 -6 4 6 4 -5 3 7"/>' : i === 1 ? '<path d="M46 29 q4 -12 14 -11 q10 -1 14 11" /><path d="M48 33 q12 -10 24 0" opacity=".5"/>' : '<path d="M44 34 c-2 -10 6 -18 16 -18 s18 8 16 18" /><path d="M44 36 c3 3 6 3 9 0 M67 36 c3 3 6 3 9 0" opacity=".6"/>';
+      return `<g transform="translate(3 2)" fill="${c}" opacity=".38"><circle cx="60" cy="36" r="15"/><path d="M40 62 c8 -8 32 -8 40 0 l4 46 c-14 6 -34 6 -48 0 z"/></g>
+        <g fill="none" stroke="${tinta}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 21 c9 0 15 7 15 15 s-6 15 -15 15 s-15 -7 -15 -15 s6 -15 15 -15 z"/><path d="M61 22 c8 1 14 7 13 15" opacity=".45"/>
+        <path d="M54 37 l3 0 M64 37 l3 0 M60 38 l-1 4 2 0 M56 45 q4 3 8 0"/>${cabelo}
+        <path d="M60 51 l0 9"/><path d="M40 62 c8 -8 32 -8 40 0 l4 46 c-14 6 -34 6 -48 0 z"/><path d="M41 64 c10 -7 28 -7 38 0" opacity=".4"/>
+        <path d="M42 70 l10 -6 M42 80 l12 -7 M43 90 l13 -8 M44 100 l13 -8" opacity=".35"/>
+        <path d="M42 66 c-6 12 -10 24 -14 34 M78 66 c6 12 10 24 14 34"/><path d="M27 101 c0 3 2 4 4 3 M93 101 c0 3 -2 4 -4 3"/>${pernas}</g>`;
+    }
+  }
+};
+const NOMES = ['Tati', 'Léo', 'Bia'];
+
+const grade = document.getElementById('grade');
+let escolhida = null;
+function pintar() {
+  grade.innerHTML = Object.entries(FAMILIAS).map(([id, f], n) => `
+    <div class="card ${escolhida === id ? 'escolhida' : ''}" data-id="${id}">
+      <span class="selo">escolhida</span>
+      <span class="mini">${String(n + 1).padStart(2, '0')} · família</span>
+      <h3>${f.nome}</h3><p>${f.desc}</p>
+      <div class="palco">
+        ${[0, 1, 2].map(i => `<svg viewBox="0 0 120 170">${chao('pe')}${f.svg(i, 'pe', NOMES[i])}</svg>`).join('')}
+        <svg viewBox="0 0 120 170">${cadeira()}${f.svg(0, 'sentado', NOMES[0])}${mesa(ACC[0])}</svg>
+        <span class="leg"><span>${NOMES.join(' · ')}</span><span>à mesa</span></span>
+      </div>
+      <button class="btn ${escolhida === id ? '' : 'ghost'}" data-esc="${id}">${escolhida === id ? 'Escolhida ✓' : 'Escolher esta'}</button>
+    </div>`).join('');
+  document.querySelectorAll('[data-esc]').forEach(b => b.onclick = () => { escolhida = b.dataset.esc; pintar(); });
+  const t = document.getElementById('escolha'), cod = document.getElementById('codigo');
+  if (escolhida) { t.innerHTML = 'Você escolheu <b>' + FAMILIAS[escolhida].nome + '</b>. Diga ao Claude, no chat, a linha ao lado; ela vira o padrão do Estúdio e do motor da tela.'; cod.textContent = 'bonecos: ' + escolhida; }
+  else { t.innerHTML = 'Clique em <b>Escolher esta</b> no cartão que você preferir.'; cod.textContent = 'bonecos: ?'; }
+}
+pintar();
+</script>
+</body>
+</html>
