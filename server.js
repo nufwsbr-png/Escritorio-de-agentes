@@ -995,7 +995,7 @@ const servidor = http.createServer(async (req, res) => {
   /* configuração pública para a tela: nome, dono, marca (sem segredo) */
   if (rota === '/config.js') {
     const c = lerConfig();
-    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {}, aberto: fs.existsSync(CONFIG_ARQ), planta: lerPlanta() };
+    const pub = { nome: c.nome, subtitulo: c.subtitulo, dono: c.dono, empresa: c.empresa, marca: c.marca || {}, aberto: fs.existsSync(CONFIG_ARQ), planta: lerPlanta(), ramo: c.ramo || null, estilo: c.estilo || null };
     res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('window.ESCRITORIO = ' + JSON.stringify(pub) + ';\n');
     return;

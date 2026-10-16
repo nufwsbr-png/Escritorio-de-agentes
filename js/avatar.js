@@ -1,7 +1,13 @@
 /* ===========================================================
-   avatar.js — bonecos estilo Habbo, desenhados por código.
-   Cabelo, pele, óculos, barba e tatuagem são parâmetros, então
-   dá pra criar quantos funcionários quiser sem sprite nenhum.
+   avatar.js — os bonecos, desenhados por código.
+   Desde 16/10/2026 (decisão do dono) o boneco é o PIXEL ART estilo Habbo de
+   js/boneco-pixel.js: grade de 16 x 40, contorno escuro, sombra de um lado;
+   cabelo, pele, óculos, barba e cor vêm da aparência de cada agente
+   (makeLook, guardada em data/equipe.json) e a ROUPA vem do negócio
+   (estilo.roupa em data/config.json, escolhida no Estúdio). O desenho
+   arredondado antigo (drawClassico) fica só como reserva para uma tela que
+   não carregou o boneco-pixel.js. O contrato não mudou: makeLook, draw,
+   headTop, nameTag, bubble, portrait.
    =========================================================== */
 const AVATAR = (() => {
 
@@ -62,7 +68,34 @@ const AVATAR = (() => {
    * @param facing  'n' | 's' | 'e' | 'w'   (n/w = de costas)
    * @param st      { moving, phase, sitting, working, relaxed, headset, blink, scale }
    */
+  /* a aparência antiga (estilos de cabelo da tela) vira a do pixel art */
+  const ESTILO_PIXEL = { curto: 'curto', fade: 'fade', ondulado: 'longo', cacheado: 'curto', longo: 'longo', rabo: 'coque', coque: 'coque', raspado: 'raspado', moicano: 'espeto', chanel: 'franja', afro: 'curto', franja: 'franja' };
+  const roupaDoNegocio = () => (typeof window !== 'undefined' && window.ESCRITORIO && ESCRITORIO.estilo && ESCRITORIO.estilo.roupa) || 'social';
+  function lookPixel(look, st) {
+    return { seed: look.seed || look.shirt || 'x', skin: look.skin, hair: look.hair, style: ESTILO_PIXEL[look.style] || (BONECO_PIXEL.HAIR[look.style] ? look.style : 'curto'),
+      glasses: !!look.glasses, beard: !!look.beard, acc: look.shirt || '#5FE0FB', roupa: (st && st.roupa) || look.roupa || roupaDoNegocio(), terno: look.terno };
+  }
+  const PIXEL_K = 1.9;   // pixels por célula: 40 células = 76 px, a cabeça no topo que o headTop promete
+
+  /** o boneco em pixel art; pé em (sx, sy). st: { moving, phase, sitting, quieto, scale, roupa } */
   function draw(ctx, look, sx, sy, facing, st = {}) {
+    if (typeof BONECO_PIXEL === 'undefined') return drawClassico(ctx, look, sx, sy, facing, st);
+    const sc = st.scale || 1, sitting = !!st.sitting, moving = !!st.moving, phase = st.phase || 0;
+    const bob = moving ? -Math.abs(Math.sin(phase * Math.PI)) * 2.4 : 0;
+    const breath = (st.quieto || moving) ? 0 : Math.round(Math.sin(phase * 1.5) * 0.6);
+    ctx.save();
+    ctx.translate(sx, sy + bob);
+    ctx.scale(sc, sc);
+    ctx.fillStyle = 'rgba(0,0,0,.34)';
+    ctx.beginPath(); ctx.ellipse(0, 0, sitting ? 11 : 13, sitting ? 5 : 6, 0, 0, 7); ctx.fill();
+    if (facing === 'w' || facing === 'n') ctx.scale(-1, 1);   // de lado ou de costas: espelhado, para a sombra do corpo trocar de lado
+    // sentado: as pernas curtas somem atrás da cadeira; a cabeça fica onde headTop(true) promete
+    if (sitting) BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, -2 + breath, PIXEL_K, 'sentado');
+    else BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, breath, PIXEL_K, 'pe');
+    ctx.restore();
+  }
+
+  function drawClassico(ctx, look, sx, sy, facing, st = {}) {
     const sc      = st.scale || 1;
     const moving  = !!st.moving;
     const sitting = !!st.sitting;
@@ -462,5 +495,5 @@ const AVATAR = (() => {
   }
 
   return { SKIN, HAIR_C, HAIR_S, SHIRT, PANTS, SEAT, SCALE, makeLook, headTop,
-           draw, nameTag, bubble, portrait, hash };
+           draw, drawClassico, lookPixel, nameTag, bubble, portrait, hash };
 })();
