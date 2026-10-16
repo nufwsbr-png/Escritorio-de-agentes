@@ -111,3 +111,38 @@ conteúdo nas redes": origem `claude`, empresa e dona certas, "o que faz" em
 uma frase limpa, ramo clínica, os quatro setores pedidos com os nomes da
 pessoa mais dois sugeridos (Atendimento, Prontuários), as quatro conexões
 com o tipo certo, roupa sugerida jaleco. Nenhum sistema inventado.
+
+## 5g-5, o acabamento da tarde (fotos de perto)
+
+Como foi: um escritório de teste com a planta genérica, seis agentes
+contratados pela tela, o Chrome sem janela fotografando a mesma mesa a 2,6x
+e 3,6x antes e depois de cada mudança.
+
+- **Paredes no zoom**: antes, as divisórias entre salas tinham um vidro fumê
+  do parapeito até o teto que, de perto, parecia uma caixa alta dentro da
+  sala (com as linhas de contorno). Depois: só o parapeito baixo; as salas
+  ficam abertas. As paredes externas altas, com as placas, continuam.
+- **Objetos animam**: o contador passou de "parado · a tela só redesenha
+  quando algo muda" para "parado · bonecos quietos, objetos animam · desenho
+  1,3 ms". A 12 quadros por segundo com 1,3 ms de desenho, a tela gasta perto
+  de 2% de um núcleo; a aba escondida continua sem desenhar; câmera e boneco
+  andando sobem para 24.
+- **Sentado na cadeira**: antes, o boneco afundava (os pés no chão, o quadril
+  abaixo do assento) e, de costas, o encosto escondia a cabeça inteira: na
+  mesa do EXEMPLO só se via a etiqueta. Depois: o quadril no assento, o
+  encosto na altura dos ombros, a cabeça e os ombros aparecendo acima dele;
+  de costas (mesas viradas para a parede) o boneco mostra o cabelo e o
+  pescoço, não o rosto. Na mesa da diretoria (de frente), o dono entre os
+  dois monitores, como antes.
+- **Textos maiores** nas caixas: a dica de 12,5 para 13,5 px, o título da
+  caixa de 18 para 20 px, a descrição de 13 para 14 px, os itens de Conexões
+  de 13 para 14 px.
+- **A linha do Claude Code** na boas-vindas some quando está tudo certo; os
+  avisos de "sem login" e "não encontrado" ficam.
+- **O quadro de telas** (`/estudio/telas.html`): seis variações, todas com a
+  barra do escritório completa (10 botões), a barra do monitor (13), a caixa
+  de Conexões e as peças; nenhum erro de JavaScript; as barras cabem em
+  1.680 px sem espremer a marca nem o nome do agente; "Escolher este" marca
+  o quadro e mostra a linha para dizer no chat.
+- `npm test` inteiro depois de tudo (a fumaça confere o contador "parado",
+  a linha do Claude escondida quando conectado e as páginas do Estúdio).

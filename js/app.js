@@ -486,25 +486,26 @@ staticDraw.sort((a, b) => a.k - b.k);
    RENDER
    =========================================================== */
 let T0 = performance.now(), t = 0;
-/* O desenho é sob demanda: a tela só redesenha quando algo muda (câmera, boneco andando, estado) ou quando o
-   movimento escolhido anima por si (calmo 12 fps, vivo 24 fps). Parada, a tela não gasta nada; a aba escondida
-   também não. Qualquer coisa que mude o que se vê chama pedirQuadro(). */
+/* Os objetos da cena (o LED das mesas, as plantas, os painéis) animam sempre, devagar: no movimento "parado" a tela
+   roda a 12 quadros por segundo e sobe para 24 quando a câmera ou um boneco se move. "Parado" é dos bonecos: eles
+   não respiram nem passeiam. A aba escondida não desenha nada. Qualquer coisa que mude o que se vê chama pedirQuadro(). */
 let loopAtivo = false, quadroPedido = false, ultimoQuadro = 0;
 function pedirQuadro() { quadroPedido = true; if (!loopAtivo) { loopAtivo = true; requestAnimationFrame(frame); } }
-function precisaAnimar() {
-  if (document.hidden) return false;
-  if (opts.movimento !== 'parado' || opts.rgb) return true;
+function precisaAnimar() { return !document.hidden; }
+function algoSeMove() {
+  if (opts.rgb || quadroPedido) return true;
   if (Math.abs(cam.tz - cam.z) > 0.002) return true;
   for (const ac of actors.values()) if (!ac.hidden && (ac.path.length || ac.fine || ac.visita || (!ac.seated && ac.desiredSlot()))) return true;
   return false;
 }
-const FPS_ALVO = { parado: 24, calmo: 12, vivo: 24 };
+const FPS_ALVO = { parado: 24, calmo: 12, vivo: 24 }, FPS_OBJETOS = 12;
+const fpsAlvo = () => (opts.movimento === 'parado' && !algoSeMove()) ? FPS_OBJETOS : FPS_ALVO[opts.movimento];
 let bgCache = null;
 const elFps = document.getElementById("fps");
 let fpsN = 0, fpsT = 0, msDesenho = 0;
 
 function frame(now) {
-  if (now - ultimoQuadro < 1000 / FPS_ALVO[opts.movimento] - 1) { requestAnimationFrame(frame); return; }
+  if (now - ultimoQuadro < 1000 / fpsAlvo() - 1) { requestAnimationFrame(frame); return; }
   ultimoQuadro = now;
   const dt = Math.min(0.05, (now - T0) / 1000);
   T0 = now; t += dt;
@@ -577,13 +578,13 @@ function frame(now) {
   fpsN++; fpsT += dt;
   if (fpsT >= 0.5) {
     const fps = fpsN / fpsT, ms = msDesenho / fpsN;
-    elFps.innerHTML = '<b>' + fps.toFixed(0) + '</b> fps · desenho ' + ms.toFixed(1) + ' ms';
+    elFps.innerHTML = (opts.movimento === 'parado' ? '<b>parado</b> · bonecos quietos, objetos animam · ' : '<b>' + fps.toFixed(0) + '</b> fps · ') + 'desenho ' + ms.toFixed(1) + ' ms';
     elFps.classList.toggle('ruim', fps < 50);
     fpsN = 0; fpsT = 0; msDesenho = 0;
   }
 
   if (precisaAnimar() || quadroPedido) { quadroPedido = false; requestAnimationFrame(frame); }
-  else { loopAtivo = false; elFps.innerHTML = '<b>parado</b> · a tela só redesenha quando algo muda'; elFps.classList.remove('ruim'); }
+  else { loopAtivo = false; elFps.innerHTML = '<b>aba escondida</b> · nada é desenhado'; elFps.classList.remove('ruim'); }
 }
 
 /* ===========================================================

@@ -299,10 +299,8 @@ const WORLD = (() => {
 
   /* ---- uma parede ---- */
   function drawWallTile(ctx, x, y, t, rgbOn, zoom) {
-    // afastado, o vidro fumê da divisória some em menos de um pixel
-    const detalhe = (zoom === undefined || zoom > 0.7);
+    void zoom;
     const occ  = wallOccludes(x, y);
-    const room = ROOMS[roomOf[idx(x, y)]] || ROOMS.corredor;
     const h    = occ ? PARAPET : WALL_H;
 
     const showLeft  = !isWall(x, y + 1);   // face virada para +y
@@ -354,20 +352,7 @@ const WORLD = (() => {
     // topo
     ISO.plane(ctx, x, y, 1, 1, h, occ ? ISO.rgba('#8fa4d8', .28) : C.wallTop);
 
-    if (occ && detalhe) {
-      // vidro fumê acima do parapeito
-      for (const f of faces) {
-        const top = [
-          P(f.o === 'n' ? x : x + 1, f.o === 'n' ? y + 1 : y,     WALL_H),
-          P(x + 1, y + 1, WALL_H),
-          P(x + 1, y + 1, h),
-          P(f.o === 'n' ? x : x + 1, f.o === 'n' ? y + 1 : y,     h)
-        ];
-        ISO.quad(ctx, top, ISO.rgba('#9fc4ff', .085));
-        ISO.quad(ctx, top, null, ISO.rgba('#bcd8ff', .12));
-      }
-      ISO.plane(ctx, x, y, 1, 1, WALL_H, ISO.rgba(room.accent, rgbOn ? .30 : .12));
-    }
+    // a divisória entre salas fica só no parapeito: o vidro fumê que subia até o teto parecia uma caixa dentro da sala no zoom (tirado em 16/10/2026)
 
     // trilho de LED no topo da parede — é a cara do lugar, nunca some
     if (rgbOn) {

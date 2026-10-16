@@ -76,6 +76,7 @@ const AVATAR = (() => {
       glasses: !!look.glasses, beard: !!look.beard, acc: look.shirt || '#5FE0FB', roupa: (st && st.roupa) || look.roupa || roupaDoNegocio(), terno: look.terno };
   }
   const PIXEL_K = 1.9;   // pixels por célula: 40 células = 76 px, a cabeça no topo que o headTop promete
+  const SENTA = Math.round(SEAT - 4 * PIXEL_K);   // sentado, o pé sobe até o quadril ficar no assento da cadeira (as 4 linhas de perna ficam abaixo dele)
 
   /** o boneco em pixel art; pé em (sx, sy). st: { moving, phase, sitting, quieto, scale, roupa } */
   function draw(ctx, look, sx, sy, facing, st = {}) {
@@ -88,10 +89,11 @@ const AVATAR = (() => {
     ctx.scale(sc, sc);
     ctx.fillStyle = 'rgba(0,0,0,.34)';
     ctx.beginPath(); ctx.ellipse(0, 0, sitting ? 11 : 13, sitting ? 5 : 6, 0, 0, 7); ctx.fill();
-    if (facing === 'w' || facing === 'n') ctx.scale(-1, 1);   // de lado ou de costas: espelhado, para a sombra do corpo trocar de lado
+    const costas = (facing === 'w' || facing === 'n');   // de costas para a câmera: só cabelo e pescoço, sem rosto
+    if (costas) ctx.scale(-1, 1);                          // espelhado, para a sombra do corpo trocar de lado
     // sentado: as pernas curtas somem atrás da cadeira; a cabeça fica onde headTop(true) promete
-    if (sitting) BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, -2 + breath, PIXEL_K, 'sentado');
-    else BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, breath, PIXEL_K, 'pe');
+    if (sitting) BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, -SENTA + breath, PIXEL_K, 'sentado', costas);
+    else BONECO_PIXEL.draw(ctx, lookPixel(look, st), 0, breath, PIXEL_K, 'pe', costas);
     ctx.restore();
   }
 

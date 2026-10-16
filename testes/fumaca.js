@@ -97,9 +97,9 @@ async function cenarioPadrao(b) {
   ok(await b.ev('document.querySelectorAll("#team-list .card").length') >= 1, 'equipe tem pelo menos um card');
   ok(await b.ev('document.querySelectorAll("#rooms-list .roomcard").length') === 5, 'painel Salas mostra as 5 salas padrão');
   ok(await b.ev('document.getElementById("opt-mov").value') === 'parado' && await b.ev('__escritorio.opts.movimento') === 'parado', 'o movimento nasce parado (leve)');
-  // os bonecos entram pelo elevador e andam até a mesa (uns 20 s); depois disso a tela aquieta
+  // os bonecos entram pelo elevador e andam até a mesa (uns 20 s); depois disso só os objetos animam, a 12 fps
   let aquietou = false; for (let i = 0; i < 45 && !aquietou; i++) { await espera(1000); aquietou = String(await b.ev('document.getElementById("fps").textContent')).includes('parado'); }
-  ok(aquietou, 'parada, a tela para de redesenhar');
+  ok(aquietou, 'parada, o contador diz "parado" e os objetos seguem animando');
   await b.ev('__escritorio.olhar("Exemplo")'); await espera(300);
   ok(await b.ev('__escritorio.loopAtivo') === true, 'mexer a câmera acorda o desenho');
   await b.ev('__escritorio.sistema("EXEMPLO")'); await espera(1200);
@@ -270,7 +270,7 @@ async function cenarioAbertura(b, DADOS) {
   console.log('\nCenário 5: a abertura na tela, de ponta a ponta (sem o Claude: por palavras-chave)');
   await b.ir('http://localhost:' + PORT + '/abertura');
   ok(String(await b.ev('document.title')).includes('Abrir'), '/abertura abre');
-  ok(await b.ev('document.getElementById("estado-claude").textContent.length > 20'), 'a boas-vindas diz como está o Claude Code');
+  ok(await b.ev('document.getElementById("estado-claude").classList.contains("hidden") || document.getElementById("estado-claude").textContent.length > 20'), 'a boas-vindas só fala do Claude Code quando falta algo');
   await b.ev('document.getElementById("b-comecar").click()'); await espera(300);
   await b.ev('document.getElementById("txt").value = "Somos a Clínica Sorriso, uma clínica odontológica em Curitiba. A dona é a Dra. Carla. Agendamos pelo WhatsApp e usamos a Google Agenda e uma planilha."; document.getElementById("f-cor").value = "#2f7bf0"; document.getElementById("f-cor").dispatchEvent(new Event("input"))');
   await b.ev('document.getElementById("b-interpretar").click()'); await espera(2500);

@@ -30,7 +30,7 @@
     const el = $('#estado-claude');
     if (!est.estado) { el.innerHTML = '<i class="sem vermelho"></i><span>o escritório não respondeu; confira se ele está no ar</span>'; return; }
     const c = est.estado.claude || {};
-    if (c.conectado) el.innerHTML = '<i class="sem verde"></i><span><b>Claude Code conectado</b> nesta máquina: ele lê o que você escrever e sugere os setores e as conexões.</span>';
+    if (c.conectado) el.classList.add('hidden');   // tudo certo: nada a dizer (o dono pediu a tela limpa, 16/10/2026)
     else if (c.instalado) el.innerHTML = '<i class="sem amarelo"></i><span><b>Claude Code instalado, sem login.</b> Dá para seguir: eu entendo por palavras-chave e você corrige. Para a leitura completa, rode <code>claude auth login</code> num terminal e recarregue.</span>';
     else el.innerHTML = '<i class="sem amarelo"></i><span><b>Claude Code não encontrado</b> nesta máquina. Dá para abrir o escritório mesmo assim (eu entendo por palavras-chave), mas os agentes precisam dele para trabalhar: instale e rode <code>claude auth login</code>.</span>';
     const ab = $('#estado-aberto');

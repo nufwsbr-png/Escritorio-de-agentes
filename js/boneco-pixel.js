@@ -56,7 +56,7 @@ const BONECO_PIXEL = (() => {
   function stamp(g, map, x, y) { map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch !== '.' && g[y + j] && i + x >= 0 && i + x < 16) g[y + j][x + i] = ch; } }); }
 
   /** a matriz 16 x 40: look = { roupa, acc, skin, hair, style, glasses, beard, seed } */
-  function grade(look, pose) {
+  function grade(look, pose, costas) {
     const g = Array.from({ length: 40 }, () => Array(16).fill('.'));
     const estilo = HAIR[look.style] ? look.style : 'curto';
     stamp(g, HEAD, 2, 4);
@@ -66,6 +66,15 @@ const BONECO_PIXEL = (() => {
     stamp(g, BODY[look.roupa] || BODY.social, 3, 14);
     stamp(g, ARM_L, 1, 14); stamp(g, ARM_R, 13, 14);
     stamp(g, pose === 'sentado' ? LEGS_SIT : LEGS, 3, 26);
+    if (costas) {
+      // de costas para a câmera: a cabeça é cabelo (ou pele, se raspado) e pescoço; sem rosto, óculos nem barba
+      const careca = estilo === 'raspado';
+      for (let j = 4; j < 14; j++) for (let i = 0; i < 16; i++) {
+        const ch = g[j][i];
+        if (ch === '.' || ch === 'o') continue;
+        g[j][i] = j < 12 ? (careca ? (i >= 11 ? 'S' : 's') : (i >= 11 ? 'H' : 'h')) : (i >= 11 ? 'S' : 's');
+      }
+    }
     return g;
   }
   function cores(look) {
@@ -78,9 +87,9 @@ const BONECO_PIXEL = (() => {
       c: terno, C: tom(terno, -0.3), a: acc, A: tom(acc, -0.3), w: '#f2f4f8', W: '#c9d0e0', r: manga, R: tom(manga, -0.3), B: tom(hair, -0.1),
       l: calca, L: tom(calca, -0.3), b: '#1a1a1a' };
   }
-  /** desenha com o pé em (x, y); k = tamanho de cada pixel; pose 'pe' ou 'sentado' (pernas curtas, para a cadeira) */
-  function draw(ctx, look, x, y, k, pose) {
-    const g = grade(look, pose), c = cores(look);
+  /** desenha com o pé em (x, y); k = tamanho de cada pixel; pose 'pe' ou 'sentado' (pernas curtas, para a cadeira); costas = visto por trás */
+  function draw(ctx, look, x, y, k, pose, costas) {
+    const g = grade(look, pose, costas), c = cores(look);
     const alto = pose === 'sentado' ? 30 : 40;
     const x0 = x - 8 * k, y0 = y - alto * k;
     ctx.save();

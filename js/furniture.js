@@ -462,11 +462,11 @@ const FURN = (() => {
 
     /* ================= CADEIRAS ================= */
     chairGamer(ctx, o) { const a = ISO.hsl(o.hue, 85, 52);
-      cadeiraBase(ctx, o, '#14171f', a, 30, true); },
+      cadeiraBase(ctx, o, '#14171f', a, 16, true); },
     chairBoss(ctx, o)  {
-      cadeiraBase(ctx, o, '#1a1419', '#7c6cff', 33, true); },
+      cadeiraBase(ctx, o, '#1a1419', '#7c6cff', 19, true); },
     chairSimple(ctx, o){
-      cadeiraBase(ctx, o, '#1c2234', '#4a5a86', 22, false); },
+      cadeiraBase(ctx, o, '#1c2234', '#4a5a86', 14, false); },
 
     /* ---------- o resto do mobiliário ---------- */
     arcade(ctx, o, t) {

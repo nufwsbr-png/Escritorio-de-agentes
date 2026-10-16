@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>As telas e os botões</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+  /* ---------- a página em si, na marca NuFws ---------- */
+  :root{--preto:#05080E;--noite:#0A1424;--carvao:#0E1522;--linha:#1A2233;--branco:#fff;--gelo:#EBEBEC;--cinza:#A4AEB9;--cinza-2:#686D86;
+    --ciano:#5FE0FB;--violeta:#7C4DF7;--magenta:#F76BE8;--grad:linear-gradient(90deg,#5FE0FB 0%,#A1AFF4 45%,#C79FF4 65%,#F76BE8 100%);--titulo:"Outfit",system-ui,sans-serif;--texto:"DM Sans",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--preto);color:var(--gelo);font-family:var(--texto);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:110px}
+  .wrap{max-width:1320px;margin:0 auto;padding:0 28px}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(5,8,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--linha)}
+  .topbar .wrap{display:flex;align-items:center;gap:14px;height:62px}
+  .topbar svg{width:30px;height:30px}
+  .wordmark{font-family:var(--titulo);font-weight:600;font-size:20px;letter-spacing:-.02em;color:var(--branco)}
+  .wordmark small{font-family:var(--texto);font-weight:400;font-size:12px;color:var(--cinza);margin-left:10px;letter-spacing:.18em;text-transform:uppercase}
+  .topbar .tag{margin-left:auto;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--linha);border-radius:99px;padding:6px 14px;color:var(--cinza);white-space:nowrap;text-decoration:none}
+  header.capa{padding:56px 0 36px;border-bottom:1px solid var(--linha)}
+  .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--cinza);font-weight:500}
+  .eyebrow::after{content:"";display:block;width:36px;height:2px;background:var(--ciano);margin-top:12px}
+  h1{font-family:var(--titulo);font-weight:300;font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.02em;color:var(--branco);margin:22px 0 14px}
+  h1 strong{font-weight:500;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lead{font-size:17px;color:var(--cinza);max-width:720px;font-weight:300}
+  p.lead b{color:var(--gelo);font-weight:500}
+  section.lista{padding:28px 0;display:flex;flex-direction:column;gap:34px;max-width:1780px}
+  .quadro{background:var(--carvao);border:1px solid var(--linha);border-radius:18px;overflow:hidden;transition:border-color .15s}
+  .quadro.escolhida{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(95,224,251,.18)}
+  .cabeca{display:flex;align-items:flex-start;gap:18px;padding:20px 24px;border-bottom:1px solid var(--linha)}
+  .cabeca .mini{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano);font-weight:600;display:block;margin-bottom:4px}
+  .cabeca h3{font-family:var(--titulo);font-weight:500;font-size:24px;letter-spacing:-.015em;color:var(--branco);line-height:1.1}
+  .cabeca p{font-size:14px;color:var(--cinza);margin-top:6px;max-width:760px}
+  .cabeca .btn{margin-left:auto;flex:none;align-self:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--ciano);color:var(--preto);font-family:var(--texto);font-weight:600;font-size:14px;padding:11px 20px;border-radius:99px;border:0;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .btn.ghost{background:transparent;color:var(--branco);border:1px solid rgba(255,255,255,.35);font-weight:500}
+  .quadro.escolhida .cabeca .btn{background:var(--branco)}
+  .selo{display:none;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--preto);background:var(--ciano);border-radius:99px;padding:4px 10px;font-weight:600;align-self:center}
+  .quadro.escolhida .selo{display:inline-block}
+  .rolagem{overflow-x:auto}
+  .palco{min-width:1680px;font-family:var(--texto);font-size:14px;line-height:1.4;color:#e8ecf7;background:#0b0f18}
+  .rodape{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(5,8,14,.92);backdrop-filter:blur(10px);border-top:1px solid var(--linha);padding:14px 0}
+  .rodape .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .rodape .txt{flex:1;font-size:14px;color:var(--cinza)}
+  .rodape .txt b{color:var(--branco);font-weight:500}
+  .rodape code{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--ciano);background:var(--carvao);border:1px solid var(--linha);border-radius:8px;padding:4px 10px}
+  @media (max-width:900px){.wrap{padding:0 16px}.cabeca{flex-wrap:wrap}.cabeca .btn{margin-left:0}}
+
+  /* ---------- a estrutura comum das telas (cada variação só muda o visual) ---------- */
+  .palco .top,.palco .mon{display:flex;align-items:center;gap:16px;padding:0 16px}
+  .palco .marca{display:flex;align-items:center;gap:11px;flex:none}
+  .palco .marca .logo{width:28px;height:28px;flex:none}
+  .palco .marca strong{display:block;line-height:1.15;white-space:nowrap}
+  .palco .marca span{display:block;white-space:nowrap}
+  .palco .relogio{text-align:center;line-height:1}
+  .palco .relogio b{display:block}
+  .palco .relogio span{display:block;margin-top:3px}
+  .palco .numeros{display:flex;gap:8px;margin-left:auto}
+  .palco .num{text-align:center}
+  .palco .num b{display:block;line-height:1}
+  .palco .num span{display:block}
+  .palco nav{display:flex;align-items:center;gap:6px}
+  .palco .grupo{display:contents}
+  .palco .b{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit;border:0;background:none;color:inherit;white-space:nowrap;line-height:1;transition:.12s}
+  .palco .b svg,.palco .ico svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .palco .mon .quem{display:flex;align-items:center;gap:11px;flex:none}
+  .palco .relogio,.palco .numeros,.palco .estado{flex:none}
+  .palco .mon .av{width:34px;height:44px;border-radius:8px;flex:none;background:#0a0d18 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 24' shape-rendering='crispEdges'><rect x='5' y='2' width='6' height='2' fill='%232a1a10'/><rect x='4' y='4' width='8' height='5' fill='%23f2c9a6'/><rect x='6' y='6' width='1' height='1' fill='%23000'/><rect x='9' y='6' width='1' height='1' fill='%23000'/><rect x='4' y='10' width='8' height='7' fill='%2322304e'/><rect x='7' y='10' width='2' height='7' fill='%23e8ecf7'/><rect x='4' y='17' width='3' height='5' fill='%231b2030'/><rect x='9' y='17' width='3' height='5' fill='%231b2030'/></svg>") center/60% no-repeat}
+  .palco .mon .quem strong{display:block;line-height:1.2}
+  .palco .mon .quem span{display:block}
+  .palco .estado{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .palco .estado i{width:9px;height:9px;border-radius:50%;background:#23e08a;box-shadow:0 0 10px #23e08a}
+  .palco .mon nav{margin-left:auto}
+  .palco .corpo{display:grid;grid-template-columns:1fr 400px}
+  .palco .cena{position:relative;min-height:470px;display:grid;place-items:center;padding:24px;overflow:hidden}
+  .palco .cena::before{content:"";position:absolute;inset:0;background:
+    repeating-linear-gradient(60deg,rgba(255,255,255,.035) 0 1px,transparent 1px 34px),
+    repeating-linear-gradient(-60deg,rgba(255,255,255,.035) 0 1px,transparent 1px 34px);
+    mask:radial-gradient(60% 60% at 50% 50%,#000 30%,transparent 100%)}
+  .palco .cena .rotulo-cena{position:absolute;left:16px;bottom:14px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.5}
+  .palco .caixa{position:relative;width:520px;padding:22px}
+  .palco .caixa .x{position:absolute;right:14px;top:14px}
+  .palco .caixa h4{margin:0 0 10px;line-height:1.2}
+  .palco .caixa p{margin:0 0 10px}
+  .palco .caixa .acoes{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .palco .pecas{padding:18px 18px 22px;display:flex;flex-direction:column;gap:16px}
+  .palco .peca .rot{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.55;margin-bottom:8px}
+  .palco .linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .palco .pil{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;line-height:1}
+  .palco .chip{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;line-height:1}
+  .palco .chip i{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .palco .abas{display:flex}
+  .palco .aba{flex:1;text-align:center;cursor:pointer}
+  .palco .func{display:flex;align-items:center;gap:11px}
+  .palco .func .av{width:40px;height:52px;flex:none;border-radius:9px}
+  .palco .func div{flex:1;min-width:0}
+  .palco .func b{display:block}
+  .palco .func span{display:block}
+  .palco .busca{display:flex;gap:8px}
+  .palco .busca input{flex:1;font:inherit;color:inherit}
+
+  /* ================= 01 · MARCA NUFWS ================= */
+  .v-nufws .palco{background:#05080E;color:#EBEBEC}
+  .v-nufws .top{height:64px;background:#05080E;border-bottom:1px solid #1A2233}
+  .v-nufws .marca strong{font-family:var(--titulo);font-weight:600;font-size:17px;letter-spacing:-.01em;color:#fff}
+  .v-nufws .marca span{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#A4AEB9;margin-top:2px}
+  .v-nufws .relogio{padding:0 16px;border-left:1px solid #1A2233;border-right:1px solid #1A2233}
+  .v-nufws .relogio b{font-family:var(--titulo);font-weight:300;font-size:22px;color:#fff}
+  .v-nufws .relogio span{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#A4AEB9}
+  .v-nufws .num{border:1px solid #1A2233;border-radius:99px;padding:6px 14px;min-width:92px}
+  .v-nufws .num b{font-family:var(--titulo);font-weight:500;font-size:17px}
+  .v-nufws .num span{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#A4AEB9;margin-top:3px}
+  .v-nufws .num.ok b{color:#5FE0FB}.v-nufws .num.pausa b{color:#F7D36B}.v-nufws .num.off b{color:#686D86}
+  .v-nufws .b{border-radius:99px;padding:9px 13px;font-size:12.5px;font-weight:500;color:#EBEBEC;border:1px solid #1A2233}
+  .v-nufws .b svg{color:#A4AEB9}
+  .v-nufws .b:hover{border-color:#5FE0FB}
+  .v-nufws .b.principal{background:#5FE0FB;color:#05080E;border-color:#5FE0FB;font-weight:600}.v-nufws .b.principal svg{color:#05080E}
+  .v-nufws .b.fantasma{border-color:transparent;color:#A4AEB9}
+  .v-nufws .b.perigo{color:#FF8A7A;border-color:rgba(255,138,122,.35)}
+  .v-nufws .b.so-icone{padding:9px;width:35px;justify-content:center}
+  .v-nufws .mon{height:64px;background:#0A1424;border-bottom:1px solid #1A2233}
+  .v-nufws .mon .av{border:1px solid #1A2233}
+  .v-nufws .mon .quem strong{font-family:var(--titulo);font-weight:500;font-size:16px;color:#fff}
+  .v-nufws .mon .quem span{font-size:12px;color:#A4AEB9}
+  .v-nufws .estado{font-size:12px;padding:7px 13px;border-radius:99px;border:1px solid #1A2233;color:#EBEBEC}
+  .v-nufws .cena{background:radial-gradient(900px 500px at 50% 40%,#101a2e 0%,#07090f 70%)}
+  .v-nufws .caixa{background:#0E1522;border:1px solid #1A2233;border-radius:18px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .v-nufws .caixa h4{font-family:var(--titulo);font-weight:500;font-size:22px;letter-spacing:-.01em;color:#fff}
+  .v-nufws .caixa h4::before{content:"";display:block;width:28px;height:2px;background:#5FE0FB;margin-bottom:12px}
+  .v-nufws .caixa p{font-size:14.5px;color:#A4AEB9;line-height:1.6}
+  .v-nufws .caixa p.vazio{color:#EBEBEC}
+  .v-nufws .caixa code{color:#5FE0FB;background:#05080E;border:1px solid #1A2233;border-radius:6px;padding:1px 6px;font-size:12.5px}
+  .v-nufws .caixa .x{background:none;border:0;color:#A4AEB9}
+  .v-nufws .pecas{background:#0A1424;border-left:1px solid #1A2233}
+  .v-nufws .pil{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;padding:6px 11px;border-radius:99px;border:1px solid #1A2233}
+  .v-nufws .pil::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .v-nufws .pil.trabalhando{color:#5FE0FB}.v-nufws .pil.descanso{color:#F7D36B}.v-nufws .pil.offline{color:#686D86}
+  .v-nufws .chip{font-size:12.5px;padding:7px 12px;border-radius:99px;border:1px solid #1A2233;color:#EBEBEC}
+  .v-nufws .chip.verde i{background:#5FE0FB}.v-nufws .chip.amarelo i{background:#F7D36B}.v-nufws .chip.vermelho i{background:#FF8A7A}
+  .v-nufws .abas{border-bottom:1px solid #1A2233}
+  .v-nufws .aba{padding:12px 4px;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:#A4AEB9;border-bottom:2px solid transparent}
+  .v-nufws .aba.ativa{color:#fff;border-bottom-color:#5FE0FB}
+  .v-nufws .busca input{background:#05080E;border:1px solid #1A2233;border-radius:99px;padding:10px 16px;font-size:13px}
+  .v-nufws .busca input::placeholder{color:#686D86}
+  .v-nufws .func{background:#0E1522;border:1px solid #1A2233;border-radius:14px;padding:12px 14px}
+  .v-nufws .func .av{background:#05080E;border:1px solid #1A2233}
+  .v-nufws .func b{font-family:var(--titulo);font-weight:500;font-size:15px;color:#fff}
+  .v-nufws .func span{font-size:12px;color:#A4AEB9}
+
+  /* ================= 02 · SÓBRIO ================= */
+  .v-sobrio .palco{background:#0b0d12;color:#e3e6ec}
+  .v-sobrio .top{height:54px;background:#0b0d12;border-bottom:1px solid #1c2029}
+  .v-sobrio .marca .logo{width:22px;height:22px;border-radius:6px;background:#e3e6ec}
+  .v-sobrio .marca strong{font-size:14px;font-weight:600;color:#fff}
+  .v-sobrio .marca span{display:none}
+  .v-sobrio .relogio b{font-size:14px;font-weight:500;color:#9aa3b5;font-variant-numeric:tabular-nums}
+  .v-sobrio .relogio span{display:none}
+  .v-sobrio .numeros{gap:16px;margin-right:8px}
+  .v-sobrio .num{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#9aa3b5}
+  .v-sobrio .num::before{content:"";width:7px;height:7px;border-radius:50%;background:#5a6280}
+  .v-sobrio .num.ok::before{background:#3ddc97}.v-sobrio .num.pausa::before{background:#f3c969}
+  .v-sobrio .num b{display:inline;font-weight:600;color:#e3e6ec;margin-right:1px}
+  .v-sobrio .num span{display:inline}
+  .v-sobrio nav{gap:2px}
+  .v-sobrio .grupo{display:flex;align-items:center;gap:2px;padding:0 6px;border-left:1px solid #1c2029}
+  .v-sobrio .grupo:first-child{border-left:0;padding-left:0}
+  .v-sobrio .b{padding:7px 10px;border-radius:6px;font-size:13px;font-weight:500;color:#9aa3b5}
+  .v-sobrio .b svg{display:none}
+  .v-sobrio .b:hover{background:#161a22;color:#e3e6ec}
+  .v-sobrio .b.principal{background:#e3e6ec;color:#0b0d12;font-weight:600}
+  .v-sobrio .b.perigo{color:#f28b82}
+  .v-sobrio .b.so-icone svg{display:block}.v-sobrio .b.so-icone{padding:7px}
+  .v-sobrio .mon{height:52px;background:#0b0d12;border-bottom:1px solid #1c2029}
+  .v-sobrio .mon .av{width:26px;height:26px;border-radius:6px;background-size:70%;border:1px solid #1c2029}
+  .v-sobrio .mon .quem strong{font-size:14px;font-weight:600;color:#fff}
+  .v-sobrio .mon .quem span{font-size:12px;color:#9aa3b5}
+  .v-sobrio .estado{font-size:12.5px;color:#9aa3b5}
+  .v-sobrio .estado i{box-shadow:none;background:#3ddc97}
+  .v-sobrio .cena{background:#0b0d12}
+  .v-sobrio .caixa{background:#111319;border:1px solid #22262f;border-radius:10px}
+  .v-sobrio .caixa h4{font-size:16px;font-weight:600;color:#fff}
+  .v-sobrio .caixa p{font-size:13.5px;color:#9aa3b5;line-height:1.6}
+  .v-sobrio .caixa p.vazio{color:#e3e6ec}
+  .v-sobrio .caixa code{color:#e3e6ec;background:#1a1e27;border-radius:4px;padding:1px 5px;font-size:12px}
+  .v-sobrio .caixa .x{background:none;border:0;color:#9aa3b5}
+  .v-sobrio .caixa .acoes .b{border:1px solid #22262f}
+  .v-sobrio .caixa .acoes .b.principal{border-color:#e3e6ec}
+  .v-sobrio .pecas{border-left:1px solid #1c2029}
+  .v-sobrio .pil{font-size:11.5px;color:#9aa3b5}
+  .v-sobrio .pil::before{content:"";width:7px;height:7px;border-radius:50%;background:#5a6280}
+  .v-sobrio .pil.trabalhando::before{background:#3ddc97}.v-sobrio .pil.descanso::before{background:#f3c969}
+  .v-sobrio .chip{font-size:12.5px;color:#9aa3b5;padding:5px 9px;border-radius:6px;background:#161a22}
+  .v-sobrio .chip.verde i{background:#3ddc97}.v-sobrio .chip.amarelo i{background:#f3c969}.v-sobrio .chip.vermelho i{background:#f28b82}
+  .v-sobrio .abas{border-bottom:1px solid #1c2029}
+  .v-sobrio .aba{padding:10px 4px;font-size:13px;color:#9aa3b5;border-bottom:1px solid transparent;margin-bottom:-1px}
+  .v-sobrio .aba.ativa{color:#fff;border-bottom-color:#fff}
+  .v-sobrio .busca input{background:#111319;border:1px solid #22262f;border-radius:6px;padding:8px 12px;font-size:13px}
+  .v-sobrio .func{border:1px solid #22262f;border-radius:8px;padding:10px 12px}
+  .v-sobrio .func .av{width:30px;height:30px;border-radius:6px;background:#161a22}
+  .v-sobrio .func b{font-size:13.5px;font-weight:600;color:#fff}
+  .v-sobrio .func span{font-size:12px;color:#9aa3b5}
+
+  /* ================= 03 · PAINEL DE CONTROLE ================= */
+  .v-painel .palco{background:#0f131a;color:#e6eaf2}
+  .v-painel .top{height:60px;background:#12171f;border-bottom:1px solid #232a36}
+  .v-painel .marca .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5FE0FB,#7C4DF7)}
+  .v-painel .marca strong{font-family:var(--titulo);font-weight:600;font-size:15px;color:#fff}
+  .v-painel .marca span{font-size:11px;color:#8a94a8}
+  .v-painel .relogio{border:1px solid #232a36;border-radius:10px;padding:6px 12px;background:#0f131a}
+  .v-painel .relogio b{font-size:16px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .v-painel .relogio span{font-size:10px;color:#8a94a8;text-transform:uppercase;letter-spacing:.08em}
+  .v-painel .numeros{gap:0;border:1px solid #232a36;border-radius:10px;overflow:hidden;background:#0f131a}
+  .v-painel .num{padding:6px 14px;border-left:1px solid #232a36;min-width:94px}
+  .v-painel .num:first-child{border-left:0}
+  .v-painel .num b{font-size:16px;font-weight:600}
+  .v-painel .num span{font-size:10px;color:#8a94a8;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .v-painel .num.ok b{color:#3ddc97}.v-painel .num.pausa b{color:#f3c969}.v-painel .num.off b{color:#6b7488}
+  .v-painel nav{gap:8px}
+  .v-painel .grupo{display:flex;border:1px solid #232a36;border-radius:10px;overflow:hidden;background:#0f131a}
+  .v-painel .b{padding:9px 12px;font-size:12.5px;font-weight:500;color:#c9d1de;border-left:1px solid #232a36;border-radius:0}
+  .v-painel .grupo .b:first-child{border-left:0}
+  .v-painel .b svg{color:#8a94a8}
+  .v-painel .b:hover{background:#1a2130;color:#fff}
+  .v-painel .b.principal{background:#7C4DF7;color:#fff}.v-painel .b.principal svg{color:#fff}
+  .v-painel .b.perigo{color:#f28b82}
+  .v-painel .b.so-icone{padding:9px 11px}
+  .v-painel .mon{height:60px;background:#12171f;border-bottom:1px solid #232a36}
+  .v-painel .mon .av{border:1px solid #232a36;border-radius:9px}
+  .v-painel .mon .quem strong{font-family:var(--titulo);font-weight:600;font-size:15px;color:#fff}
+  .v-painel .mon .quem span{font-size:12px;color:#8a94a8}
+  .v-painel .estado{font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(61,220,151,.12);color:#3ddc97}
+  .v-painel .estado i{background:#3ddc97;box-shadow:none}
+  .v-painel .cena{background:radial-gradient(900px 500px at 50% 40%,#141a26 0%,#0b0e14 70%)}
+  .v-painel .caixa{background:#141922;border:1px solid #262c3a;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .v-painel .caixa h4{font-family:var(--titulo);font-weight:600;font-size:18px;color:#fff}
+  .v-painel .caixa p{font-size:14px;color:#aeb6c6;line-height:1.6}
+  .v-painel .caixa p.vazio{color:#e6eaf2;background:#0f131a;border:1px dashed #2c3443;border-radius:8px;padding:10px 12px}
+  .v-painel .caixa code{color:#c9d1de;background:#0f131a;border:1px solid #262c3a;border-radius:5px;padding:1px 5px;font-size:12px}
+  .v-painel .caixa .x{background:none;border:0;color:#8a94a8}
+  .v-painel .caixa .acoes .b{border:1px solid #262c3a;border-radius:8px}
+  .v-painel .caixa .acoes .b.principal{border-color:#7C4DF7}
+  .v-painel .pecas{border-left:1px solid #232a36;background:#12171f}
+  .v-painel .pil{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:6px}
+  .v-painel .pil.trabalhando{background:rgba(61,220,151,.14);color:#3ddc97}.v-painel .pil.descanso{background:rgba(243,201,105,.14);color:#f3c969}.v-painel .pil.offline{background:rgba(107,116,136,.18);color:#8a94a8}
+  .v-painel .chip{font-size:12.5px;padding:6px 10px;border-radius:8px;border:1px solid #262c3a;background:#0f131a;color:#c9d1de}
+  .v-painel .chip.verde i{background:#3ddc97}.v-painel .chip.amarelo i{background:#f3c969}.v-painel .chip.vermelho i{background:#f28b82}
+  .v-painel .abas{background:#0f131a;border:1px solid #232a36;border-radius:10px;padding:3px;gap:3px}
+  .v-painel .aba{padding:7px;font-size:12.5px;font-weight:600;color:#8a94a8;border-radius:7px}
+  .v-painel .aba.ativa{background:#1f2634;color:#fff}
+  .v-painel .busca input{background:#0f131a;border:1px solid #232a36;border-radius:8px;padding:8px 12px;font-size:13px}
+  .v-painel .func{background:#0f131a;border:1px solid #232a36;border-radius:10px;padding:10px 12px;border-left:3px solid #3ddc97}
+  .v-painel .func .av{background:#12171f;border:1px solid #232a36}
+  .v-painel .func b{font-size:14px;font-weight:600;color:#fff}
+  .v-painel .func span{font-size:12px;color:#8a94a8}
+
+  /* ================= 04 · CLARO ================= */
+  .v-claro .palco{background:#f4f6fb;color:#1e293b}
+  .v-claro .top{height:64px;background:#fff;border-bottom:1px solid #e3e7f0}
+  .v-claro .marca strong{font-family:var(--titulo);font-weight:600;font-size:17px;color:#0b1220}
+  .v-claro .marca span{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#64748b;margin-top:2px}
+  .v-claro .relogio{padding:0 16px;border-left:1px solid #e3e7f0;border-right:1px solid #e3e7f0}
+  .v-claro .relogio b{font-family:var(--titulo);font-weight:400;font-size:22px;color:#0891b2}
+  .v-claro .relogio span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#64748b}
+  .v-claro .num{background:#fff;border:1px solid #e3e7f0;border-radius:12px;padding:6px 14px;min-width:92px}
+  .v-claro .num b{font-family:var(--titulo);font-weight:500;font-size:17px}
+  .v-claro .num span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#64748b;margin-top:3px}
+  .v-claro .num.ok b{color:#15803d}.v-claro .num.pausa b{color:#b45309}.v-claro .num.off b{color:#94a3b8}
+  .v-claro .b{border-radius:99px;padding:9px 13px;font-size:12.5px;font-weight:500;color:#1e293b;background:#fff;border:1px solid #dfe4ee}
+  .v-claro .b svg{color:#64748b}
+  .v-claro .b:hover{background:#f1f4fa;border-color:#c7cfdd}
+  .v-claro .b.principal{background:#7C4DF7;color:#fff;border-color:#7C4DF7;box-shadow:0 6px 16px rgba(124,77,247,.25)}.v-claro .b.principal svg{color:#fff}
+  .v-claro .b.fantasma{background:transparent;border-color:transparent;color:#475569}
+  .v-claro .b.perigo{color:#b91c1c;border-color:#fecaca}
+  .v-claro .b.so-icone{padding:9px;width:35px;justify-content:center}
+  .v-claro .mon{height:64px;background:#fff;border-bottom:1px solid #e3e7f0}
+  .v-claro .mon .av{background-color:#f1f4fa;border:1px solid #e3e7f0}
+  .v-claro .mon .quem strong{font-family:var(--titulo);font-weight:500;font-size:16px;color:#0b1220}
+  .v-claro .mon .quem span{font-size:12px;color:#64748b}
+  .v-claro .estado{font-size:12px;font-weight:600;padding:7px 13px;border-radius:99px;background:#ecfdf5;color:#15803d}
+  .v-claro .estado i{background:#16a34a;box-shadow:none}
+  .v-claro .cena{background:radial-gradient(900px 500px at 50% 40%,#e9edf7 0%,#f4f6fb 70%)}
+  .v-claro .cena::before{background:repeating-linear-gradient(60deg,rgba(15,23,42,.06) 0 1px,transparent 1px 34px),repeating-linear-gradient(-60deg,rgba(15,23,42,.06) 0 1px,transparent 1px 34px)}
+  .v-claro .caixa{background:#fff;border:1px solid #e3e7f0;border-radius:18px;padding:26px;box-shadow:0 24px 60px rgba(15,23,42,.14)}
+  .v-claro .caixa h4{font-family:var(--titulo);font-weight:500;font-size:22px;color:#0b1220}
+  .v-claro .caixa p{font-size:14.5px;color:#475569;line-height:1.6}
+  .v-claro .caixa p.vazio{color:#0b1220}
+  .v-claro .caixa code{color:#0891b2;background:#f1f4fa;border:1px solid #e3e7f0;border-radius:6px;padding:1px 6px;font-size:12.5px}
+  .v-claro .caixa .x{background:none;border:0;color:#64748b}
+  .v-claro .pecas{background:#fff;border-left:1px solid #e3e7f0}
+  .v-claro .pil{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:99px}
+  .v-claro .pil.trabalhando{background:#ecfdf5;color:#15803d}.v-claro .pil.descanso{background:#fffbeb;color:#b45309}.v-claro .pil.offline{background:#f1f5f9;color:#64748b}
+  .v-claro .chip{font-size:12.5px;padding:6px 11px;border-radius:99px;border:1px solid #e3e7f0;background:#fff;color:#1e293b}
+  .v-claro .chip.verde i{background:#16a34a}.v-claro .chip.amarelo i{background:#d97706}.v-claro .chip.vermelho i{background:#dc2626}
+  .v-claro .abas{border-bottom:1px solid #e3e7f0}
+  .v-claro .aba{padding:11px 4px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#64748b;font-weight:600;border-bottom:2px solid transparent}
+  .v-claro .aba.ativa{color:#0b1220;border-bottom-color:#7C4DF7}
+  .v-claro .busca input{background:#f8fafc;border:1px solid #e3e7f0;border-radius:99px;padding:9px 16px;font-size:13px}
+  .v-claro .busca input::placeholder{color:#94a3b8}
+  .v-claro .func{background:#fff;border:1px solid #e3e7f0;border-radius:14px;padding:12px 14px;box-shadow:0 2px 6px rgba(15,23,42,.05)}
+  .v-claro .func .av{background:#f1f4fa;border:1px solid #e3e7f0}
+  .v-claro .func b{font-family:var(--titulo);font-weight:500;font-size:15px;color:#0b1220}
+  .v-claro .func span{font-size:12px;color:#64748b}
+
+  /* ================= 05 · VIDRO ================= */
+  .v-vidro .palco{background:#070a12;color:#eef2ff}
+  .v-vidro .palco{position:relative}
+  .v-vidro .top{height:64px;background:rgba(12,16,28,.55);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08);position:relative;z-index:2}
+  .v-vidro .marca strong{font-family:var(--titulo);font-weight:500;font-size:17px;color:#fff}
+  .v-vidro .marca span{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:2px}
+  .v-vidro .relogio{padding:0 16px;border-left:1px solid rgba(255,255,255,.08);border-right:1px solid rgba(255,255,255,.08)}
+  .v-vidro .relogio b{font-family:var(--titulo);font-weight:300;font-size:22px;color:#fff}
+  .v-vidro .relogio span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .v-vidro .num{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px 14px;min-width:92px}
+  .v-vidro .num b{font-family:var(--titulo);font-weight:500;font-size:17px}
+  .v-vidro .num span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:3px}
+  .v-vidro .num.ok b{color:#5FE0FB}.v-vidro .num.pausa b{color:#F7D36B}.v-vidro .num.off b{color:rgba(255,255,255,.45)}
+  .v-vidro .b{border-radius:12px;padding:9px 12px;font-size:12.5px;font-weight:500;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+  .v-vidro .b svg{color:rgba(255,255,255,.8)}
+  .v-vidro .b:hover{background:rgba(255,255,255,.13)}
+  .v-vidro .b.principal{background:linear-gradient(135deg,rgba(95,224,251,.95),rgba(124,77,247,.95));border-color:transparent;color:#fff;box-shadow:0 8px 24px rgba(95,224,251,.25)}
+  .v-vidro .b.fantasma{background:transparent;border-color:transparent;color:rgba(255,255,255,.75)}
+  .v-vidro .b.perigo{color:#ff9d90;border-color:rgba(255,157,144,.35)}
+  .v-vidro .b.so-icone{padding:9px;width:35px;justify-content:center}
+  .v-vidro .mon{height:64px;background:rgba(12,16,28,.55);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08);position:relative;z-index:2}
+  .v-vidro .mon .av{border:1px solid rgba(255,255,255,.12);background-color:rgba(255,255,255,.05)}
+  .v-vidro .mon .quem strong{font-family:var(--titulo);font-weight:500;font-size:16px;color:#fff}
+  .v-vidro .mon .quem span{font-size:12px;color:rgba(255,255,255,.6)}
+  .v-vidro .estado{font-size:12px;padding:7px 13px;border-radius:99px;background:rgba(95,224,251,.1);border:1px solid rgba(95,224,251,.3);color:#fff}
+  .v-vidro .estado i{background:#5FE0FB;box-shadow:0 0 10px #5FE0FB}
+  .v-vidro .corpo{position:relative}
+  .v-vidro .corpo::before{content:"";position:absolute;inset:0;background:radial-gradient(420px 300px at 22% 30%,rgba(95,224,251,.28),transparent 70%),radial-gradient(460px 320px at 70% 75%,rgba(124,77,247,.35),transparent 70%),radial-gradient(360px 260px at 88% 20%,rgba(247,107,232,.22),transparent 70%)}
+  .v-vidro .cena{background:transparent}
+  .v-vidro .caixa{background:rgba(14,21,34,.55);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12)}
+  .v-vidro .caixa h4{font-family:var(--titulo);font-weight:500;font-size:22px;color:#fff}
+  .v-vidro .caixa p{font-size:14.5px;color:rgba(255,255,255,.7);line-height:1.6}
+  .v-vidro .caixa p.vazio{color:#fff}
+  .v-vidro .caixa code{color:#5FE0FB;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:1px 6px;font-size:12.5px}
+  .v-vidro .caixa .x{background:none;border:0;color:rgba(255,255,255,.7)}
+  .v-vidro .pecas{position:relative;background:rgba(12,16,28,.5);backdrop-filter:blur(18px);border-left:1px solid rgba(255,255,255,.08)}
+  .v-vidro .pil{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:6px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+  .v-vidro .pil.trabalhando{color:#5FE0FB}.v-vidro .pil.descanso{color:#F7D36B}.v-vidro .pil.offline{color:rgba(255,255,255,.5)}
+  .v-vidro .chip{font-size:12.5px;padding:7px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff}
+  .v-vidro .chip.verde i{background:#5FE0FB}.v-vidro .chip.amarelo i{background:#F7D36B}.v-vidro .chip.vermelho i{background:#ff9d90}
+  .v-vidro .abas{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:3px;gap:3px}
+  .v-vidro .aba{padding:8px;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);border-radius:9px}
+  .v-vidro .aba.ativa{background:rgba(255,255,255,.12);color:#fff}
+  .v-vidro .busca input{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 14px;font-size:13px}
+  .v-vidro .busca input::placeholder{color:rgba(255,255,255,.4)}
+  .v-vidro .func{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px}
+  .v-vidro .func .av{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1)}
+  .v-vidro .func b{font-family:var(--titulo);font-weight:500;font-size:15px;color:#fff}
+  .v-vidro .func span{font-size:12px;color:rgba(255,255,255,.6)}
+
+  /* ================= 06 · COMPACTO ================= */
+  .v-compacto .palco{background:#07090f;color:#e3e6ec}
+  .v-compacto .top{height:46px;background:#07090f;border-bottom:1px solid #151a26;gap:12px}
+  .v-compacto .marca .logo{width:22px;height:22px}
+  .v-compacto .marca strong{font-family:var(--titulo);font-weight:600;font-size:13.5px;color:#fff}
+  .v-compacto .marca span{display:none}
+  .v-compacto .relogio b{font-size:13px;font-weight:600;color:#9aa3b5;font-variant-numeric:tabular-nums}
+  .v-compacto .relogio span{display:none}
+  .v-compacto .numeros{gap:12px;margin-right:6px}
+  .v-compacto .num{display:flex;align-items:center;gap:6px;font-size:12px;color:#9aa3b5}
+  .v-compacto .num::before{content:"";width:6px;height:6px;border-radius:50%;background:#5a6280}
+  .v-compacto .num.ok::before{background:#3ddc97}.v-compacto .num.pausa::before{background:#f3c969}
+  .v-compacto .num b{display:inline;font-weight:700;color:#e3e6ec}
+  .v-compacto .num span{display:none}
+  .v-compacto nav{gap:4px}
+  .v-compacto .grupo{display:flex;gap:4px;padding-left:8px;margin-left:4px;border-left:1px solid #151a26}
+  .v-compacto .grupo:first-child{border-left:0;padding-left:0;margin-left:0}
+  .v-compacto .b{position:relative;width:32px;height:32px;padding:0;justify-content:center;border-radius:8px;font-size:12.5px;font-weight:500;color:#9aa3b5}
+  .v-compacto .b .rotulo{display:none}
+  .v-compacto .b.rotulado{width:auto;padding:0 11px}
+  .v-compacto .b.rotulado .rotulo{display:inline}
+  .v-compacto .b:hover,.v-compacto .b.mostra{background:#151a26;color:#fff}
+  .v-compacto .b.principal{background:#7C4DF7;color:#fff}
+  .v-compacto .b.perigo{color:#f28b82}
+  .v-compacto .b[data-rotulo]:hover::after,.v-compacto .b.mostra::after{content:attr(data-rotulo);position:absolute;top:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1b2130;color:#fff;font-size:11.5px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:5;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .v-compacto .b[data-rotulo]:hover::before,.v-compacto .b.mostra::before{content:"";position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1b2130;z-index:5}
+  .v-compacto .mon{height:46px;background:#07090f;border-bottom:1px solid #151a26;gap:12px}
+  .v-compacto .mon .av{width:26px;height:26px;border-radius:6px;background-size:70%;border:1px solid #151a26}
+  .v-compacto .mon .quem strong{font-size:13.5px;font-weight:600;color:#fff}
+  .v-compacto .mon .quem span{font-size:11.5px;color:#9aa3b5}
+  .v-compacto .estado{font-size:12px;color:#9aa3b5}
+  .v-compacto .estado i{box-shadow:none;background:#3ddc97;width:7px;height:7px}
+  .v-compacto .cena{background:radial-gradient(900px 500px at 50% 40%,#0f1422 0%,#07090f 70%)}
+  .v-compacto .caixa{background:#0d111a;border:1px solid #1c2232;border-radius:12px;width:480px;padding:20px}
+  .v-compacto .caixa h4{font-family:var(--titulo);font-weight:600;font-size:16px;color:#fff}
+  .v-compacto .caixa p{font-size:13.5px;color:#9aa3b5;line-height:1.55}
+  .v-compacto .caixa p.vazio{color:#e3e6ec}
+  .v-compacto .caixa code{color:#c9d1de;background:#151a26;border-radius:4px;padding:1px 5px;font-size:12px}
+  .v-compacto .caixa .x{background:none;border:0;color:#9aa3b5;width:28px;height:28px}
+  .v-compacto .caixa .acoes .b{width:auto;padding:0 12px;height:32px;border:1px solid #1c2232}
+  .v-compacto .caixa .acoes .b .rotulo{display:inline}
+  .v-compacto .caixa .acoes .b.principal{border-color:#7C4DF7}
+  .v-compacto .pecas{border-left:1px solid #151a26;gap:12px;padding:14px}
+  .v-compacto .pecas .b{width:auto;padding:0 12px;height:30px;border:1px solid #1c2232}
+  .v-compacto .pecas .b .rotulo{display:inline}
+  .v-compacto .pil{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:5px}
+  .v-compacto .pil.trabalhando{background:rgba(61,220,151,.14);color:#3ddc97}.v-compacto .pil.descanso{background:rgba(243,201,105,.14);color:#f3c969}.v-compacto .pil.offline{background:rgba(107,116,136,.18);color:#8a94a8}
+  .v-compacto .chip{font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid #1c2232;background:#0d111a;color:#c9d1de}
+  .v-compacto .chip.verde i{background:#3ddc97}.v-compacto .chip.amarelo i{background:#f3c969}.v-compacto .chip.vermelho i{background:#f28b82}
+  .v-compacto .abas{border-bottom:1px solid #151a26}
+  .v-compacto .aba{padding:8px 4px;font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9aa3b5;border-bottom:2px solid transparent}
+  .v-compacto .aba.ativa{color:#fff;border-bottom-color:#7C4DF7}
+  .v-compacto .busca input{background:#0d111a;border:1px solid #1c2232;border-radius:8px;padding:7px 11px;font-size:12.5px}
+  .v-compacto .func{border:1px solid #1c2232;border-radius:8px;padding:8px 10px;gap:9px}
+  .v-compacto .func .av{width:30px;height:38px;border-radius:6px;background:#0d111a}
+  .v-compacto .func b{font-size:13px;font-weight:600;color:#fff}
+  .v-compacto .func span{font-size:11.5px;color:#9aa3b5}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FE0FB"/><stop offset=".5" stop-color="#7C4DF7"/><stop offset="1" stop-color="#F76BE8"/></linearGradient></defs><polyline points="34,60 74,100 34,140" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="66,56 110,100 66,144" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><polyline points="104,50 154,100 104,150" fill="none" stroke="url(#gs)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="wordmark">NuFws<small>Estúdio · telas</small></span>
+  <a class="tag" href="/?tela=1">a tela de hoje</a>
+</div></div>
+
+<header class="capa"><div class="wrap">
+  <div class="eyebrow">Escolha · as telas e os botões</div>
+  <h1>Seis jeitos de vestir<br><strong>a mesma tela.</strong></h1>
+  <p class="lead">Cada quadro mostra as mesmas três peças com o mesmo conteúdo: a <b>barra do escritório</b> (marca, relógio, contadores e botões), a <b>barra do monitor de um agente</b> e a <b>caixa de Conexões</b>; ao lado, os botões, os selos de estado, as abas e o cartão da equipe. Só o visual muda: fonte, cantos, cor, agrupamento, ícones em traço no lugar dos emojis. Clique em <b>Escolher este</b> e me diga o nome.</p>
+</div></header>
+
+<section class="lista wrap" id="lista"></section>
+
+<div class="rodape"><div class="wrap">
+  <span class="txt" id="escolha">Clique em <b>Escolher este</b> no quadro que você preferir.</span>
+  <code id="codigo">telas: ?</code>
+</div></div>
+
+<script>
+/* ---------- ícones em traço (24 x 24) ---------- */
+const ICO = {
+  admin: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  quadro: '<path d="M12 17v5"/><path d="M9 3h6l-1 7 3 3H7l3-3z"/>',
+  conexoes: '<path d="M9 2v6M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/>',
+  esteiras: '<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M5 8v2a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4V8M12 14v2"/>',
+  cuki: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  avisos: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  relatorio: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>',
+  voz: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>',
+  som: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/>',
+  ligar: '<path d="M7 4l13 8-13 8z"/>',
+  desligar: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  trabalho: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  conversar: '<path d="M4 5h16v11H9l-5 4z"/>',
+  ficha: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M13 10h5M13 14h5M5.5 16.5c.6-1.6 1.8-2.3 3-2.3s2.4.7 3 2.3"/>',
+  memoria: '<ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
+  recados: '<path d="M3 13l2-8h14l2 8v6H3z"/><path d="M3 13h5l2 3h4l2-3h5"/>',
+  propostas: '<path d="M9 18h6M10 21h4"/><path d="M8 13a5.5 5.5 0 1 1 8 0c-1 1-1.5 2-1.5 3h-5c0-1-.5-2-1.5-3z"/>',
+  testar: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
+  log: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/>',
+  novaAba: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>',
+  fechar: '<path d="M6 6l12 12M18 6L6 18"/>',
+  mais: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+  sync: '<path d="M20 11a8 8 0 0 0-14-4L4 9M4 13a8 8 0 0 0 14 4l2-2"/><path d="M4 4v5h5M20 20v-5h-5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  lupa: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'
+};
+const ic = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICO[n] || ''}</svg>`;
+const LOGO = '<svg class="logo" viewBox="0 0 200 200" aria-hidden="true"><polyline points="34,60 74,100 34,140" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".25"/><polyline points="66,56 110,100 66,144" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/><polyline points="104,50 154,100 104,150" fill="none" stroke="#5FE0FB" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------- o conteúdo, igual em todas: os botões de hoje, em grupos ---------- */
+const TOPO = [
+  [['admin', 'Admin', 'fantasma rotulado'], ['quadro', 'Quadro', 'principal rotulado']],
+  [['conexoes', 'Conexões', 'mostra'], ['esteiras', 'Esteiras'], ['cuki', 'Cuki BOT']],
+  [['ajustes', 'Ajustes', 'fantasma'], ['avisos', 'Avisos'], ['relatorio', 'Relatório']],
+  [['voz', 'Voz'], ['som', 'Ler em voz alta', 'fantasma so-icone']]
+];
+const MON = [
+  [['ligar', 'Ligar', 'principal rotulado'], ['desligar', 'Desligar', 'rotulado']],
+  [['trabalho', 'Trabalho'], ['conversar', 'Conversar'], ['ficha', 'Ficha'], ['memoria', 'Memória'], ['recados', 'Recados'], ['propostas', 'Propostas']],
+  [['conexoes', 'Conexões'], ['testar', 'Testar'], ['log', 'Log']],
+  [['novaAba', 'Nova aba'], ['fechar', 'Fechar', 'fantasma so-icone']]
+];
+const botao = ([n, rot, cls = '']) => `<button class="b ${cls}" data-rotulo="${rot}" title="${rot}">${ic(n)}${cls.includes('so-icone') ? '' : `<span class="rotulo">${rot}</span>`}</button>`;
+const grupos = g => g.map(gr => `<div class="grupo">${gr.map(botao).join('')}</div>`).join('');
+
+const VARIACOES = {
+  nufws:    { nome: 'Marca NuFws', desc: 'Preto liso, Outfit nos títulos e DM Sans no texto, botões em pílula com borda fina e um só botão cheio em ciano. Ícones em traço, contadores em pílula, a régua ciana nos títulos. É a cara da abertura e das páginas do Estúdio levada para a tela.' },
+  sobrio:   { nome: 'Sóbrio', desc: 'O mínimo: sem ícones, sem bordas nos botões, texto cinza que acende no hover, grupos separados por um fio. Um botão principal branco. Contadores viram uma frase com pontos de cor. Para quem quer a cena e nada chamando atenção.' },
+  painel:   { nome: 'Painel de controle', desc: 'Botões agrupados em blocos com uma borda só (como ferramentas de produtividade): quem é do mesmo assunto fica junto. Ícones em traço com rótulo, contadores num bloco segmentado, abas em controle deslizante, violeta como cor de ação.' },
+  claro:    { nome: 'Claro', desc: 'Tema claro: branco e cinza-azulado, texto grafite, violeta na ação e ciano no relógio. Pílulas, sombras suaves, cena em tom de papel. Para quem usa de dia, em sala iluminada, ou quer parecer um sistema de gestão.' },
+  vidro:    { nome: 'Vidro', desc: 'Barras e caixas translúcidas com desfoque sobre a cena, bordas finas de luz, cantos de 12 px e o degradê da marca no botão principal. A cena aparece por trás de tudo; o escritório vira o fundo da interface.' },
+  compacto: { nome: 'Compacto', desc: 'Barras finas (46 px) com botões só de ícone e o rótulo aparecendo em baixo ao passar o mouse; só Admin, Quadro, Ligar e Desligar mantêm a palavra. Sobra tela para a cena. Caixas e cartões menores, abas e selos discretos.' }
+};
+
+function quadro(id, n) {
+  const v = VARIACOES[id];
+  return `
+  <section class="quadro v-${id}" data-id="${id}">
+    <div class="cabeca">
+      <div><span class="mini">0${n} · variação</span><h3>${v.nome}</h3><p>${v.desc}</p></div>
+      <span class="selo">escolhido</span>
+      <button class="btn ghost" data-esc="${id}">Escolher este</button>
+    </div>
+    <div class="rolagem"><div class="palco">
+      <header class="top">
+        <div class="marca">${LOGO}<div><strong>Escritório de Agentes</strong><span>painel dos seus agentes de IA</span></div></div>
+        <div class="relogio"><b>11:33</b><span>expediente</span></div>
+        <div class="numeros"><div class="num ok"><b>2</b><span>trabalhando</span></div><div class="num pausa"><b>0</b><span>descanso</span></div><div class="num off"><b>0</b><span>offline</span></div></div>
+        <nav>${grupos(TOPO)}</nav>
+      </header>
+      <div class="mon">
+        <div class="quem"><i class="av"></i><div><strong>EXEMPLO</strong><span>Agente de exemplo · Agente de demonstração</span></div></div>
+        <span class="estado"><i></i>no ar · fora daqui</span>
+        <nav>${grupos(MON)}</nav>
+      </div>
+      <div class="corpo">
+        <div class="cena">
+          <span class="rotulo-cena">a cena do escritório fica aqui</span>
+          <div class="caixa">
+            <button class="b x so-icone" title="Fechar">${ic('fechar')}</button>
+            <h4>Conexões do negócio</h4>
+            <p>Os sistemas que a empresa já usa e os agentes podem acessar: CRM, planilha, agenda, pasta, WhatsApp, e-mail. Cadastre cada um uma vez; ao contratar, você marca quais o agente pode usar, e só essas entram no <code>.env</code> dele. Chaves ficam só aqui e no <code>.env</code> dos agentes permitidos: nunca no chat. O escritório testa cada conexão ao salvar, ao subir e a cada 15 minutos.</p>
+            <p class="vazio">Nenhuma conexão cadastrada ainda.</p>
+            <div class="acoes"><button class="b principal">${ic('plus')}<span class="rotulo">Cadastrar conexão</span></button><button class="b">${ic('sync')}<span class="rotulo">Sincronizar agentes</span></button><button class="b fantasma"><span class="rotulo">Fechar</span></button></div>
+          </div>
+        </div>
+        <aside class="pecas">
+          <div class="peca"><span class="rot">Botões</span><div class="linha"><button class="b principal"><span class="rotulo">Salvar</span></button><button class="b"><span class="rotulo">Cancelar</span></button><button class="b fantasma"><span class="rotulo">Ver mais</span></button><button class="b perigo"><span class="rotulo">Demitir</span></button></div></div>
+          <div class="peca"><span class="rot">Estados do agente</span><div class="linha"><span class="pil trabalhando">trabalhando</span><span class="pil descanso">descanso</span><span class="pil offline">offline</span></div></div>
+          <div class="peca"><span class="rot">Conexões</span><div class="linha"><span class="chip verde"><i></i>CRM · conectada</span><span class="chip amarelo"><i></i>Planilha · sem chave</span><span class="chip vermelho"><i></i>WhatsApp · falhou</span></div></div>
+          <div class="peca"><span class="rot">Abas do painel</span><div class="abas"><span class="aba ativa">Equipe</span><span class="aba">Contratar</span><span class="aba">Salas</span></div></div>
+          <div class="peca"><span class="rot">Busca</span><div class="busca"><input placeholder="buscar funcionário…"><button class="b so-icone" title="Buscar">${ic('lupa')}</button></div></div>
+          <div class="peca"><span class="rot">Cartão da equipe</span><div class="func"><i class="av"></i><div><b>Tati</b><span>Financeiro · na Estação D13</span></div><span class="pil trabalhando">trabalhando</span></div></div>
+        </aside>
+      </div>
+    </div></div>
+  </section>`;
+}
+
+const lista = document.getElementById('lista');
+let escolhida = null;
+function pintar() {
+  lista.innerHTML = Object.keys(VARIACOES).map((id, i) => quadro(id, i + 1)).join('');
+  document.querySelectorAll('.quadro').forEach(q => q.classList.toggle('escolhida', q.dataset.id === escolhida));
+  document.querySelectorAll('[data-esc]').forEach(b => {
+    const minha = b.dataset.esc === escolhida;
+    b.textContent = minha ? 'Escolhido ✓' : 'Escolher este'; b.classList.toggle('ghost', !minha);
+    b.onclick = () => { escolhida = b.dataset.esc; pintar(); document.querySelector('.quadro.escolhida').scrollIntoView({ block: 'nearest' }); };
+  });
+  // o cartão de equipe tem o mesmo boneco do monitor
+  document.querySelectorAll('.func .av').forEach(a => { a.style.backgroundImage = getComputedStyle(document.querySelector('.mon .av')).backgroundImage; a.style.backgroundSize = '60%'; a.style.backgroundPosition = 'center'; a.style.backgroundRepeat = 'no-repeat'; });
+  const t = document.getElementById('escolha'), cod = document.getElementById('codigo');
+  if (escolhida) { t.innerHTML = 'Você escolheu <b>' + VARIACOES[escolhida].nome + '</b>. Diga ao Claude, no chat, a linha ao lado.'; cod.textContent = 'telas: ' + escolhida; }
+  else { t.innerHTML = 'Clique em <b>Escolher este</b> no quadro que você preferir.'; cod.textContent = 'telas: ?'; }
+}
+pintar();
+</script>
+</body>
+</html>
