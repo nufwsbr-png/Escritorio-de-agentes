@@ -60,11 +60,18 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .campo{display:flex;flex-direction:column;gap:6px;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza);font-weight:500}
 .campo input,.campo select{text-transform:none;letter-spacing:0;font-weight:400}
 .campo .hint{text-transform:none;letter-spacing:0;font-weight:400}
-.campo input[type=file]{padding:9px 12px;font-size:13px;color:var(--cinza)}
+.arquivo{display:flex;align-items:center;gap:12px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400}
+.arquivo input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.arquivo .escolher{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1px solid rgba(95,224,251,.55);color:var(--ciano);font-size:13.5px;font-weight:600;white-space:nowrap;transition:background .12s}
+.arquivo .escolher::before{content:"＋";font-weight:500;font-size:15px;line-height:1}
+.arquivo:hover .escolher{background:rgba(95,224,251,.12)}
+.arquivo .hint{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .campo .cor{display:flex;align-items:center;gap:10px}
 .campo input[type=color]{width:46px;height:36px;padding:2px;border-radius:10px;border:1px solid var(--linha);background:var(--carvao)}
 .duas{display:grid;grid-template-columns:1.4fr .8fr;gap:18px;align-items:start}
-@media (max-width:860px){.duas{grid-template-columns:1fr}}
+.duas aside{margin-top:-96px}
+#e-1 .lead{max-width:660px}   /* a marca sobe para o lado do título: fica à vista antes da caixa de texto */
+@media (max-width:860px){.duas{grid-template-columns:1fr}.duas aside{margin-top:0;order:-1}}
 .card{background:var(--carvao);border:1px solid var(--linha);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
 .card .mini{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano);font-weight:600}
 .previa-logo{background:var(--noite);border:1px solid var(--linha);border-radius:12px;padding:12px;display:flex;justify-content:center}

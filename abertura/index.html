@@ -47,9 +47,9 @@
       </div>
       <aside class="card">
         <span class="mini">Opcional · a sua marca</span>
-        <label class="campo">Logo <input type="file" id="f-logo" accept=".png,.jpg,.jpeg,.svg,.webp"><span class="hint" id="n-logo">png, jpg, svg ou webp</span></label>
+        <div class="campo">Logo <label class="arquivo"><input type="file" id="f-logo" accept=".png,.jpg,.jpeg,.svg,.webp"><span class="escolher">Escolher imagem</span><span class="hint" id="n-logo">png, jpg, svg ou webp</span></label></div>
         <label class="campo">Cor principal <span class="cor"><input type="color" id="f-cor" value="#5FE0FB"><code id="t-cor">#5FE0FB</code></span><span class="hint">entra na paleta "da marca" e nos detalhes da tela</span></label>
-        <label class="campo">Planta do escritório <input type="file" id="f-planta" accept=".png,.jpg,.jpeg,.pdf,.webp"><span class="hint" id="n-planta">imagem ou PDF; fica guardada para o Claude Code redesenhar as salas depois (/criar-escritorio)</span></label>
+        <div class="campo">Planta do escritório <label class="arquivo"><input type="file" id="f-planta" accept=".png,.jpg,.jpeg,.pdf,.webp"><span class="escolher">Escolher arquivo</span><span class="hint" id="n-planta">imagem ou PDF</span></label><span class="hint">fica guardada para o Claude Code redesenhar as salas depois (/criar-escritorio)</span></div>
         <div class="previa-logo hidden" id="p-logo"><img alt="" id="img-logo"></div>
       </aside>
     </div>
