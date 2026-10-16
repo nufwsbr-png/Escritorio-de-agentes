@@ -33,7 +33,7 @@ h1 strong{font-weight:500;background:var(--grad);-webkit-background-clip:text;ba
 h2{font-family:var(--titulo);font-weight:400;font-size:clamp(26px,3.6vw,38px);line-height:1.1;letter-spacing:-.02em;color:var(--branco);margin:18px 0 10px}
 p.lead{font-size:16.5px;color:var(--cinza);max-width:720px;font-weight:300;margin-bottom:22px}
 .capa{position:relative;overflow:hidden;padding:30px 0 10px}
-.glow{position:absolute;pointer-events:none;filter:blur(90px);border-radius:50%}
+.glow{display:none}   /* fundo preto liso: o dono pediu sem a mancha de cor (16/10/2026) */
 .g1{width:460px;height:460px;background:#2a9ac9;right:-140px;top:-200px;opacity:.22}
 .g2{width:380px;height:380px;background:#a02cd8;right:260px;bottom:-260px;opacity:.16}
 
